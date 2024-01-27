@@ -1,0 +1,17 @@
+[package]
+name = "csvbro"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+calamine = "0.23.1"
+chrono = "0.4.31"
+fuzzywuzzy = "0.0.2"
+rgwml = { path = "/home/rgw/Apps/rgwml" }
+rustyline = "13.0.0"
+vim_edit = "0.1.1"
+serde_json = "1.0.111"
+serde = "1.0.195"
