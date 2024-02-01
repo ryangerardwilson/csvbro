@@ -2,9 +2,10 @@
 use fuzzywuzzy::fuzz;
 use serde::{Deserialize, Serialize};
 use serde_json;
+use std::env;
 use std::error::Error;
 use std::fs;
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::user_interaction::{
     get_edited_user_sql_input, get_user_input, get_user_input_level_2, print_insight, print_list,
@@ -91,7 +92,20 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
 pub fn manage_config_file<F: FnOnce(&mut Config) -> Result<(), Box<dyn Error>>>(
     op: F,
 ) -> Result<(), Box<dyn Error>> {
-    let mut path = PathBuf::from("/home/rgw/Desktop/csv_db");
+    let home_dir = match env::var("HOME") {
+        Ok(home) => home,
+        Err(_) => match env::var("USERPROFILE") {
+            Ok(userprofile) => userprofile,
+            Err(_) => {
+                eprintln!("Unable to determine user home directory.");
+                std::process::exit(1);
+            }
+        },
+    };
+
+    let desktop_path = Path::new(&home_dir).join("Desktop");
+    let mut path = desktop_path.join("csv_db");
+
     //println!("Checking if path exists: {:?}", path);
     if !path.exists() {
         println!("Path does not exist, creating directory.");

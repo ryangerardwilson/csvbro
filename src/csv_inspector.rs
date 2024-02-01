@@ -11,14 +11,16 @@ use fuzzywuzzy::fuzz;
 use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal};
 use serde_json::Value;
 
+// Assuming CsvBuilder, Exp, and ExpVal are updated as per your implementation
+
 struct ExpStore {
-    expressions: Vec<Exp<'static>>, // Store the Exp instances directly
+    expressions: Vec<Exp>, // Store the Exp instances directly
 }
 
 #[derive(Debug)]
-enum CompareValue<'a> {
-    Single(&'a str),
-    Multiple(Vec<&'a str>),
+enum CompareValue {
+    Single(String),
+    Multiple(Vec<String>),
 }
 
 impl ExpStore {
@@ -29,51 +31,25 @@ impl ExpStore {
         compare_value: CompareValue,
         compare_type: String,
     ) {
-        // Convert Strings into 'static references by leaking Box<str>
-        let column_static = Box::leak(column.into_boxed_str());
-        let operator_static = Box::leak(operator.into_boxed_str());
-        let compare_type_static = Box::leak(compare_type.into_boxed_str());
-        let exp;
-
-        match compare_value {
-            CompareValue::Single(value) => {
-                //ExpVal::STR(Box::leak(value.to_string().into_boxed_str()))
-
-                exp = Exp {
-                    column: column_static,
-                    operator: operator_static,
-                    compare_with: ExpVal::STR(Box::leak(value.to_string().into_boxed_str())),
-                    compare_as: compare_type_static,
-                };
-            }
-            CompareValue::Multiple(values) => {
-                // Step 1: Convert each `&str` to `String`
-                let owned_values: Vec<String> = values.iter().map(|&val| val.to_string()).collect();
-
-                // Step 2: Initialize an empty Vec<&'static str>
-                let mut static_strs: Vec<&'static str> = Vec::new();
-
-                // Step 3: Iterate over each `String` in `owned_values`, convert it to `Box<str>` and leak it
-                for val in owned_values {
-                    let leaked_str: &'static str = Box::leak(val.into_boxed_str());
-                    static_strs.push(leaked_str);
-                }
-
-                //ExpVal::VEC(static_strs)
-
-                exp = Exp {
-                    column: column_static,
-                    operator: operator_static,
-                    compare_with: ExpVal::VEC(static_strs),
-                    compare_as: compare_type_static,
-                };
-            }
+        let exp = match compare_value {
+            CompareValue::Single(value) => Exp {
+                column,
+                operator,
+                compare_with: ExpVal::STR(value),
+                compare_as: compare_type,
+            },
+            CompareValue::Multiple(values) => Exp {
+                column,
+                operator,
+                compare_with: ExpVal::VEC(values),
+                compare_as: compare_type,
+            },
         };
 
         self.expressions.push(exp);
     }
 
-    fn get_exp(&self, index: usize) -> &Exp<'static> {
+    fn get_exp(&self, index: usize) -> &Exp {
         &self.expressions[index]
     }
 }
@@ -196,18 +172,6 @@ SYNTAX
                 .to_string();
 
             /*
-                let compare_with = exp.get(1)
-                    .and_then(|cw| cw["compare_with"].as_str())
-                    .ok_or("Invalid or missing compare_with")?;
-
-
-            let compare_value = if operator.starts_with("FUZZ_MIN_SCORE_") {
-                CompareValue::Multiple(compare_with.split(',').map(str::trim).collect())
-            } else {
-                CompareValue::Single(compare_with)
-            };
-            */
-
             let compare_value = if let Some(compare_with_array) =
                 exp.get(1).and_then(|cw| cw["compare_with"].as_array())
             {
@@ -221,6 +185,23 @@ SYNTAX
                 exp.get(1).and_then(|cw| cw["compare_with"].as_str())
             {
                 CompareValue::Single(compare_with_single)
+            } else {
+                return Err("Invalid or missing compare_with".into());
+            };
+            */
+            let compare_value = if let Some(compare_with_array) =
+                exp.get(1).and_then(|cw| cw["compare_with"].as_array())
+            {
+                CompareValue::Multiple(
+                    compare_with_array
+                        .iter()
+                        .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                        .collect::<Vec<String>>(), // Collecting as Vec<String>
+                )
+            } else if let Some(compare_with_single) =
+                exp.get(1).and_then(|cw| cw["compare_with"].as_str())
+            {
+                CompareValue::Single(compare_with_single.to_string())
             } else {
                 return Err("Invalid or missing compare_with".into());
             };

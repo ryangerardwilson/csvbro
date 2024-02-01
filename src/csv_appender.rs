@@ -11,6 +11,7 @@ use fuzzywuzzy::fuzz;
 use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal};
 use serde_json::Value;
 
+/*
 struct ExpStore {
     expressions: Vec<Exp<'static>>, // Store the Exp instances directly
 }
@@ -74,6 +75,50 @@ impl ExpStore {
     }
 
     fn get_exp(&self, index: usize) -> &Exp<'static> {
+        &self.expressions[index]
+    }
+}
+*/
+
+// Assuming CsvBuilder, Exp, and ExpVal are updated as per your implementation
+
+struct ExpStore {
+    expressions: Vec<Exp>, // Store the Exp instances directly
+}
+
+#[derive(Debug)]
+enum CompareValue {
+    Single(String),
+    Multiple(Vec<String>),
+}
+
+impl ExpStore {
+    fn add_expression(
+        &mut self,
+        column: String,
+        operator: String,
+        compare_value: CompareValue,
+        compare_type: String,
+    ) {
+        let exp = match compare_value {
+            CompareValue::Single(value) => Exp {
+                column,
+                operator,
+                compare_with: ExpVal::STR(value),
+                compare_as: compare_type,
+            },
+            CompareValue::Multiple(values) => Exp {
+                column,
+                operator,
+                compare_with: ExpVal::VEC(values),
+                compare_as: compare_type,
+            },
+        };
+
+        self.expressions.push(exp);
+    }
+
+    fn get_exp(&self, index: usize) -> &Exp {
         &self.expressions[index]
     }
 }
@@ -204,6 +249,7 @@ SYNTAX
                 .ok_or("Invalid or missing operator")?
                 .to_string();
 
+            /*
             let compare_value = if let Some(compare_with_array) =
                 exp.get(1).and_then(|cw| cw["compare_with"].as_array())
             {
@@ -217,6 +263,24 @@ SYNTAX
                 exp.get(1).and_then(|cw| cw["compare_with"].as_str())
             {
                 CompareValue::Single(compare_with_single)
+            } else {
+                return Err("Invalid or missing compare_with".into());
+            };
+            */
+            let compare_value = if let Some(compare_with_array) =
+                exp.get(1).and_then(|cw| cw["compare_with"].as_array())
+            {
+                CompareValue::Multiple(
+                    compare_with_array
+                        .iter()
+                        .filter_map(|v| v.as_str())
+                        .map(|s| s.to_string()) // Convert &str to String
+                        .collect(), // Collecting as Vec<String>
+                )
+            } else if let Some(compare_with_single) =
+                exp.get(1).and_then(|cw| cw["compare_with"].as_str())
+            {
+                CompareValue::Single(compare_with_single.to_string()) // Convert &str to String
             } else {
                 return Err("Invalid or missing compare_with".into());
             };
@@ -440,15 +504,14 @@ SYNTAX
                             compare_with_array
                                 .iter()
                                 .filter_map(|v| v.as_str())
-                                //.map(|s| s.to_string())
-                                .collect(),
+                                .map(|s| s.to_string()) // Convert &str to String
+                                .collect(), // Collecting as Vec<String>
                         )
                     } else if let Some(compare_with_single) =
                         expression_details["compare_with"].as_str()
                     {
-                        CompareValue::Single(compare_with_single)
+                        CompareValue::Single(compare_with_single.to_string()) // Convert &str to String
                     } else {
-                        //return Err(Box::new(std::fmt::Error::new(format!("Invalid or missing compare_with for filter {} in category {}", exp_name, category_index))));
                         return Err(Box::from(format!(
                             "Invalid or missing compare_with for filter {} in category {}",
                             exp_name, category_index
