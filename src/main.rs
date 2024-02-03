@@ -38,82 +38,52 @@ async fn main() {
         best_match
     }
 
-/*
-fn embed_and_set_up_in_directory_system() -> (String, String, String) {
-    // Attempt to dynamically find the current executable's path
-    let current_exe_path = env::current_exe().expect("Failed to find current executable path");
+    fn embed_and_set_up_in_directory_system() -> (String, String, String) {
+        // Attempt to dynamically find the current executable's path
+        let current_exe_path_buf =
+            env::current_exe().expect("Failed to find current executable path");
+        let current_exe_path = current_exe_path_buf.as_path();
 
-    let home_dir = env::var("HOME").expect("Unable to determine user home directory");
-    let desktop_path = Path::new(&home_dir).join("Desktop");
-    let downloads_path = Path::new(&home_dir).join("Downloads");
-    let csv_db_path = desktop_path.join("csv_db");
+        let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+        let desktop_path = Path::new(&home_dir).join("Desktop");
+        let downloads_path = Path::new(&home_dir).join("Downloads");
+        let csv_db_path = desktop_path.join("csv_db");
 
-    // Define the target path for moving the binary
-    let target_binary_path = Path::new("/usr/local/bin/csvbro");
+        // Define the target path for moving the binary
+        let target_binary_path = Path::new("/usr/local/bin/csvbro");
 
-    // Check if the target path already exists to avoid overwriting or unnecessary operations
-    if !target_binary_path.exists() {
-        // Move the binary to the target path using 'sudo mv'
-        let status = Command::new("sudo")
-            .arg("mv")
-            .arg(&current_exe_path)
-            .arg(&target_binary_path)
-            .status()
-            .expect("Failed to execute process");
+        // Deduce if running via cargo by checking if the executable path contains target/debug or target/release
+        let is_cargo_run = current_exe_path
+            .to_string_lossy()
+            .contains("/target/debug/")
+            || current_exe_path
+                .to_string_lossy()
+                .contains("/target/release/");
 
-        if !status.success() {
-            eprintln!("Failed to move binary to /usr/local/bin. You may be prompted for your password.");
-            process::exit(1);
+        // Check if the binary is being executed from the target path
+        let is_executed_from_target = current_exe_path == target_binary_path;
+
+        if !is_executed_from_target && !is_cargo_run {
+            // Move the binary to the target path using 'sudo mv'
+            let status = Command::new("sudo")
+                .arg("mv")
+                .arg(current_exe_path)
+                .arg(target_binary_path)
+                .status()
+                .expect("Failed to execute process");
+
+            if !status.success() {
+                eprintln!("Failed to move binary to /usr/local/bin. You may be prompted for your password.");
+                process::exit(1);
+            }
         }
 
+        return (
+            desktop_path.to_string_lossy().into_owned(),
+            downloads_path.to_string_lossy().into_owned(),
+            csv_db_path.to_string_lossy().into_owned(),
+        );
     }
-
-    return (desktop_path.to_string_lossy().into_owned(), downloads_path.to_string_lossy().into_owned(), csv_db_path.to_string_lossy().into_owned());
-}
-*/
-
-fn embed_and_set_up_in_directory_system() -> (String, String, String) {
-    // Attempt to dynamically find the current executable's path
-    let current_exe_path_buf = env::current_exe().expect("Failed to find current executable path");
-    let current_exe_path = current_exe_path_buf.as_path();
-
-    let home_dir = env::var("HOME").expect("Unable to determine user home directory");
-    let desktop_path = Path::new(&home_dir).join("Desktop");
-    let downloads_path = Path::new(&home_dir).join("Downloads");
-    let csv_db_path = desktop_path.join("csv_db");
-
-    // Define the target path for moving the binary
-    let target_binary_path = Path::new("/usr/local/bin/csvbro");
-
-    // Deduce if running via cargo by checking if the executable path contains target/debug or target/release
-    let is_cargo_run = current_exe_path.to_string_lossy().contains("/target/debug/") || current_exe_path.to_string_lossy().contains("/target/release/");
-
-    // Check if the binary is being executed from the target path
-    let is_executed_from_target = current_exe_path == target_binary_path;
-
-    if !is_executed_from_target && !is_cargo_run {
-        if target_binary_path.exists() {
-            // If the target exists, you might want to compare the binaries to decide on overwriting
-            println!("Target binary already exists. Consider checking for an update or backup before overwriting.");
-        }
-
-        // Move the binary to the target path using 'sudo mv'
-        let status = Command::new("sudo")
-            .arg("mv")
-            .arg(current_exe_path)
-            .arg(target_binary_path)
-            .status()
-            .expect("Failed to execute process");
-
-        if !status.success() {
-            eprintln!("Failed to move binary to /usr/local/bin. You may be prompted for your password.");
-            process::exit(1);
-        }
-    }
-
-    return (desktop_path.to_string_lossy().into_owned(), downloads_path.to_string_lossy().into_owned(), csv_db_path.to_string_lossy().into_owned());
-}
-
 
     let (desktop_path, downloads_path, csv_db_path) = embed_and_set_up_in_directory_system();
 
