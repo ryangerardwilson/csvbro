@@ -145,7 +145,7 @@ pub fn print_insight(message: &str) {
                                     // ANSI escape code to reset formatting
     let reset = "\x1b[0m";
 
-    println!("  {}{}{}", bold_yellow, message, reset);
+    println!("{}@BIGBro: {}{}", bold_yellow, message, reset);
 }
 
 /// Prints a message in bold yellow font.

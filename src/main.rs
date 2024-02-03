@@ -85,6 +85,11 @@ async fn main() {
         );
     }
 
+    if std::env::args().any(|arg| arg == "--version") {
+        print_insight("csvbro 0.1.5");
+        std::process::exit(0);
+    }
+
     let (desktop_path, downloads_path, csv_db_path) = embed_and_set_up_in_directory_system();
 
     let csv_db_path_buf = PathBuf::from(csv_db_path);

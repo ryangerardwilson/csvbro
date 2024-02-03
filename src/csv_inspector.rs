@@ -227,60 +227,6 @@ SYNTAX
 
         Ok((expression_names, result_expression))
 
-        /*
-                let mut expression_names = Vec::new();
-                let num_expressions = get_user_input_level_2("Enter the number of expressions: ")
-                    .parse::<usize>()
-                    .map_err(|_| "Invalid number")?;
-
-                println!();
-                for i in 1..=num_expressions {
-                    let column = get_user_input_level_2(&format!("Enter column name for Exp{}: ", i));
-                    let operator = get_user_input_level_2(&format!(
-                        r#"Enter operator for Exp{}
-          NUMBERS/TIMESTAMPS (==, !=, >, <, >=, <=)
-          TEXT (==, !=, CONTAINS, STARTS_WITH, DOES_NOT_CONTAIN)
-          VECTOR (FUZZ_MIN_SCORE_10/20/30, etc.)
-          "#,i
-
-                    ));
-
-                    let compare_value_input =
-                        get_user_input_level_2(&format!("Enter comparison value for Exp{}: ", i));
-                    let compare_value = if operator.starts_with("FUZZ_MIN_SCORE_") {
-                        CompareValue::Multiple(compare_value_input.split(',').map(str::trim).collect())
-                    } else {
-                        CompareValue::Single(&compare_value_input)
-                    };
-
-                    let compare_type = if operator.starts_with("FUZZ_MIN_SCORE_") {
-                        "TEXT".to_string()
-                    } else {
-                        get_user_input_level_2(&format!(
-                            "Enter comparison type for Exp{}\n(TEXT, NUMBERS, TIMESTAMPS): ",
-                            i
-                        ))
-                    };
-
-                    // Add each component of the Exp to the data store
-
-                    //dbg!(&compare_value);
-                    data_store.add_expression(column, operator, compare_value, compare_type);
-                    expression_names.push((format!("Exp{}", i), i - 1));
-
-                }
-
-                //let result_expression = get_user_input_level_2("Enter the result expression (e.g., 'Exp1 && (Exp2 || Exp3)'): ");
-
-                let result_expression = if num_expressions == 1 {
-                    "Exp1".to_string()
-                } else {
-                    get_user_input_level_2("Enter the result expression (e.g., 'Exp1 && (Exp2 || Exp3)'): ")
-                };
-                println!();
-
-                Ok((expression_names, result_expression))
-        */
     }
 
     let menu_options = vec![
