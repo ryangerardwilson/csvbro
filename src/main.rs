@@ -12,6 +12,8 @@ use fuzzywuzzy::fuzz;
 use rgwml::csv_utils::CsvBuilder;
 use std::env;
 use std::path::Path;
+use std::path::PathBuf;
+use std::process::{self, Command};
 
 #[tokio::main]
 async fn main() {
@@ -36,23 +38,44 @@ async fn main() {
         best_match
     }
 
-    let home_dir = match env::var("HOME") {
-        Ok(home) => home,
-        Err(_) => match env::var("USERPROFILE") {
-            Ok(userprofile) => userprofile,
-            Err(_) => {
-                eprintln!("Unable to determine user home directory.");
-                std::process::exit(1);
-            }
-        },
-    };
+fn embed_and_set_up_in_directory_system() -> (String, String, String) {
+    // Attempt to dynamically find the current executable's path
+    let current_exe_path = env::current_exe().expect("Failed to find current executable path");
 
+    let home_dir = env::var("HOME").expect("Unable to determine user home directory");
     let desktop_path = Path::new(&home_dir).join("Desktop");
     let downloads_path = Path::new(&home_dir).join("Downloads");
     let csv_db_path = desktop_path.join("csv_db");
 
-    // Ensure csv_db directory exists
-    std::fs::create_dir_all(&csv_db_path).expect("Failed to create directory");
+    // Define the target path for moving the binary
+    let target_binary_path = Path::new("/usr/local/bin/csvbro");
+
+    // Check if the target path already exists to avoid overwriting or unnecessary operations
+    if !target_binary_path.exists() {
+        // Move the binary to the target path using 'sudo mv'
+        let status = Command::new("sudo")
+            .arg("mv")
+            .arg(&current_exe_path)
+            .arg(&target_binary_path)
+            .status()
+            .expect("Failed to execute process");
+
+        if !status.success() {
+            eprintln!("Failed to move binary to /usr/local/bin. You may be prompted for your password.");
+            process::exit(1);
+        }
+
+    }
+
+    return (desktop_path.to_string_lossy().into_owned(), downloads_path.to_string_lossy().into_owned(), csv_db_path.to_string_lossy().into_owned());
+}
+
+
+    let (desktop_path, downloads_path, csv_db_path) = embed_and_set_up_in_directory_system();
+
+    let csv_db_path_buf = PathBuf::from(csv_db_path);
+    let desktop_path_buf = PathBuf::from(desktop_path);
+    let downloads_path_buf = PathBuf::from(downloads_path);
 
     println!(
         r#"
@@ -112,7 +135,7 @@ async fn main() {
             .as_str()
             {
                 "new" => break CsvBuilder::new(),
-                "open" => match open_csv_file(&csv_db_path) {
+                "open" => match open_csv_file(&csv_db_path_buf) {
                     Some((csv_builder, file_path)) => {
                         // Convert file_path to a string slice before passing it
                         if let Some(path_str) = file_path.to_str() {
@@ -128,7 +151,7 @@ async fn main() {
                         continue;
                     }
                 },
-                "import" => match import(&desktop_path, &downloads_path) {
+                "import" => match import(&desktop_path_buf, &downloads_path_buf) {
                     Some(csv_builder) => break csv_builder,
                     None => {
                         continue;
@@ -144,7 +167,7 @@ async fn main() {
                     }
                 },
                 "delete" => {
-                    delete_csv_file(&csv_db_path); // No return value expected
+                    delete_csv_file(&csv_db_path_buf); // No return value expected
                     continue; // Continue the loop after deletion
                 }
                 "settings" => {
