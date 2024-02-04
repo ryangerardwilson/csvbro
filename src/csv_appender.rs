@@ -10,7 +10,9 @@ use crate::user_interaction::{
 use fuzzywuzzy::fuzz;
 use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal, Train};
 use serde_json::Value;
+use std::env;
 use std::error::Error;
+use std::path::Path;
 
 // Assuming CsvBuilder, Exp, and ExpVal are updated as per your implementation
 
@@ -461,9 +463,9 @@ SYNTAX
         Ok((new_column_name, categories))
     }
 
-fn get_concatenation_input() -> Result<(String, Vec<String>), Box<dyn Error>> {
-    // Placeholder for getting JSON input from the user
-    let json_syntax = r#"{
+    fn get_concatenation_input() -> Result<(String, Vec<String>), Box<dyn Error>> {
+        // Placeholder for getting JSON input from the user
+        let json_syntax = r#"{
     "new_column_name": "",
     "concatenation_items": []
 }
@@ -478,28 +480,28 @@ SYNTAX
 
 "#;
 
-    // Simulating user editing JSON input and providing it back
-    let user_edited_json = get_edited_user_json_input(json_syntax.to_string());
-    
-    let parsed_json: Value = serde_json::from_str(&user_edited_json)?;
+        // Simulating user editing JSON input and providing it back
+        let user_edited_json = get_edited_user_json_input(json_syntax.to_string());
 
-    let new_column_name = parsed_json["new_column_name"]
-        .as_str()
-        .ok_or("Invalid or missing new column name")?
-        .to_string();
+        let parsed_json: Value = serde_json::from_str(&user_edited_json)?;
 
-    let concatenation_items = parsed_json["concatenation_items"]
-        .as_array()
-        .ok_or("Invalid format for concatenation items")?
-        .iter()
-        .filter_map(|item| item.as_str().map(String::from))
-        .collect();
+        let new_column_name = parsed_json["new_column_name"]
+            .as_str()
+            .ok_or("Invalid or missing new column name")?
+            .to_string();
 
-    Ok((new_column_name, concatenation_items))
-}
+        let concatenation_items = parsed_json["concatenation_items"]
+            .as_array()
+            .ok_or("Invalid format for concatenation items")?
+            .iter()
+            .filter_map(|item| item.as_str().map(String::from))
+            .collect();
 
-fn get_date_split_input() -> Result<(String, String), Box<dyn Error>> {
-    let syntax = r#"{
+        Ok((new_column_name, concatenation_items))
+    }
+
+    fn get_date_split_input() -> Result<(String, String), Box<dyn Error>> {
+        let syntax = r#"{
     "column_name": "",
     "date_format": ""
 }
@@ -521,24 +523,114 @@ SYNTAX
 
 "#;
 
-    let date_split_json = get_edited_user_json_input(syntax.to_string());
-    let parsed_json: Value = serde_json::from_str(&date_split_json)?;
+        let date_split_json = get_edited_user_json_input(syntax.to_string());
+        let parsed_json: Value = serde_json::from_str(&date_split_json)?;
 
-    let column_name = parsed_json["column_name"]
-        .as_str()
-        .ok_or("Invalid or missing column name")?
-        .to_string();
+        let column_name = parsed_json["column_name"]
+            .as_str()
+            .ok_or("Invalid or missing column name")?
+            .to_string();
 
-    let date_format = parsed_json["date_format"]
-        .as_str()
-        .ok_or("Invalid or missing date format")?
-        .to_string();
+        let date_format = parsed_json["date_format"]
+            .as_str()
+            .ok_or("Invalid or missing date format")?
+            .to_string();
 
-    Ok((column_name, date_format))
+        Ok((column_name, date_format))
+    }
+
+    fn get_fuzzai_analysis_input(
+    ) -> Result<(String, String, Vec<Train>, String, String, String), Box<dyn Error>> {
+        let syntax = r#"{
+    "column_to_analyze": "",
+    "column_prefix": "",
+    "training_data": [
+        {"input": "", "output": ""},
+        {"input": "", "output": ""}
+    ],
+    "word_split_param": "WORD_SPLIT:2",
+    "word_length_sensitivity_param": "WORD_LENGTH_SENSITIVITY:0.8",
+    "get_best_param": "GET_BEST:2"
 }
 
-fn get_fuzzai_analysis_where_input() -> Result<(String, String, Vec<Train>, String, String, String, Vec<(String, Exp)>, String), Box<dyn Error>> {
-    let syntax = r#"{
+SYNTAX
+======
+
+{
+    "column_to_analyze": "Column1",
+    "column_prefix": "sales_analysis",
+    "training_data": [
+            {"input": "I want my money back", "output": "refund"},
+            {"input": "I want a refund immediately", "output": "refund"}
+        ],
+    "word_split_param": "WORD_SPLIT:2",
+    "word_length_sensitivity_param": "WORD_LENGTH_SENSITIVITY:0.8",
+    "get_best_param": "GET_BEST:2",
+}
+
+    "#;
+
+        // Assume get_edited_user_json_input allows user to edit the predefined syntax
+        let fuzzai_json = get_edited_user_json_input(syntax.to_string());
+        let parsed_json: Value = serde_json::from_str(&fuzzai_json)?;
+
+        // Extract and construct each parameter
+        let column_to_analyze = parsed_json["column_to_analyze"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let column_prefix = parsed_json["column_prefix"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+
+        let training_data: Vec<Train> = parsed_json["training_data"]
+            .as_array()
+            .unwrap_or(&vec![])
+            .iter()
+            .map(|train| Train {
+                input: train["input"].as_str().unwrap_or("").to_string(),
+                output: train["output"].as_str().unwrap_or("").to_string(),
+            })
+            .collect();
+
+        let word_split_param = parsed_json["word_split_param"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let word_length_sensitivity_param = parsed_json["word_length_sensitivity_param"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let get_best_param = parsed_json["get_best_param"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+
+        Ok((
+            column_to_analyze,
+            column_prefix,
+            training_data,
+            word_split_param,
+            word_length_sensitivity_param,
+            get_best_param,
+        ))
+    }
+
+    fn get_fuzzai_analysis_where_input() -> Result<
+        (
+            String,
+            String,
+            Vec<Train>,
+            String,
+            String,
+            String,
+            Vec<(String, Exp)>,
+            String,
+        ),
+        Box<dyn Error>,
+    > {
+        let syntax = r#"{
     "column_to_analyze": "",
     "column_prefix": "",
     "training_data": [
@@ -591,49 +683,90 @@ SYNTAX
 
     "#;
 
-    // Assume get_edited_user_json_input allows user to edit the predefined syntax
-    let fuzzai_json = get_edited_user_json_input(syntax.to_string());
-    let parsed_json: Value = serde_json::from_str(&fuzzai_json)?;
+        // Assume get_edited_user_json_input allows user to edit the predefined syntax
+        let fuzzai_json = get_edited_user_json_input(syntax.to_string());
+        let parsed_json: Value = serde_json::from_str(&fuzzai_json)?;
 
-    // Extract and construct each parameter
-    let column_to_analyze = parsed_json["column_to_analyze"].as_str().unwrap_or_default().to_string();
-    let column_prefix = parsed_json["column_prefix"].as_str().unwrap_or_default().to_string();
+        // Extract and construct each parameter
+        let column_to_analyze = parsed_json["column_to_analyze"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let column_prefix = parsed_json["column_prefix"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
 
-    let training_data: Vec<Train> = parsed_json["training_data"].as_array().unwrap_or(&vec![]).iter().map(|train| Train {
-        input: train["input"].as_str().unwrap_or("").to_string(),
-        output: train["output"].as_str().unwrap_or("").to_string(),
-    }).collect();
+        let training_data: Vec<Train> = parsed_json["training_data"]
+            .as_array()
+            .unwrap_or(&vec![])
+            .iter()
+            .map(|train| Train {
+                input: train["input"].as_str().unwrap_or("").to_string(),
+                output: train["output"].as_str().unwrap_or("").to_string(),
+            })
+            .collect();
 
-    let word_split_param = parsed_json["word_split_param"].as_str().unwrap_or_default().to_string();
-    let word_length_sensitivity_param = parsed_json["word_length_sensitivity_param"].as_str().unwrap_or_default().to_string();
-    let get_best_param = parsed_json["get_best_param"].as_str().unwrap_or_default().to_string();
+        let word_split_param = parsed_json["word_split_param"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let word_length_sensitivity_param = parsed_json["word_length_sensitivity_param"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let get_best_param = parsed_json["get_best_param"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
 
-    let expressions: Vec<(String, Exp)> = parsed_json["expressions"].as_array().unwrap_or(&vec![]).iter().map(|exp| (
-        exp[0].as_str().unwrap_or_default().to_string(),
-        Exp {
-            column: exp[1]["column"].as_str().unwrap_or("").to_string(),
-            operator: exp[1]["operator"].as_str().unwrap_or("").to_string(),
-            compare_with: match exp[1]["compare_with"].as_str() {
-                Some(value) => ExpVal::STR(value.to_string()),
-                None => ExpVal::STR("".to_string()), // Adjust as necessary for your logic
-            },
-            compare_as: exp[1]["compare_as"].as_str().unwrap_or("").to_string(),
-        }
-    )).collect();
+        let expressions: Vec<(String, Exp)> = parsed_json["expressions"]
+            .as_array()
+            .unwrap_or(&vec![])
+            .iter()
+            .map(|exp| {
+                (
+                    exp[0].as_str().unwrap_or_default().to_string(),
+                    Exp {
+                        column: exp[1]["column"].as_str().unwrap_or("").to_string(),
+                        operator: exp[1]["operator"].as_str().unwrap_or("").to_string(),
+                        compare_with: match exp[1]["compare_with"].as_str() {
+                            Some(value) => ExpVal::STR(value.to_string()),
+                            None => ExpVal::STR("".to_string()), // Adjust as necessary for your logic
+                        },
+                        compare_as: exp[1]["compare_as"].as_str().unwrap_or("").to_string(),
+                    },
+                )
+            })
+            .collect();
 
-    let result_expression = parsed_json["result_expression"].as_str().unwrap_or_default().to_string();
+        let result_expression = parsed_json["result_expression"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
 
-    Ok((column_to_analyze, column_prefix, training_data, word_split_param, word_length_sensitivity_param, get_best_param, expressions, result_expression))
-}
+        Ok((
+            column_to_analyze,
+            column_prefix,
+            training_data,
+            word_split_param,
+            word_length_sensitivity_param,
+            get_best_param,
+            expressions,
+            result_expression,
+        ))
+    }
 
     let menu_options = vec![
         "Append derived boolean column",
         "Append derived category column",
         "Append derived concatenation column",
         "Append category columns by spliting date/timestamp column",
+        "Append fuzzai analysis column",
         "Append fuzzai analysis column where",
         "Inspect",
         "Show all rows",
+        "Save as",
         "Go back",
     ];
 
@@ -772,106 +905,175 @@ SYNTAX
                 }
             }
 
-Some(3) => {
-    match get_concatenation_input() {
-        Ok((new_column_name, items_to_concatenate)) => {
-            if new_column_name.trim().is_empty() {
-                print_insight_level_2("No new column name provided. Operation aborted.");
-                continue;
+            Some(3) => {
+                match get_concatenation_input() {
+                    Ok((new_column_name, items_to_concatenate)) => {
+                        if new_column_name.trim().is_empty() {
+                            print_insight_level_2(
+                                "No new column name provided. Operation aborted.",
+                            );
+                            continue;
+                        }
+
+                        // Convert Vec<String> to Vec<&str>
+                        let items_to_concatenate_refs: Vec<&str> =
+                            items_to_concatenate.iter().map(|s| s.as_str()).collect();
+
+                        // Now pass the vector of string slices
+                        csv_builder.append_derived_concatenation_column(
+                            &new_column_name,
+                            items_to_concatenate_refs,
+                        );
+
+                        if csv_builder.has_data() {
+                            csv_builder.print_table();
+                            println!();
+                        }
+                        print_insight_level_2("Derived concatenation column appended.");
+                    }
+                    Err(e) => {
+                        println!("Error getting concatenation details: {}", e);
+                        continue;
+                    }
+                }
             }
 
-            // Convert Vec<String> to Vec<&str>
-            let items_to_concatenate_refs: Vec<&str> = items_to_concatenate.iter().map(|s| s.as_str()).collect();
+            Some(4) => match get_date_split_input() {
+                Ok((column_name, date_format)) => {
+                    if column_name.trim().is_empty() || date_format.trim().is_empty() {
+                        print_insight_level_2(
+                            "Missing column name or date format. Operation aborted.",
+                        );
+                        continue;
+                    }
 
-            // Now pass the vector of string slices
-            csv_builder.append_derived_concatenation_column(&new_column_name, items_to_concatenate_refs);
+                    csv_builder.split_date_as_appended_category_columns(&column_name, &date_format);
 
-            if csv_builder.has_data() {
-                csv_builder.print_table();
-                println!();
+                    if csv_builder.has_data() {
+                        csv_builder.print_table();
+                        println!();
+                    }
+                    print_insight_level_2("Date column split into category columns.");
+                }
+                Err(e) => {
+                    println!("Error getting date split details: {}", e);
+                    continue;
+                }
+            },
+
+            Some(5) => {
+                // This matches the case in your project's workflow
+                match get_fuzzai_analysis_input() {
+                    Ok((
+                        column_to_analyze,
+                        column_prefix,
+                        training_data,
+                        word_split_param,
+                        word_length_sensitivity_param,
+                        get_best_param,
+                    )) => {
+                        // Assuming csv_builder is an instance of your CSV manipulation class
+                        csv_builder.append_fuzzai_analysis_columns(
+                            &column_to_analyze,
+                            &column_prefix,
+                            training_data,
+                            &word_split_param,
+                            &word_length_sensitivity_param,
+                            &get_best_param,
+                        );
+                        println!("Fuzzai analysis columns appended.");
+
+                        if csv_builder.has_data() {
+                            csv_builder.print_table();
+                            println!();
+                        }
+                        print_insight_level_2("Fuzzai Analysis columns appended.");
+                    }
+                    Err(e) => {
+                        println!("Error getting fuzzai analysis details: {}", e);
+                    }
+                }
             }
-            print_insight_level_2("Derived concatenation column appended.");
-        },
-        Err(e) => {
-            println!("Error getting concatenation details: {}", e);
-            continue;
-        }
-    }
-}
-
-Some(4) => {
-    match get_date_split_input() {
-        Ok((column_name, date_format)) => {
-            if column_name.trim().is_empty() || date_format.trim().is_empty() {
-                print_insight_level_2("Missing column name or date format. Operation aborted.");
-                continue;
-            }
-
-            csv_builder.split_date_as_appended_category_columns(&column_name, &date_format);
-
-            if csv_builder.has_data() {
-                csv_builder.print_table();
-                println!();
-            }
-            print_insight_level_2("Date column split into category columns.");
-        },
-        Err(e) => {
-            println!("Error getting date split details: {}", e);
-            continue;
-        }
-    }
-}
-
-Some(5) => { // This matches the case in your project's workflow
-    match get_fuzzai_analysis_where_input() {
-        Ok((column_to_analyze, column_prefix, training_data, word_split_param, word_length_sensitivity_param, get_best_param, expressions, result_expression)) => {
-            
-            let expressions_refs: Vec<(&str, Exp)> = expressions.iter().map(|(name, exp)| (name.as_str(), exp.clone())).collect();
-
-            // Assuming csv_builder is an instance of your CSV manipulation class
-            csv_builder.append_fuzzai_analysis_columns_with_values_where(
-                &column_to_analyze,
-                &column_prefix,
-                training_data,
-                &word_split_param,
-                &word_length_sensitivity_param,
-                &get_best_param,
-                expressions_refs,
-                &result_expression,
-            );
-            println!("Fuzzai analysis columns appended.");
-
-            if csv_builder.has_data() {
-                csv_builder.print_table();
-                println!();
-            }
-            print_insight_level_2("Fuzzai Analysis columns appended.");
-
-        },
-        Err(e) => {
-            println!("Error getting fuzzai analysis details: {}", e);
-        }
-    }
-}
 
             Some(6) => {
+                // This matches the case in your project's workflow
+                match get_fuzzai_analysis_where_input() {
+                    Ok((
+                        column_to_analyze,
+                        column_prefix,
+                        training_data,
+                        word_split_param,
+                        word_length_sensitivity_param,
+                        get_best_param,
+                        expressions,
+                        result_expression,
+                    )) => {
+                        let expressions_refs: Vec<(&str, Exp)> = expressions
+                            .iter()
+                            .map(|(name, exp)| (name.as_str(), exp.clone()))
+                            .collect();
+
+                        csv_builder.append_fuzzai_analysis_columns_with_values_where(
+                            &column_to_analyze,
+                            &column_prefix,
+                            training_data,
+                            &word_split_param,
+                            &word_length_sensitivity_param,
+                            &get_best_param,
+                            expressions_refs,
+                            &result_expression,
+                        );
+                        println!("Fuzzai analysis columns appended.");
+
+                        if csv_builder.has_data() {
+                            csv_builder.print_table();
+                            println!();
+                        }
+                        print_insight_level_2("Fuzzai Analysis columns appended.");
+                    }
+                    Err(e) => {
+                        println!("Error getting fuzzai analysis details: {}", e);
+                    }
+                }
+            }
+
+            Some(7) => {
                 if let Err(e) = handle_inspect(csv_builder) {
                     println!("Error during inspection: {}", e);
                     continue;
                 }
             }
 
-            Some(7) => {
+            Some(8) => {
                 if csv_builder.has_data() {
                     csv_builder.print_table_all_rows();
                     println!();
                 }
             }
-            Some(8) => {
+
+            Some(9) => {
+                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+                let desktop_path = Path::new(&home_dir).join("Desktop");
+                let csv_db_path = desktop_path.join("csv_db");
+
+                let file_name =
+                    get_user_input_level_2("Enter file name to save (without extension): ");
+                let full_file_name = if file_name.ends_with(".csv") {
+                    file_name
+                } else {
+                    format!("{}.csv", file_name)
+                };
+                let file_path = csv_db_path.join(full_file_name);
+                let _ = csv_builder.save_as(file_path.to_str().unwrap());
+                print_insight_level_2(&format!("CSV file saved at {}", file_path.display()));
+
+            }
+
+            Some(10) => {
                 break; // Exit the inspect handler
             }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 6.");
+                println!("Invalid option. Please enter a number from 1 to 10.");
                 continue; // Ask for the choice again
             }
         }

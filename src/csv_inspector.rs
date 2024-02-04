@@ -226,7 +226,6 @@ SYNTAX
             .to_string();
 
         Ok((expression_names, result_expression))
-
     }
 
     let menu_options = vec![

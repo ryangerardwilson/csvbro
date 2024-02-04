@@ -12,9 +12,11 @@ use chrono::{DateTime, Local};
 use fuzzywuzzy::fuzz;
 use rgwml::csv_utils::{CalibConfig, CsvBuilder};
 use serde_json::json;
+use std::env;
 use std::error::Error;
 use std::fs::{self};
 use std::io;
+use std::path::Path;
 use std::path::PathBuf;
 use std::time::Instant;
 use std::time::SystemTime;
@@ -173,7 +175,7 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
                     let file_path = &files[serial - 1];
                     if file_path.is_file() {
                         if let Some(file_name) = file_path.file_name().and_then(|n| n.to_str()) {
-                            print_insight(&format!("Deleting {}", file_name));
+                            print_insight_level_2(&format!("Deleting {}", file_name));
                             if let Err(e) = fs::remove_file(file_path) {
                                 print_insight(&format!("Failed to delete file: {}", e));
                             } else {
@@ -200,7 +202,7 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
                 if let Some((best_match, _)) = best_match_result {
                     if best_match.is_file() {
                         if let Some(file_name) = best_match.file_name().and_then(|n| n.to_str()) {
-                            print_insight(&format!("Deleting {}", file_name));
+                            print_insight_level_2(&format!("Deleting {}", file_name));
                             if let Err(e) = fs::remove_file(best_match) {
                                 print_insight(&format!("Failed to delete file: {}", e));
                             } else {
@@ -379,10 +381,10 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
 
     fn get_confirmation_input() -> Result<String, Box<dyn std::error::Error>> {
         let input = get_user_input_level_2(
-            "Do you want to load this data? (yes/retry/show all rows/inspect/append/back): ",
+            "What next? (retry/show all rows/inspect/append/save as/back): ",
         )
         .to_lowercase();
-        let options = &["yes", "retry", "show all rows", "inspect", "append", "back"];
+        let options = &["retry", "show all rows", "inspect", "append", "save as", "back"];
         let mut highest_score = 0;
         let mut best_match = "";
 
@@ -401,6 +403,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
             "back" => Ok("back".to_string()),
             "inspect" => Ok("inspect".to_string()),
             "append" => Ok("append".to_string()),
+            "save as" => Ok("save as".to_string()),
             _ => Err("Invalid option".into()),
         }
     }
@@ -479,6 +482,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                 } else if confirmation != "inspect"
                     && confirmation != "append"
                     && confirmation != "show all rows"
+                    && confirmation != "save as"
                 {
                     // Get new query from user, except when confirmation is "inspect"
                     let new_query = get_user_sql_input();
@@ -556,6 +560,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                 } else if confirmation != "inspect"
                     && confirmation != "append"
                     && confirmation != "show all rows"
+                    && confirmation != "save as"
                 {
                     // Get new query from user, except when confirmation is "inspect"
                     let new_query = get_user_sql_input();
@@ -643,6 +648,26 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     println!("Error during append operation: {}", e);
                     continue; // Handle error or let the user try again
                 }
+                //dbg!(&csv_builder);
+            }
+            "save as" => {
+                //dbg!(&csv_builder);
+
+                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+                let desktop_path = Path::new(&home_dir).join("Desktop");
+                let csv_db_path = desktop_path.join("csv_db");
+
+                let file_name =
+                    get_user_input_level_2("Enter file name to save (without extension): ");
+                let full_file_name = if file_name.ends_with(".csv") {
+                    file_name
+                } else {
+                    format!("{}.csv", file_name)
+                };
+                let file_path = csv_db_path.join(full_file_name);
+                let _ = csv_builder.save_as(file_path.to_str().unwrap());
+                print_insight_level_2(&format!("CSV file saved at {}", file_path.display()));
+
                 //dbg!(&csv_builder);
             }
             "back" => {
@@ -733,7 +758,9 @@ pub fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
         println!();
     }
 
-    let csv_db_path = PathBuf::from("/home/rgw/Desktop/csv_db");
+    let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+    let desktop_path = Path::new(&home_dir).join("Desktop");
+    let csv_db_path = desktop_path.join("csv_db");
 
     loop {
         let has_data = builder.has_data();
