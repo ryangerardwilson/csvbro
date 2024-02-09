@@ -1,4 +1,4 @@
-// csv_appender.rs
+// csv_pivoter.rs
 use crate::csv_inspector::handle_inspect;
 use crate::user_interaction::{
     //get_edited_user_sql_input,
@@ -8,10 +8,11 @@ use crate::user_interaction::{
     print_list,
 };
 use fuzzywuzzy::fuzz;
-use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal, Train};
+use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal, Piv, Train};
 use serde_json::Value;
 use std::env;
 use std::error::Error;
+use std::fs;
 use std::path::Path;
 
 // Assuming CsvBuilder, Exp, and ExpVal are updated as per your implementation
@@ -57,7 +58,7 @@ impl ExpStore {
     }
 }
 
-pub fn handle_append(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
+pub fn handle_pivot(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
     fn get_append_boolean_expression(
         data_store: &mut ExpStore,
     ) -> Result<(String, Vec<(String, usize)>, String), Box<dyn std::error::Error>> {
@@ -757,6 +758,79 @@ SYNTAX
         ))
     }
 
+    fn get_pivot_input() -> Result<(Piv, String), Box<dyn Error>> {
+        let pivot_syntax = r#"{
+    "index_at": "",
+    "values_from": "",
+    "operation": "",
+    "seggregate_by": [
+        {"column": "", "type": ""},
+        {"column": "", "type": ""}
+    ],
+    "save_as": ""
+}
+
+SYNTAX
+======
+
+{
+    "index_at": "Date",
+    "values_from": "Sales",
+    "operation": "MEDIAN", // Also "COUNT", "SUM", "MEAN"
+    "seggregate_by": [
+        {"column": "Category", "type": "AS_CATEGORY"},
+        {"column": "IsPromotion", "type": "AS_BOOLEAN"}
+    ],
+    "save_as": "analysis1" // Leave as "" if you dont want to save it
+}
+
+
+"#;
+
+        let user_input = get_edited_user_json_input(pivot_syntax.to_string());
+        let parsed_json: Value = serde_json::from_str(&user_input)?;
+
+        let index_at = parsed_json["index_at"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let values_from = parsed_json["values_from"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let operation = parsed_json["operation"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+
+        let seggregate_by: Vec<(String, String)> = parsed_json["seggregate_by"]
+            .as_array()
+            .unwrap_or(&Vec::new())
+            .iter()
+            .map(|item| {
+                (
+                    item["column"].as_str().unwrap_or("").to_string(),
+                    item["type"].as_str().unwrap_or("").to_string(),
+                )
+            })
+            .collect();
+
+        let save_as_path = parsed_json["save_as"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+
+        Ok((
+            Piv {
+                index_at,
+                values_from,
+                operation,
+                seggregate_by,
+            },
+            save_as_path,
+        ))
+    }
+
     let menu_options = vec![
         "Append derived boolean column",
         "Append derived category column",
@@ -764,6 +838,7 @@ SYNTAX
         "Append category columns by spliting date/timestamp column",
         "Append fuzzai analysis column",
         "Append fuzzai analysis column where",
+        "Pivot",
         "Inspect",
         "Show all rows",
         "Save as",
@@ -1038,20 +1113,66 @@ SYNTAX
             }
 
             Some(7) => {
+                // This matches the case in your project's workflow for the pivot operation
+                match get_pivot_input() {
+                    Ok((piv, save_as_path)) => {
+                        let home_dir =
+                            env::var("HOME").expect("Unable to determine user home directory");
+                        let desktop_path = Path::new(&home_dir).join("Desktop");
+                        let default_temp_path =
+                            desktop_path.join("csv_db").join("temp_pivot_file.csv");
+
+                        // Decide the path based on 'save_as_path' value
+                        let final_path = if save_as_path.is_empty() {
+                            &default_temp_path
+                        } else {
+                            Path::new(&save_as_path)
+                        };
+
+                        let final_path_str = final_path
+                            .to_str()
+                            .expect("Path contains invalid Unicode characters");
+                        // Perform the pivot operation
+                        csv_builder.pivot_as(final_path_str, piv);
+                        println!("Pivot operation completed.");
+
+                        // If 'save_as_path' is not empty, use it to create and print from the CsvBuilder object
+                        if !save_as_path.is_empty() {
+                            CsvBuilder::from_csv(save_as_path.as_str()).print_table_all_rows();
+                        } else {
+                            // If 'save_as_path' is empty, assume the pivot operation used the default temp path
+                            // Create a CsvBuilder object from the temp file and print
+                            CsvBuilder::from_csv(default_temp_path.to_str().unwrap())
+                                .print_table_all_rows();
+
+                            // Delete the temporary file after printing
+                            if let Err(e) = fs::remove_file(default_temp_path) {
+                                println!("Failed to delete temporary file: {}", e);
+                            } else {
+                                println!("Temporary file deleted successfully.");
+                            }
+                        }
+                    }
+
+                    Err(e) => println!("Error getting pivot details: {}", e),
+                }
+            }
+
+            Some(8) => {
                 if let Err(e) = handle_inspect(csv_builder) {
                     println!("Error during inspection: {}", e);
                     continue;
                 }
             }
 
-            Some(8) => {
+            Some(9) => {
                 if csv_builder.has_data() {
                     csv_builder.print_table_all_rows();
                     println!();
                 }
             }
 
-            Some(9) => {
+            Some(10) => {
                 let home_dir = env::var("HOME").expect("Unable to determine user home directory");
                 let desktop_path = Path::new(&home_dir).join("Desktop");
                 let csv_db_path = desktop_path.join("csv_db");
@@ -1066,10 +1187,9 @@ SYNTAX
                 let file_path = csv_db_path.join(full_file_name);
                 let _ = csv_builder.save_as(file_path.to_str().unwrap());
                 print_insight_level_2(&format!("CSV file saved at {}", file_path.display()));
-
             }
 
-            Some(10) => {
+            Some(11) => {
                 break; // Exit the inspect handler
             }
             _ => {

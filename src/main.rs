@@ -1,6 +1,6 @@
-mod csv_appender;
 mod csv_inspector;
 mod csv_manager;
+mod csv_pivoter;
 mod settings;
 mod user_interaction;
 mod utils;
@@ -86,7 +86,7 @@ async fn main() {
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 0.1.6");
+        print_insight("csvbro 0.1.7");
         std::process::exit(0);
     }
 

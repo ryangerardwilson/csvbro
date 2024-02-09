@@ -1,6 +1,6 @@
 // csv_manager.rs
-use crate::csv_appender::handle_append;
 use crate::csv_inspector::handle_inspect;
+use crate::csv_pivoter::handle_pivot;
 use crate::settings::{manage_config_file, DbPreset};
 use crate::user_interaction::{
     get_edited_user_json_input, get_edited_user_sql_input, get_user_input, get_user_input_level_2,
@@ -380,11 +380,17 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
     }
 
     fn get_confirmation_input() -> Result<String, Box<dyn std::error::Error>> {
-        let input = get_user_input_level_2(
-            "What next? (retry/show all rows/inspect/append/save as/back): ",
-        )
-        .to_lowercase();
-        let options = &["retry", "show all rows", "inspect", "append", "save as", "back"];
+        let input =
+            get_user_input_level_2("What next? (retry/show all rows/inspect/pivot/save as/back): ")
+                .to_lowercase();
+        let options = &[
+            "retry",
+            "show all rows",
+            "inspect",
+            "pivot",
+            "save as",
+            "back",
+        ];
         let mut highest_score = 0;
         let mut best_match = "";
 
@@ -402,7 +408,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
             "show all rows" => Ok("show all rows".to_string()),
             "back" => Ok("back".to_string()),
             "inspect" => Ok("inspect".to_string()),
-            "append" => Ok("append".to_string()),
+            "pivot" => Ok("pivot".to_string()),
             "save as" => Ok("save as".to_string()),
             _ => Err("Invalid option".into()),
         }
@@ -480,7 +486,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     last_sql_query = new_query.clone();
                     new_query
                 } else if confirmation != "inspect"
-                    && confirmation != "append"
+                    && confirmation != "pivot"
                     && confirmation != "show all rows"
                     && confirmation != "save as"
                 {
@@ -558,7 +564,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     last_sql_query = new_query.clone();
                     new_query
                 } else if confirmation != "inspect"
-                    && confirmation != "append"
+                    && confirmation != "pivot"
                     && confirmation != "show all rows"
                     && confirmation != "save as"
                 {
@@ -642,10 +648,10 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     continue; // Handle error or let the user try again
                 }
             }
-            "append" => {
+            "pivot" => {
                 //dbg!(&csv_builder);
-                if let Err(e) = handle_append(&mut csv_builder) {
-                    println!("Error during append operation: {}", e);
+                if let Err(e) = handle_pivot(&mut csv_builder) {
+                    println!("Error during pivot operation: {}", e);
                     continue; // Handle error or let the user try again
                 }
                 //dbg!(&csv_builder);
@@ -727,7 +733,7 @@ pub fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
             actions.push("add_rows");
             actions.push("update_row");
             actions.push("inspect");
-            actions.push("append");
+            actions.push("pivot");
             actions.push("delete_rows");
             actions.push("sort");
         }
@@ -768,9 +774,9 @@ pub fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
 
         let action_prompt = if has_data {
             if has_headers {
-                "Choose action >> show_all_rows/calibrate/update_headers/add_rows/update_row/inspect/append/delete_rows/sort/save/save_as/back: "
+                "Choose action >> show_all_rows/calibrate/update_headers/add_rows/update_row/inspect/pivot/delete_rows/sort/save/save_as/back: "
             } else {
-                "Choose action >> show_all_rows/calibrate/set_headers/add_rows/update_row/inspect/append/delete_rows/sort/save/save_as/back: "
+                "Choose action >> show_all_rows/calibrate/set_headers/add_rows/update_row/inspect/pivot/delete_rows/sort/save/save_as/back: "
             }
         } else {
             if has_headers {
@@ -858,8 +864,8 @@ SYNTAX
                     );
 
                     CalibConfig {
-                        header_is_at_row: header_row,
-                        rows_range_from: (start_range, end_range),
+                        header_is_at_row: header_row.to_string(),
+                        rows_range_from: (start_range.to_string(), end_range.to_string()),
                     }
                 };
 
@@ -1231,9 +1237,9 @@ SYNTAX
                     continue;
                 }
             }
-            "append" => {
-                if let Err(e) = handle_append(&mut builder) {
-                    println!("Error during append operation: {}", e);
+            "pivot" => {
+                if let Err(e) = handle_pivot(&mut builder) {
+                    println!("Error during pivot operation: {}", e);
                     continue;
                 }
             }
