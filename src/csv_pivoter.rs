@@ -1157,7 +1157,7 @@ SYNTAX
 
                             let _ = CsvBuilder::from_csv(final_path_str)
                                 .print_table_all_rows()
-                                .save_as(&file_path_str);
+                                .save_as(&full_file_name);
                             println!();
                             print_insight_level_2(&format!("CSV file saved at {}", full_file_name));
                         } else {
