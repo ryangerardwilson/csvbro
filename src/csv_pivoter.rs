@@ -764,7 +764,6 @@ SYNTAX
     "values_from": "",
     "operation": "",
     "seggregate_by": [
-        {"column": "", "type": ""},
         {"column": "", "type": ""}
     ],
     "save_as": ""
@@ -777,7 +776,7 @@ SYNTAX
     "index_at": "Date",
     "values_from": "Sales",
     "operation": "MEDIAN", // Also "COUNT", "SUM", "MEAN"
-    "seggregate_by": [
+    "seggregate_by": [  // Leave as empty [] if seggregation is not required
         {"column": "Category", "type": "AS_CATEGORY"},
         {"column": "IsPromotion", "type": "AS_BOOLEAN"}
     ],
@@ -805,15 +804,20 @@ SYNTAX
 
         let seggregate_by: Vec<(String, String)> = parsed_json["seggregate_by"]
             .as_array()
-            .unwrap_or(&Vec::new())
-            .iter()
-            .map(|item| {
-                (
-                    item["column"].as_str().unwrap_or("").to_string(),
-                    item["type"].as_str().unwrap_or("").to_string(),
-                )
-            })
-            .collect();
+            .map_or_else(Vec::new, |items| {
+                items
+                    .iter()
+                    .filter_map(|item| {
+                        let column = item["column"].as_str().unwrap_or("").to_string();
+                        let type_ = item["type"].as_str().unwrap_or("").to_string();
+                        if column.is_empty() || type_.is_empty() {
+                            None // Exclude items where either column or type is empty
+                        } else {
+                            Some((column, type_)) // Include valid segregation criteria
+                        }
+                    })
+                    .collect()
+            });
 
         let save_as_path = parsed_json["save_as"]
             .as_str()
@@ -1133,12 +1137,29 @@ SYNTAX
                             .to_str()
                             .expect("Path contains invalid Unicode characters");
                         // Perform the pivot operation
-                        csv_builder.pivot_as(final_path_str, piv);
-                        println!("Pivot operation completed.");
+
+                        csv_builder.print_table().pivot_as(final_path_str, piv);
+                        println!();
+                        //dbg!(&save_as_path);
 
                         // If 'save_as_path' is not empty, use it to create and print from the CsvBuilder object
                         if !save_as_path.is_empty() {
-                            CsvBuilder::from_csv(save_as_path.as_str()).print_table_all_rows();
+                            //dbg!(&save_as_path, &final_path_str);
+                            let csv_db_path = desktop_path.join("csv_db");
+                            let file_path = csv_db_path.join(final_path_str);
+                            let file_path_str = file_path.to_str().unwrap();
+
+                            let full_file_name = if file_path.ends_with(".csv") {
+                                file_path_str.to_string()
+                            } else {
+                                format!("{}.csv", file_path_str)
+                            };
+
+                            let _ = CsvBuilder::from_csv(final_path_str)
+                                .print_table_all_rows()
+                                .save_as(&file_path_str);
+                            println!();
+                            print_insight_level_2(&format!("CSV file saved at {}", full_file_name));
                         } else {
                             // If 'save_as_path' is empty, assume the pivot operation used the default temp path
                             // Create a CsvBuilder object from the temp file and print
