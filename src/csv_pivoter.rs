@@ -1120,54 +1120,49 @@ SYNTAX
                 // This matches the case in your project's workflow for the pivot operation
                 match get_pivot_input() {
                     Ok((piv, save_as_path)) => {
+                        // Get the user's home directory or panic if not found
                         let home_dir =
                             env::var("HOME").expect("Unable to determine user home directory");
                         let desktop_path = Path::new(&home_dir).join("Desktop");
-                        let default_temp_path =
-                            desktop_path.join("csv_db").join("temp_pivot_file.csv");
+                        let csv_db_path = desktop_path.join("csv_db");
+                        let default_csv_path = desktop_path.join("csv_db/temp_pivot_file.csv");
 
-                        // Decide the path based on 'save_as_path' value
+                        // Determine the final path based on whether `save_as_path` is provided
                         let final_path = if save_as_path.is_empty() {
-                            &default_temp_path
+                            default_csv_path.clone()
                         } else {
-                            Path::new(&save_as_path)
+                            csv_db_path.join(&save_as_path)
                         };
 
+                        // Ensure the final path is valid Unicode
                         let final_path_str = final_path
                             .to_str()
                             .expect("Path contains invalid Unicode characters");
-                        // Perform the pivot operation
 
-                        csv_builder.print_table().pivot_as(final_path_str, piv);
+                        // Determine the full file name, appending `.csv` if necessary
+                        let full_file_name = if final_path_str.ends_with(".csv") {
+                            final_path_str.to_string()
+                        } else {
+                            format!("{}.csv", final_path_str)
+                        };
+
+                        csv_builder.print_table().pivot_as(&full_file_name, piv);
                         println!();
-                        //dbg!(&save_as_path);
 
                         // If 'save_as_path' is not empty, use it to create and print from the CsvBuilder object
                         if !save_as_path.is_empty() {
-                            //dbg!(&save_as_path, &final_path_str);
-                            let csv_db_path = desktop_path.join("csv_db");
-                            let file_path = csv_db_path.join(final_path_str);
-                            let file_path_str = file_path.to_str().unwrap();
-
-                            let full_file_name = if file_path.ends_with(".csv") {
-                                file_path_str.to_string()
-                            } else {
-                                format!("{}.csv", file_path_str)
-                            };
-
-                            let _ = CsvBuilder::from_csv(final_path_str)
-                                .print_table_all_rows()
-                                .save_as(&full_file_name);
+                            let _ = CsvBuilder::from_csv(&full_file_name).print_table_all_rows();
+                            //.save_as(&full_file_name);
                             println!();
                             print_insight_level_2(&format!("CSV file saved at {}", full_file_name));
                         } else {
                             // If 'save_as_path' is empty, assume the pivot operation used the default temp path
                             // Create a CsvBuilder object from the temp file and print
-                            CsvBuilder::from_csv(default_temp_path.to_str().unwrap())
+                            CsvBuilder::from_csv(default_csv_path.to_str().unwrap())
                                 .print_table_all_rows();
 
                             // Delete the temporary file after printing
-                            if let Err(e) = fs::remove_file(default_temp_path) {
+                            if let Err(e) = fs::remove_file(default_csv_path) {
                                 println!("Failed to delete temporary file: {}", e);
                             } else {
                                 println!("Temporary file deleted successfully.");
