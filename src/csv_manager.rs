@@ -1,5 +1,6 @@
 // csv_manager.rs
 use crate::csv_inspector::handle_inspect;
+use crate::csv_joiner::handle_join;
 use crate::csv_pivoter::handle_pivot;
 use crate::settings::{manage_config_file, DbPreset};
 use crate::user_interaction::{
@@ -380,14 +381,16 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
     }
 
     fn get_confirmation_input() -> Result<String, Box<dyn std::error::Error>> {
-        let input =
-            get_user_input_level_2("What next? (retry/show all rows/inspect/pivot/save as/back): ")
-                .to_lowercase();
+        let input = get_user_input_level_2(
+            "What next? (retry/show all rows/inspect/pivot/join/save as/back): ",
+        )
+        .to_lowercase();
         let options = &[
             "retry",
             "show all rows",
             "inspect",
             "pivot",
+            "join",
             "save as",
             "back",
         ];
@@ -409,6 +412,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
             "back" => Ok("back".to_string()),
             "inspect" => Ok("inspect".to_string()),
             "pivot" => Ok("pivot".to_string()),
+            "join" => Ok("join".to_string()),
             "save as" => Ok("save as".to_string()),
             _ => Err("Invalid option".into()),
         }
@@ -487,6 +491,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     new_query
                 } else if confirmation != "inspect"
                     && confirmation != "pivot"
+                    && confirmation != "join"
                     && confirmation != "show all rows"
                     && confirmation != "save as"
                 {
@@ -565,6 +570,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     new_query
                 } else if confirmation != "inspect"
                     && confirmation != "pivot"
+                    && confirmation != "join"
                     && confirmation != "show all rows"
                     && confirmation != "save as"
                 {
@@ -634,8 +640,8 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
         };
 
         match confirmation.as_str() {
-            "yes" => break,      // Confirms and exits the loop
-            "retry" => continue, // Repeats the query for the same database type
+            "yes" => break,
+            "retry" => continue,
             "show all rows" => {
                 if csv_builder.has_data() {
                     csv_builder.print_table_all_rows();
@@ -645,20 +651,22 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
             "inspect" => {
                 if let Err(e) = handle_inspect(&mut csv_builder) {
                     println!("Error during inspection: {}", e);
-                    continue; // Handle error or let the user try again
+                    continue;
                 }
             }
             "pivot" => {
-                //dbg!(&csv_builder);
                 if let Err(e) = handle_pivot(&mut csv_builder) {
                     println!("Error during pivot operation: {}", e);
-                    continue; // Handle error or let the user try again
+                    continue;
                 }
-                //dbg!(&csv_builder);
+            }
+            "join" => {
+                if let Err(e) = handle_join(&mut csv_builder) {
+                    println!("Error during join operation: {}", e);
+                    continue;
+                }
             }
             "save as" => {
-                //dbg!(&csv_builder);
-
                 let home_dir = env::var("HOME").expect("Unable to determine user home directory");
                 let desktop_path = Path::new(&home_dir).join("Desktop");
                 let csv_db_path = desktop_path.join("csv_db");
@@ -734,6 +742,7 @@ pub fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
             actions.push("update_row");
             actions.push("inspect");
             actions.push("pivot");
+            actions.push("join");
             actions.push("delete_rows");
             actions.push("sort");
         }
@@ -774,9 +783,9 @@ pub fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
 
         let action_prompt = if has_data {
             if has_headers {
-                "Choose action >> show_all_rows/calibrate/update_headers/add_rows/update_row/inspect/pivot/delete_rows/sort/save/save_as/back: "
+                "Choose action >> show_all_rows/calibrate/update_headers/add_rows/update_row/inspect/pivot/join/delete_rows/sort/save/save_as/back: "
             } else {
-                "Choose action >> show_all_rows/calibrate/set_headers/add_rows/update_row/inspect/pivot/delete_rows/sort/save/save_as/back: "
+                "Choose action >> show_all_rows/calibrate/set_headers/add_rows/update_row/inspect/pivot/join/delete_rows/sort/save/save_as/back: "
             }
         } else {
             if has_headers {
@@ -1243,7 +1252,12 @@ SYNTAX
                     continue;
                 }
             }
-
+            "join" => {
+                if let Err(e) = handle_join(&mut builder) {
+                    println!("Error during join operation: {}", e);
+                    continue;
+                }
+            }
             "delete_rows" => {
                 println!();
 
