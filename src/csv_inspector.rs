@@ -236,6 +236,7 @@ SYNTAX
         "Print freq of multiple column values",
         "Print unique column values",
         "Print count where",
+        "Print all rows",
         "Go back",
     ];
 
@@ -343,6 +344,13 @@ SYNTAX
             }
 
             Some(8) => {
+                if csv_builder.has_data() {
+                    csv_builder.print_table_all_rows();
+                    println!();
+                }
+            }
+
+            Some(9) => {
                 break; // Exit the inspect handler
             }
             _ => {

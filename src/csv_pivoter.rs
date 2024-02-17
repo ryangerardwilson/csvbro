@@ -844,7 +844,7 @@ SYNTAX
         "Append fuzzai analysis column where",
         "Pivot",
         "Inspect",
-        "Show all rows",
+        "Print all rows",
         "Save as",
         "Go back",
     ];

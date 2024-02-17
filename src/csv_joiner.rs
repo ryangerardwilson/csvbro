@@ -91,6 +91,7 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
         "Set intersection with {3}",
         "Set difference with {1,2}",
         "Set symmetric difference with {1,2,4,5}",
+        "Print all rows",
         "Go back",
     ];
 
@@ -128,7 +129,6 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
         let csv_db_path = get_csv_db_path();
         let csv_db_path_buf = PathBuf::from(csv_db_path);
 
-
         match selected_option {
             Some(1) => {
                 let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
@@ -144,7 +144,10 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
                 let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
                 if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
                     csv_builder
-                        .set_union_with(&chosen_file_path_for_join, "UNION_TYPE:ALL_WITHOUT_DUPLICATES")
+                        .set_union_with(
+                            &chosen_file_path_for_join,
+                            "UNION_TYPE:ALL_WITHOUT_DUPLICATES",
+                        )
                         .print_table();
                 } else {
                     println!("No file was selected.");
@@ -153,10 +156,11 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
             Some(3) => {
                 let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
                 if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-
-
                     CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
-                    let left_join_at_choice = get_user_input_level_2("Enter column name from your above selected csv to LEFT JOIN at: ").to_lowercase();
+                    let left_join_at_choice = get_user_input_level_2(
+                        "Enter column name from your above selected csv to LEFT JOIN at: ",
+                    )
+                    .to_lowercase();
                     let union_type = format!("UNION_TYPE:LEFT_JOIN_AT{{{}}}", left_join_at_choice);
                     csv_builder
                         .set_union_with(&chosen_file_path_for_join, &union_type)
@@ -168,10 +172,11 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
             Some(4) => {
                 let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
                 if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-
-
                     CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
-                    let left_join_at_choice = get_user_input_level_2("Enter column name from your above selected csv to RIGHT JOIN at: ").to_lowercase();
+                    let left_join_at_choice = get_user_input_level_2(
+                        "Enter column name from your above selected csv to RIGHT JOIN at: ",
+                    )
+                    .to_lowercase();
                     let union_type = format!("UNION_TYPE:RIGHT_JOIN_AT{{{}}}", left_join_at_choice);
                     csv_builder
                         .set_union_with(&chosen_file_path_for_join, &union_type)
@@ -210,7 +215,15 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
                     println!("No file was selected.");
                 }
             }
+
             Some(8) => {
+                if csv_builder.has_data() {
+                    csv_builder.print_table_all_rows();
+                    println!();
+                }
+            }
+
+            Some(9) => {
                 break; // Exit the inspect handler
             }
             _ => {

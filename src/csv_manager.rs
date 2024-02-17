@@ -1367,7 +1367,7 @@ SYNTAX
                             Ok(config) => config,
                             Err(e) => {
                                 eprintln!("Error parsing JSON: {}", e);
-                                return; // Exit the function early
+                                return; // Exit the function early if there's an error
                             }
                         };
 
@@ -1377,21 +1377,15 @@ SYNTAX
                         .unwrap_or(&vec![])
                         .iter()
                         .filter_map(|order| {
-                            let column = order["column"].as_str()?.to_owned();
-                            let order = order["order"].as_str()?.to_owned();
+                            let column = order["column"].as_str()?.to_string(); // Convert directly to String
+                            let order = order["order"].as_str()?.to_string(); // Convert directly to String
                             Some((column, order))
                         })
                         .collect::<Vec<(String, String)>>()
                 };
 
-                // Convert to references for cascade_sort
-                let sort_orders_refs = sort_orders
-                    .iter()
-                    .map(|(col, ord)| (col.as_str(), ord.as_str()))
-                    .collect::<Vec<(&str, &str)>>();
-
                 // Apply the cascade sort
-                builder.cascade_sort(sort_orders_refs);
+                builder.cascade_sort(sort_orders);
 
                 if builder.has_data() {
                     builder.print_table();
