@@ -839,6 +839,7 @@ SYNTAX
                 //dbg!(&calib_json);
 
                 // Parse the user input
+                /*
                 let calib_config = {
                     let parsed_calib_config =
                         match serde_json::from_str::<serde_json::Value>(&calib_json) {
@@ -877,6 +878,41 @@ SYNTAX
                         rows_range_from: (start_range.to_string(), end_range.to_string()),
                     }
                 };
+                */
+
+// Parse the user input
+let calib_config = {
+    let parsed_calib_config =
+        match serde_json::from_str::<serde_json::Value>(&calib_json) {
+            Ok(config) => config,
+            Err(e) => {
+                eprintln!("Error parsing JSON: {}", e);
+                return; // Exit the function early
+            }
+        };
+
+    // Extract calibration settings directly as Strings
+    let header_row = parsed_calib_config["header_is_at_row"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
+    let start_range = parsed_calib_config["rows_range_from"][0]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
+    let end_range = parsed_calib_config["rows_range_from"][1]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
+
+    CalibConfig {
+        header_is_at_row: header_row,
+        rows_range_from: (start_range, end_range),
+    }
+};
+
+
+
 
                 // Apply the calibration
                 builder.calibrate(calib_config);
