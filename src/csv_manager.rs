@@ -382,12 +382,13 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
 
     fn get_confirmation_input() -> Result<String, Box<dyn std::error::Error>> {
         let input = get_user_input_level_2(
-            "What next? (retry/show all rows/inspect/pivot/join/save as/back): ",
+            "What next? (retry/show all rows/search/inspect/pivot/join/save as/back): ",
         )
         .to_lowercase();
         let options = &[
             "retry",
             "show all rows",
+            "search",
             "inspect",
             "pivot",
             "join",
@@ -409,6 +410,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
             "yes" => Ok("yes".to_string()),
             "retry" => Ok("retry".to_string()),
             "show all rows" => Ok("show all rows".to_string()),
+            "search" => Ok("search".to_string()),
             "back" => Ok("back".to_string()),
             "inspect" => Ok("inspect".to_string()),
             "pivot" => Ok("pivot".to_string()),
@@ -490,6 +492,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     last_sql_query = new_query.clone();
                     new_query
                 } else if confirmation != "inspect"
+                    && confirmation != "search"
                     && confirmation != "pivot"
                     && confirmation != "join"
                     && confirmation != "show all rows"
@@ -569,6 +572,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     last_sql_query = new_query.clone();
                     new_query
                 } else if confirmation != "inspect"
+                    && confirmation != "search"
                     && confirmation != "pivot"
                     && confirmation != "join"
                     && confirmation != "show all rows"
@@ -645,6 +649,16 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
             "show all rows" => {
                 if csv_builder.has_data() {
                     csv_builder.print_table_all_rows();
+                    println!();
+                }
+            }
+            "search" => {
+                if csv_builder.has_data() {
+                    let query =
+                    get_user_input_level_2("Enter search term: ");
+
+
+                    csv_builder.contains_search(&query);
                     println!();
                 }
             }
@@ -737,6 +751,7 @@ pub fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
         // Add "add row" if has_data is true
         if has_data {
             actions.push("show_all_rows");
+            actions.push("search");
             actions.push("calibrate");
             actions.push("add_rows");
             actions.push("update_row");
@@ -783,9 +798,9 @@ pub fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
 
         let action_prompt = if has_data {
             if has_headers {
-                "Choose action >> show_all_rows/calibrate/update_headers/add_rows/update_row/inspect/pivot/join/delete_rows/sort/save/save_as/back: "
+                "Choose action >> show_all_rows/calibrate/search/update_headers/add_rows/update_row/inspect/pivot/join/delete_rows/sort/save/save_as/back: "
             } else {
-                "Choose action >> show_all_rows/calibrate/set_headers/add_rows/update_row/inspect/pivot/join/delete_rows/sort/save/save_as/back: "
+                "Choose action >> show_all_rows/calibrate/search/set_headers/add_rows/update_row/inspect/pivot/join/delete_rows/sort/save/save_as/back: "
             }
         } else {
             if has_headers {
@@ -1274,6 +1289,14 @@ SYNTAX
 
                 builder.print_table();
                 println!();
+            }
+            "search" => {
+                if builder.has_data() {
+                    let query =
+                    get_user_input_level_2("Enter search term: ");
+                    builder.contains_search(&query);
+                    println!();
+                }
             }
 
             "inspect" => {
