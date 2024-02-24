@@ -2,6 +2,7 @@
 use crate::csv_inspector::handle_inspect;
 use crate::csv_joiner::handle_join;
 use crate::csv_pivoter::handle_pivot;
+use crate::csv_searcher::handle_search;
 use crate::settings::{manage_config_file, DbPreset};
 use crate::user_interaction::{
     get_edited_user_json_input, get_edited_user_sql_input, get_user_input, get_user_input_level_2,
@@ -653,6 +654,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                 }
             }
             "search" => {
+                /*
                 if csv_builder.has_data() {
                     let query =
                     get_user_input_level_2("Enter search term: ");
@@ -660,6 +662,12 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
 
                     csv_builder.contains_search(&query);
                     println!();
+                }
+                */
+
+                if let Err(e) = handle_search(&mut csv_builder) {
+                    println!("Error during search: {}", e);
+                    continue;
                 }
             }
             "inspect" => {
@@ -895,39 +903,36 @@ SYNTAX
                 };
                 */
 
-// Parse the user input
-let calib_config = {
-    let parsed_calib_config =
-        match serde_json::from_str::<serde_json::Value>(&calib_json) {
-            Ok(config) => config,
-            Err(e) => {
-                eprintln!("Error parsing JSON: {}", e);
-                return; // Exit the function early
-            }
-        };
+                // Parse the user input
+                let calib_config = {
+                    let parsed_calib_config =
+                        match serde_json::from_str::<serde_json::Value>(&calib_json) {
+                            Ok(config) => config,
+                            Err(e) => {
+                                eprintln!("Error parsing JSON: {}", e);
+                                return; // Exit the function early
+                            }
+                        };
 
-    // Extract calibration settings directly as Strings
-    let header_row = parsed_calib_config["header_is_at_row"]
-        .as_str()
-        .unwrap_or_default()
-        .to_string();
-    let start_range = parsed_calib_config["rows_range_from"][0]
-        .as_str()
-        .unwrap_or_default()
-        .to_string();
-    let end_range = parsed_calib_config["rows_range_from"][1]
-        .as_str()
-        .unwrap_or_default()
-        .to_string();
+                    // Extract calibration settings directly as Strings
+                    let header_row = parsed_calib_config["header_is_at_row"]
+                        .as_str()
+                        .unwrap_or_default()
+                        .to_string();
+                    let start_range = parsed_calib_config["rows_range_from"][0]
+                        .as_str()
+                        .unwrap_or_default()
+                        .to_string();
+                    let end_range = parsed_calib_config["rows_range_from"][1]
+                        .as_str()
+                        .unwrap_or_default()
+                        .to_string();
 
-    CalibConfig {
-        header_is_at_row: header_row,
-        rows_range_from: (start_range, end_range),
-    }
-};
-
-
-
+                    CalibConfig {
+                        header_is_at_row: header_row,
+                        rows_range_from: (start_range, end_range),
+                    }
+                };
 
                 // Apply the calibration
                 builder.calibrate(calib_config);
@@ -1291,11 +1296,18 @@ SYNTAX
                 println!();
             }
             "search" => {
+                /*
                 if builder.has_data() {
                     let query =
                     get_user_input_level_2("Enter search term: ");
                     builder.contains_search(&query);
                     println!();
+                }
+                */
+
+                if let Err(e) = handle_search(&mut builder) {
+                    println!("Error during search: {}", e);
+                    continue;
                 }
             }
 

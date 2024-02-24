@@ -2,6 +2,7 @@ mod csv_inspector;
 mod csv_joiner;
 mod csv_manager;
 mod csv_pivoter;
+mod csv_searcher;
 mod settings;
 mod user_interaction;
 mod utils;
@@ -87,7 +88,7 @@ async fn main() {
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 0.2.1");
+        print_insight("csvbro 0.2.2");
         std::process::exit(0);
     }
 
