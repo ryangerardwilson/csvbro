@@ -242,10 +242,7 @@ SYNTAX
 
     loop {
         print_insight_level_2("Select an option to inspect CSV data:");
-
-        for (index, option) in menu_options.iter().enumerate() {
-            print_list(&format!("{}: {}", index + 1, option));
-        }
+        print_list(&menu_options);
 
         let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
         let mut selected_option = None;

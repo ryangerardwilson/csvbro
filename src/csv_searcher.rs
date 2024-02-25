@@ -17,10 +17,13 @@ pub fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::er
 
     loop {
         print_insight_level_2("Select an option to search CSV data:");
+        print_list(&menu_options);
 
+        /*
         for (index, option) in menu_options.iter().enumerate() {
             print_list(&format!("{}: {}", index + 1, option));
         }
+        */
 
         let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
         let mut selected_option = None;

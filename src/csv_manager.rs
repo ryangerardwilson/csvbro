@@ -7,6 +7,8 @@ use crate::settings::{manage_config_file, DbPreset};
 use crate::user_interaction::{
     get_edited_user_json_input, get_edited_user_sql_input, get_user_input, get_user_input_level_2,
     get_user_sql_input, print_insight, print_insight_level_2, print_list,
+    determine_action_as_text,
+    //determine_action_as_text_or_number
 };
 
 use calamine::{open_workbook, Reader, Xls};
@@ -45,11 +47,16 @@ pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
 
             files.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
 
-            for (index, file) in files.iter().enumerate() {
-                if let Some(file_name) = file.file_name().and_then(|n| n.to_str()) {
-                    print_list(&format!("{}: {}", index + 1, file_name));
-                }
-            }
+    // Collect file names into a Vec<&str>
+    let file_names: Vec<String> = files.iter()
+        .filter_map(|file| file.file_name()?.to_str().map(String::from))
+        .collect();
+
+    // Since print_list expects a Vec<&str>, convert Vec<String> to Vec<&str>
+    let file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
+
+    // Now, call print_list with this vector
+    print_list(&file_name_slices);
 
             let choice = get_user_input("Punch in the serial number or a slice of the file name to LOAD, or hit 'back' to bail.\nWhat's it gonna be?: ")
                 .to_lowercase();
@@ -142,11 +149,17 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
 
             files.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
 
-            for (index, file) in files.iter().enumerate() {
-                if let Some(file_name) = file.file_name().and_then(|n| n.to_str()) {
-                    print_list(&format!("{}: {}", index + 1, file_name));
-                }
-            }
+    // Collect file names into a Vec<&str>
+    let file_names: Vec<String> = files.iter()
+        .filter_map(|file| file.file_name()?.to_str().map(String::from))
+        .collect();
+
+    // Since print_list expects a Vec<&str>, convert Vec<String> to Vec<&str>
+    let file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
+
+    // Now, call print_list with this vector
+    print_list(&file_name_slices);
+
 
             let choice = get_user_input("Punch in the serial number or a slice of the file name to DELETE, or hit 'back' to bail.\nWhat's it gonna be?: ")
                 .to_lowercase();
@@ -254,22 +267,34 @@ pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBui
     let mut files = list_files(desktop_path).unwrap_or_default();
     files.extend(list_files(downloads_path).unwrap_or_default());
 
-    // Sort files by modified date in descending order
-    files.sort_by(|a, b| b.1.cmp(&a.1));
+// Assuming `files` is a Vec<(PathBuf, SystemTime)> or similar
+files.sort_by(|a, b| b.1.cmp(&a.1));
 
-    for (index, (file, modified_date)) in files.iter().enumerate() {
-        let formatted_date = system_time_to_date_time(*modified_date)
-            .format("%Y-%m-%d %H:%M:%S")
-            .to_string();
-        if let Some(file_name) = file.file_name().and_then(|n| n.to_str()) {
-            print_list(&format!(
-                "{}: {} (Modified: {})",
-                index + 1,
-                file_name,
-                formatted_date
-            ));
-        }
+// Create a vector to hold formatted strings for each file
+let mut file_infos: Vec<String> = Vec::new();
+
+for (file, modified_date) in files.iter() {
+    let formatted_date = system_time_to_date_time(*modified_date)
+        .format("%Y-%m-%d %H:%M:%S")
+        .to_string();
+    if let Some(file_name) = file.file_name().and_then(|n| n.to_str()) {
+        // Format each file's information and push it to the vector
+        let file_info = format!(
+            "{} (Modified: {})",
+            file_name,
+            formatted_date
+        );
+        file_infos.push(file_info);
     }
+}
+
+// Convert Vec<String> to Vec<&str> for `print_list`
+let file_info_slices: Vec<&str> = file_infos.iter().map(AsRef::as_ref).collect();
+
+// Call `print_list` with the vector of file information
+print_list(&file_info_slices);
+
+
 
     let choice = get_user_input("Enter the serial number of the file to open: ");
 
@@ -350,12 +375,17 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
         options.push("mssql".to_string());
         options.push("mysql".to_string());
         options.push("back".to_string());
+        let options_slices: Vec<&str> = options.iter().map(AsRef::as_ref).collect();
 
         print_insight_level_2("Choose a database:");
+        print_list(&options_slices);
+
+        /*
         for (index, option) in options.iter().enumerate() {
             let formatted_message = format!("{}: {}", index + 1, option);
             print_list(&formatted_message);
         }
+        */
 
         let input = get_user_input_level_2("Enter your choice: ").to_lowercase();
 
@@ -746,6 +776,8 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
 }
 
 pub fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
+
+    /*
     fn determine_action(input: &str, has_data: bool, has_headers: bool) -> &'static str {
         let mut actions = Vec::new();
 
@@ -788,6 +820,7 @@ pub fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
 
         best_match
     }
+    */
 
     let current_file_path: Option<PathBuf> = file_path_option.map(PathBuf::from);
 
@@ -804,31 +837,66 @@ pub fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
         let has_data = builder.has_data();
         let has_headers = builder.has_headers(); // Assuming this method exists
 
-        let action_prompt = if has_data {
+        print_insight("Choose an action:");
+        let menu_options;
+        if has_data {
             if has_headers {
-                "Choose action >> show_all_rows/calibrate/search/update_headers/add_rows/update_row/inspect/pivot/join/delete_rows/sort/save/save_as/back: "
+                menu_options = vec![
+                    "show_all_rows",
+                    "calibrate",
+                    "search",
+                    "update_headers",
+                    "add_rows",
+                    "update_row",
+                    "inspect",
+                    "pivot",
+                    "join",
+                    "delete_rows",
+                    "sort",
+                    "save",
+                    "save_as",
+                    "Go back",
+                ];
             } else {
-                "Choose action >> show_all_rows/calibrate/search/set_headers/add_rows/update_row/inspect/pivot/join/delete_rows/sort/save/save_as/back: "
+                menu_options = vec![
+                    "show_all_rows",
+                    "calibrate",
+                    "search",
+                    "set_headers",
+                    "add_rows",
+                    "update_row",
+                    "inspect",
+                    "pivot",
+                    "join",
+                    "delete_rows",
+                    "sort",
+                    "save",
+                    "save_as",
+                    "Go back",
+                ];
             }
         } else {
             if has_headers {
-                "Choose action >> update_headers/back: "
+                menu_options = vec!["update_headers", "Go back"];
             } else {
-                "Choose action >> set_headers/back: "
+                menu_options = vec!["set_headers", "Go back"];
             }
         };
 
-        let action = get_user_input(action_prompt);
+        print_list(&menu_options);
+        let choice = get_user_input("Enter your choice").to_lowercase();
+        let selected_option = determine_action_as_text(&menu_options, &choice);
 
-        match determine_action(&action, has_data, has_headers) {
-            "show_all_rows" => {
+        match selected_option {
+
+            Some(ref action) if action == "show_all_rows" => {
                 if builder.has_data() {
                     builder.print_table_all_rows();
                     println!();
                 }
             }
 
-            "calibrate" => {
+            Some(ref action) if action == "calibrate" => {
                 println!();
 
                 // Define the JSON syntax for calibration settings
@@ -943,7 +1011,7 @@ SYNTAX
                 }
             }
 
-            "set_headers" => {
+            Some(ref action) if action == "set_headers" => {
                 println!();
 
                 let headers_json = json!({
@@ -992,7 +1060,8 @@ SYNTAX
                     println!();
                 }
             }
-            "update_headers" => {
+
+            Some(ref action) if action == "update_headers" => {
                 println!();
 
                 let existing_headers = builder.get_headers().unwrap_or(&[]).to_vec();
@@ -1050,7 +1119,9 @@ SYNTAX
                 }
             }
 
-            "add_rows" if has_data => {
+            Some(ref action) if action == "add_rows" => {
+
+                if has_data {
                 println!();
 
                 if let Some(headers) = builder.get_headers() {
@@ -1167,8 +1238,9 @@ SYNTAX
                     print_insight("No headers set. Cannot add rows.");
                 }
             }
+            }
 
-            "update_row" => {
+            Some(ref action) if action == "update_row" => {
                 println!();
 
                 if !builder.has_data() {
@@ -1295,7 +1367,8 @@ SYNTAX
                 builder.print_table();
                 println!();
             }
-            "search" => {
+
+            Some(ref action) if action == "search" => {
                 /*
                 if builder.has_data() {
                     let query =
@@ -1311,25 +1384,27 @@ SYNTAX
                 }
             }
 
-            "inspect" => {
+            Some(ref action) if action == "inspect" => {
                 if let Err(e) = handle_inspect(&mut builder) {
                     println!("Error during inspection: {}", e);
                     continue;
                 }
             }
-            "pivot" => {
+
+            Some(ref action) if action == "pivot" => {
                 if let Err(e) = handle_pivot(&mut builder) {
                     println!("Error during pivot operation: {}", e);
                     continue;
                 }
             }
-            "join" => {
+
+            Some(ref action) if action == "join" => {
                 if let Err(e) = handle_join(&mut builder) {
                     println!("Error during join operation: {}", e);
                     continue;
                 }
             }
-            "delete_rows" => {
+            Some(ref action) if action == "delete_rows" => {
                 println!();
 
                 if !builder.has_data() {
@@ -1403,7 +1478,7 @@ SYNTAX
                 println!();
             }
 
-            "sort" => {
+            Some(ref action) if action == "sort" => {
                 println!();
 
                 // Define the JSON syntax for sort settings
@@ -1464,7 +1539,9 @@ SYNTAX
                 }
             }
 
-            "save" if has_data => {
+            Some(ref action) if action == "save" => {
+
+                if has_data {
                 if let Some(ref path) = current_file_path {
                     // Save to the existing file path
                     let _ = builder.save_as(path.to_str().unwrap());
@@ -1482,8 +1559,11 @@ SYNTAX
                     print_insight(&format!("CSV file saved at {}", file_path.display()));
                 }
             }
+            }
 
-            "save_as" if has_data => {
+            Some(ref action) if action == "save_as" => { 
+
+                if has_data {
                 let file_name =
                     get_user_input_level_2("Enter file name to save (without extension): ");
                 let full_file_name = if file_name.ends_with(".csv") {
@@ -1496,11 +1576,15 @@ SYNTAX
                 print_insight(&format!("CSV file saved at {}", file_path.display()));
                 //break; // Exit the loop after saving
             }
-            "back" => {
+            }
+
+            Some(ref action) if action == "back" => {
                 break;
             }
             //"done" => break,
-            _ => print_insight("Unrecognized action, please try again."),
+            Some(_) => print_insight("Unrecognized action, please try again."),
+            None => print_insight("No action determined"),
+
         }
     }
 }
