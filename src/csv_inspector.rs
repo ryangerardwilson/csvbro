@@ -76,7 +76,34 @@ pub fn handle_inspect(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::e
 SYNTAX
 ======
 
-1. NUMBERS/TIMESTAMPS/TEXT Operations
+1. MULTIPLE EXPRESSION TEMPLATE
+-------------------------------
+
+{
+  "expressions": [
+    [
+      "Exp1",
+      {
+        "column": "",
+        "operator": "",
+        "compare_with": "",
+        "compare_as": ""
+      }
+    ],
+    [
+      "Exp2",
+      {
+        "column": "",
+        "operator": "",
+        "compare_with": "",
+        "compare_as": ""
+      }
+    ]
+  ],
+  "evaluation": "Exp1 && Exp2"
+}
+
+2. NUMBERS/TIMESTAMPS/TEXT Operations
 ------------------------------------
 
 ### Expression
@@ -90,7 +117,7 @@ SYNTAX
             "operator": "==",
             "compare_with": "PROSPECT",
             "compare_as": "TEXT"
-          },
+          }
         ],
         [
           "Exp2",
@@ -99,7 +126,7 @@ SYNTAX
             "operator": ">",
             "compare_with": "2024-01-01 00:00:00",
             "compare_as": "TIMESTAMPS"
-          },
+          }
         ],
         [,
           "Exp3",
@@ -119,7 +146,7 @@ SYNTAX
 - NUMBERS/TIMESTAMPS (==, !=, >, <, >=, <=)
 - TEXT (==, !=, CONTAINS, STARTS_WITH, DOES_NOT_CONTAIN)
 
-2. VECTOR/ARRAY Operations
+3. VECTOR/ARRAY Operations
 --------------------------
 
 ### Expression
@@ -171,24 +198,6 @@ SYNTAX
                 .ok_or("Invalid or missing operator")?
                 .to_string();
 
-            /*
-            let compare_value = if let Some(compare_with_array) =
-                exp.get(1).and_then(|cw| cw["compare_with"].as_array())
-            {
-                CompareValue::Multiple(
-                    compare_with_array
-                        .iter()
-                        .filter_map(|v| v.as_str())
-                        .collect(),
-                ) // Collecting as Vec<&str>
-            } else if let Some(compare_with_single) =
-                exp.get(1).and_then(|cw| cw["compare_with"].as_str())
-            {
-                CompareValue::Single(compare_with_single)
-            } else {
-                return Err("Invalid or missing compare_with".into());
-            };
-            */
             let compare_value = if let Some(compare_with_array) =
                 exp.get(1).and_then(|cw| cw["compare_with"].as_array())
             {
