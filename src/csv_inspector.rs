@@ -1,13 +1,8 @@
 // csv_inspector.rs
 use crate::user_interaction::{
-    //get_edited_user_sql_input,
-    get_edited_user_json_input,
-    get_user_input_level_2,
-    print_insight_level_2,
-    print_list,
+    determine_action_as_number, get_edited_user_json_input, get_user_input_level_2,
+    print_insight_level_2, print_list_level_2,
 };
-
-use fuzzywuzzy::fuzz;
 use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal};
 use serde_json::Value;
 
@@ -251,31 +246,10 @@ SYNTAX
 
     loop {
         print_insight_level_2("Select an option to inspect CSV data:");
-        print_list(&menu_options);
+        print_list_level_2(&menu_options);
 
         let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-        let mut selected_option = None;
-
-        // Check for direct numeric input
-        if let Ok(index) = choice.parse::<usize>() {
-            if index > 0 && index <= menu_options.len() {
-                selected_option = Some(index);
-            }
-        }
-
-        // If no direct numeric input, use fuzzy matching
-        if selected_option.is_none() {
-            let (best_match_index, _) = menu_options
-                .iter()
-                .enumerate()
-                .map(|(index, option)| (index + 1, fuzz::ratio(&choice, &option.to_lowercase())))
-                .max_by_key(|&(_, score)| score)
-                .unwrap_or((0, 0));
-
-            if best_match_index > 0 && best_match_index <= menu_options.len() {
-                selected_option = Some(best_match_index);
-            }
-        }
+        let selected_option = determine_action_as_number(&menu_options, &choice);
 
         match selected_option {
             Some(1) => {

@@ -1,9 +1,8 @@
 // user_interaction.rs
+use fuzzywuzzy::fuzz;
 use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
 use vim_edit::{vim_create, vim_edit};
-use fuzzywuzzy::fuzz;
-
 
 pub fn get_user_input(prompt: &str) -> String {
     let mut rl = match DefaultEditor::new() {
@@ -130,113 +129,159 @@ pub fn get_user_input_level_2(prompt: &str) -> String {
     }
 }
 
-/*
-/// Prints a message in bold yellow font.
-pub fn print_list(message: &str) {
-    // ANSI escape code for bold yellow font
-    let bold_yellow = "\x1b[0;93m"; // 1 for bold, 33 for yellow
-                                    // ANSI escape code to reset formatting
-    let reset = "\x1b[0m";
-
-    println!("  {}{}{}", bold_yellow, message, reset);
-}
-
-
-pub fn print_list(options: &Vec<&str>) {
-    // ANSI escape code for bold yellow font
-    let bold_yellow = "\x1b[1;33m"; // Corrected the ANSI code for bold yellow
-    // ANSI escape code to reset formatting
-    let reset = "\x1b[0m";
-
-    for (index, option) in options.iter().enumerate() {
-        println!("  {}{}: {}{}", bold_yellow, index + 1, option, reset);
-    }
-}
-*/
-
 pub fn print_list(options: &Vec<&str>) {
     // ANSI escape code for bold yellow font
     let bold_yellow = "\x1b[1;33m"; // Bold yellow
-    // ANSI escape code to reset formatting
+                                    // ANSI escape code to reset formatting
     let reset = "\x1b[0m";
 
-    // Calculate the length of the longest index to ensure neat indentation
-    let max_digits = options.len().to_string().len();
+    // Calculate the length of the longest option to ensure neat box sizing
+    let max_length = options.iter().map(|o| o.len()).max().unwrap_or(0) + 14; // Adjusted for padding and border
 
+    println!("{} +{}+{}", bold_yellow, "-".repeat(max_length), reset);
+    println!("{} +{}+{}", bold_yellow, "-".repeat(max_length), reset);
     for (index, option) in options.iter().enumerate() {
-        let padded_index = format!("{:width$}:", index + 1, width = max_digits);
-        println!("  {}{} {}{}", bold_yellow, padded_index, option, reset);
+        // Format each item with padding to align within the ASCII art box, ensuring the index is included correctly
+        let padded_option = format!(
+            "  | {:<width$} |",
+            format!("{}. {}", index + 1, option),
+            width = max_length - 4
+        );
+        println!("{}{}{}", bold_yellow, padded_option, reset);
     }
+    println!("{} +{}+{}", bold_yellow, "-".repeat(max_length), reset);
+    println!("{} +{}+{}", bold_yellow, "-".repeat(max_length), reset);
+}
+
+pub fn print_list_level_2(options: &Vec<&str>) {
+    // ANSI escape code for bold yellow font
+    let yellow = "\x1b[38;5;227m"; // Bold yellow
+                                   // ANSI escape code to reset formatting
+    let reset = "\x1b[0m";
+
+    // Calculate the length of the longest option to ensure neat box sizing
+    let max_length = options.iter().map(|o| o.len()).max().unwrap_or(0) + 14; // Adjusted for padding and border
+
+    //println!("{} +{}+{}", yellow, "-".repeat(max_length), reset);
+    println!(" {} +{}+{}", yellow, "-".repeat(max_length), reset);
+    for (index, option) in options.iter().enumerate() {
+        // Format each item with padding to align within the ASCII art box, ensuring the index is included correctly
+        let padded_option = format!(
+            "   | {:<width$} |",
+            format!("{}. {}", index + 1, option),
+            width = max_length - 4
+        );
+        println!("{}{}{}", yellow, padded_option, reset);
+    }
+    //println!("{} +{}+{}", yellow, "-".repeat(max_length), reset);
+    println!(" {} +{}+{}", yellow, "-".repeat(max_length), reset);
 }
 
 pub fn determine_action_as_text(menu_options: &[&str], choice: &str) -> Option<String> {
     let choice = choice.to_lowercase();
-    let mut selected_option: Option<String> = None;
 
     // Check for direct numeric input
     if let Ok(index) = choice.parse::<usize>() {
         if index > 0 && index <= menu_options.len() {
-            selected_option = Some(menu_options[index - 1].to_string());
+            return Some(menu_options[index - 1].to_string());
         }
     }
 
-    // If no direct numeric input, use fuzzy matching
-    if selected_option.is_none() {
-        let (best_match_index, _) = menu_options
-            .iter()
-            .enumerate()
-            .map(|(index, option)| (index + 1, fuzz::ratio(&choice, &option.to_lowercase())))
-            .max_by_key(|&(_, score)| score)
-            .unwrap_or((0, 0));
+    // Collect indices of "starts with" options
+    let starts_with_indices: Vec<usize> = menu_options
+        .iter()
+        .enumerate()
+        .filter_map(|(index, option)| {
+            if option.to_lowercase().starts_with(&choice) {
+                Some(index)
+            } else {
+                None
+            }
+        })
+        .collect();
 
-        if best_match_index > 0 && best_match_index <= menu_options.len() {
-            selected_option = Some(menu_options[best_match_index - 1].to_string());
-        }
+    let target_indices = if starts_with_indices.is_empty() {
+        (0..menu_options.len()).collect::<Vec<usize>>()
+    } else {
+        starts_with_indices
+    };
+
+    let (best_match_index, _) = target_indices
+        .iter()
+        .map(|&index| {
+            let option = &menu_options[index];
+            (index, fuzz::ratio(&choice, &option.to_lowercase()))
+        })
+        .max_by_key(|&(_, score)| score)
+        .unwrap_or((0, 0));
+
+    if best_match_index < menu_options.len() {
+        Some(menu_options[best_match_index].to_string())
+    } else {
+        None
     }
-
-    selected_option
 }
 
-
-pub fn determine_action_as_text_or_number(menu_options: &[&str], choice: &str) -> Option<usize> {
+pub fn determine_action_as_number(menu_options: &[&str], choice: &str) -> Option<usize> {
     let choice = choice.to_lowercase();
-    let mut selected_option = None;
 
     // Check for direct numeric input
     if let Ok(index) = choice.parse::<usize>() {
         if index > 0 && index <= menu_options.len() {
-            selected_option = Some(index);
+            return Some(index);
         }
     }
 
-    // If no direct numeric input, use fuzzy matching
-    if selected_option.is_none() {
-        let (best_match_index, _) = menu_options
-            .iter()
-            .enumerate()
-            .map(|(index, option)| (index + 1, fuzz::ratio(&choice, &option.to_lowercase())))
-            .max_by_key(|&(_, score)| score)
-            .unwrap_or((0, 0));
+    // Collect "starts with" matches
+    let starts_with_indices: Vec<usize> = menu_options
+        .iter()
+        .enumerate()
+        .filter_map(|(index, option)| {
+            if option.to_lowercase().starts_with(&choice) {
+                Some(index + 1)
+            } else {
+                None
+            }
+        })
+        .collect();
 
-        if best_match_index > 0 && best_match_index <= menu_options.len() {
-            selected_option = Some(best_match_index);
-        }
+    // If there's exactly one "starts with" match, return it
+    if starts_with_indices.len() == 1 {
+        return Some(starts_with_indices[0]);
     }
 
-    selected_option
+    // Apply fuzzy logic to either the filtered "starts with" options or all options
+    let target_indices = if starts_with_indices.is_empty() {
+        (1..=menu_options.len()).collect::<Vec<usize>>()
+    } else {
+        starts_with_indices
+    };
+
+    let (best_match_index, _) = target_indices
+        .iter()
+        .map(|&index| {
+            let option = &menu_options[index - 1];
+            (index, fuzz::ratio(&choice, &option.to_lowercase()))
+        })
+        .max_by_key(|&(_, score)| score)
+        .unwrap_or((0, 0));
+
+    if best_match_index > 0 && best_match_index <= menu_options.len() {
+        Some(best_match_index)
+    } else {
+        None
+    }
 }
-
 
 /// Prints a message in bold yellow font.
 pub fn print_insight(message: &str) {
     // ANSI escape code for bold yellow font
     //let bold_yellow = "\x1b[1;93m"; // 1 for bold, 33 for yellow
-                                    // ANSI escape code to reset formatting
+    // ANSI escape code to reset formatting
     //let reset = "\x1b[0m";
 
     let bold_orange = "\x1b[1;38;5;208m";
     let reset = "\x1b[0m";
-
 
     println!("{}@BIGBro: {}{}", bold_orange, message, reset);
 }

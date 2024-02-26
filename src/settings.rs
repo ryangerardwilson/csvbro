@@ -225,11 +225,11 @@ fn delete_db_preset() -> Result<(), Box<dyn std::error::Error>> {
 pub fn view_db_presets() -> Result<(), Box<dyn std::error::Error>> {
     manage_config_file(|config| {
         println!();
-// Initialize a vector to hold the formatted preset strings
-let mut formatted_presets = Vec::new();
+        // Initialize a vector to hold the formatted preset strings
+        let mut formatted_presets = Vec::new();
 
-for (index, preset) in config.db_presets.iter().enumerate() {
-    let formatted_preset = format!(
+        for (index, preset) in config.db_presets.iter().enumerate() {
+            let formatted_preset = format!(
         "{}. {} {{db_type: \"{}\", host: \"{}\", username: \"{}\", password: \"{}\", database: \"{}\" }}", 
         index + 1,
         preset.name,
@@ -240,16 +240,16 @@ for (index, preset) in config.db_presets.iter().enumerate() {
         preset.database
     );
 
-    // Add the formatted preset string to the vector
-    formatted_presets.push(formatted_preset);
-}
+            // Add the formatted preset string to the vector
+            formatted_presets.push(formatted_preset);
+        }
 
-// Convert Vec<String> to Vec<&str> for print_list
-let formatted_presets_slices: Vec<&str> = formatted_presets.iter().map(AsRef::as_ref).collect();
+        // Convert Vec<String> to Vec<&str> for print_list
+        let formatted_presets_slices: Vec<&str> =
+            formatted_presets.iter().map(AsRef::as_ref).collect();
 
-// Call print_list with a reference to the vector of string slices
-print_list(&formatted_presets_slices);
-
+        // Call print_list with a reference to the vector of string slices
+        print_list(&formatted_presets_slices);
 
         println!();
         Ok(())

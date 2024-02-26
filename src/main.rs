@@ -9,8 +9,9 @@ mod utils;
 
 use crate::csv_manager::{chain_builder, delete_csv_file, import, open_csv_file, query};
 use crate::settings::open_settings;
-use crate::user_interaction::{get_user_input, print_insight};
-use fuzzywuzzy::fuzz;
+use crate::user_interaction::{
+    determine_action_as_text, get_user_input, print_insight, print_list,
+};
 use rgwml::csv_utils::CsvBuilder;
 use std::env;
 use std::path::Path;
@@ -19,27 +20,6 @@ use std::process::{self, Command};
 
 #[tokio::main]
 async fn main() {
-    fn determine_action(input: &str, actions: &[&str]) -> String {
-        let mut highest_score = 0;
-        let mut best_match = String::new();
-
-        for &action in actions {
-            let mut score = fuzz::ratio(input, action);
-
-            // Check if the first characters match and boost score if they do
-            if input.chars().next() == action.chars().next() {
-                score += 20;
-            }
-
-            if score > highest_score {
-                highest_score = score;
-                best_match = action.to_string();
-            }
-        }
-
-        best_match
-    }
-
     fn embed_and_set_up_in_directory_system() -> (String, String, String) {
         // Attempt to dynamically find the current executable's path
         let current_exe_path_buf =
@@ -88,7 +68,7 @@ async fn main() {
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 0.2.3");
+        print_insight("csvbro 0.2.4");
         std::process::exit(0);
     }
 
@@ -142,44 +122,41 @@ async fn main() {
 "#
     );
 
-    loop {
-        let builder = loop {
-            let input = get_user_input(
-                "What's your move, homie?\n(new/open/import/query/delete/settings/exit): ",
-            );
+    let menu_options = vec![
+        "new", "open", "import", "query", "delete", "settings", "exit",
+    ];
 
-            match determine_action(
-                &input,
-                &[
-                    "new", "open", "import", "query", "delete", "settings", "exit",
-                ],
-            )
-            .as_str()
-            {
-                "new" => break CsvBuilder::new(),
-                "open" => match open_csv_file(&csv_db_path_buf) {
-                    Some((csv_builder, file_path)) => {
-                        // Convert file_path to a string slice before passing it
-                        if let Some(path_str) = file_path.to_str() {
-                            chain_builder(csv_builder, Some(path_str));
-                        } else {
-                            // Handle the error if the path cannot be converted to a string slice
-                            println!("Error: Unable to convert file path to string.");
-                            continue;
+    loop {
+        let _builder = loop {
+            print_list(&menu_options);
+            let choice = get_user_input("Your move, bro: ");
+            let selected_option = determine_action_as_text(&menu_options, &choice);
+
+            match selected_option {
+                Some(ref action) if action == "new" => {
+                    break CsvBuilder::new();
+                }
+                Some(ref action) if action == "open" => {
+                    match open_csv_file(&csv_db_path_buf) {
+                        Some((csv_builder, file_path)) => {
+                            if let Some(path_str) = file_path.to_str() {
+                                chain_builder(csv_builder, Some(path_str));
+                            } else {
+                                println!("Error: Unable to convert file path to string.");
+                                continue;
+                            }
+                            continue; // Continue the outer loop since chain_builder has been called
                         }
-                        continue; // Continue the outer loop since chain_builder has been called
+                        None => continue,
                     }
-                    None => {
-                        continue;
+                }
+                Some(ref action) if action == "import" => {
+                    match import(&desktop_path_buf, &downloads_path_buf) {
+                        Some(csv_builder) => break csv_builder,
+                        None => continue,
                     }
-                },
-                "import" => match import(&desktop_path_buf, &downloads_path_buf) {
-                    Some(csv_builder) => break csv_builder,
-                    None => {
-                        continue;
-                    }
-                },
-                "query" => match query().await {
+                }
+                Some(ref action) if action == "query" => match query().await {
                     Ok(csv_builder) => break csv_builder,
                     Err(e) => {
                         if e.to_string() == "User chose to go back" {
@@ -188,20 +165,22 @@ async fn main() {
                         continue;
                     }
                 },
-                "delete" => {
+                Some(ref action) if action == "delete" => {
                     delete_csv_file(&csv_db_path_buf); // No return value expected
                     continue; // Continue the loop after deletion
                 }
-                "settings" => {
+                Some(ref action) if action == "settings" => {
                     let _ = open_settings(); // No return value expected
-                    continue; // Continue the loop after deletion
+                    continue; // Continue the loop after settings are adjusted
                 }
-
-                "exit" => return, // Exit the program
-                _ => print_insight("Dude, that action's a no-go. Give it another whirl, alright?"),
+                Some(ref action) if action == "exit" => {
+                    std::process::exit(0);
+                    //return; // Exit the program
+                }
+                _ => {
+                    print_insight("Dude, that action's a no-go. Give it another whirl, alright?");
+                }
             }
         };
-
-        chain_builder(builder, None);
     }
 }

@@ -5,10 +5,16 @@ use crate::csv_pivoter::handle_pivot;
 use crate::csv_searcher::handle_search;
 use crate::settings::{manage_config_file, DbPreset};
 use crate::user_interaction::{
-    get_edited_user_json_input, get_edited_user_sql_input, get_user_input, get_user_input_level_2,
-    get_user_sql_input, print_insight, print_insight_level_2, print_list,
     determine_action_as_text,
     //determine_action_as_text_or_number
+    get_edited_user_json_input,
+    get_edited_user_sql_input,
+    get_user_input,
+    get_user_input_level_2,
+    get_user_sql_input,
+    print_insight,
+    print_insight_level_2,
+    print_list,
 };
 
 use calamine::{open_workbook, Reader, Xls};
@@ -47,19 +53,19 @@ pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
 
             files.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
 
-    // Collect file names into a Vec<&str>
-    let file_names: Vec<String> = files.iter()
-        .filter_map(|file| file.file_name()?.to_str().map(String::from))
-        .collect();
+            // Collect file names into a Vec<&str>
+            let file_names: Vec<String> = files
+                .iter()
+                .filter_map(|file| file.file_name()?.to_str().map(String::from))
+                .collect();
 
-    // Since print_list expects a Vec<&str>, convert Vec<String> to Vec<&str>
-    let file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
+            // Since print_list expects a Vec<&str>, convert Vec<String> to Vec<&str>
+            let file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
 
-    // Now, call print_list with this vector
-    print_list(&file_name_slices);
+            // Now, call print_list with this vector
+            print_list(&file_name_slices);
 
-            let choice = get_user_input("Punch in the serial number or a slice of the file name to LOAD, or hit 'back' to bail.\nWhat's it gonna be?: ")
-                .to_lowercase();
+            let choice = get_user_input("What's it gonna be?: ").to_lowercase();
 
             // Fuzzy match logic for 'back'
             let options = &["back"];
@@ -149,17 +155,17 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
 
             files.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
 
-    // Collect file names into a Vec<&str>
-    let file_names: Vec<String> = files.iter()
-        .filter_map(|file| file.file_name()?.to_str().map(String::from))
-        .collect();
+            // Collect file names into a Vec<&str>
+            let file_names: Vec<String> = files
+                .iter()
+                .filter_map(|file| file.file_name()?.to_str().map(String::from))
+                .collect();
 
-    // Since print_list expects a Vec<&str>, convert Vec<String> to Vec<&str>
-    let file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
+            // Since print_list expects a Vec<&str>, convert Vec<String> to Vec<&str>
+            let file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
 
-    // Now, call print_list with this vector
-    print_list(&file_name_slices);
-
+            // Now, call print_list with this vector
+            print_list(&file_name_slices);
 
             let choice = get_user_input("Punch in the serial number or a slice of the file name to DELETE, or hit 'back' to bail.\nWhat's it gonna be?: ")
                 .to_lowercase();
@@ -267,34 +273,28 @@ pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBui
     let mut files = list_files(desktop_path).unwrap_or_default();
     files.extend(list_files(downloads_path).unwrap_or_default());
 
-// Assuming `files` is a Vec<(PathBuf, SystemTime)> or similar
-files.sort_by(|a, b| b.1.cmp(&a.1));
+    // Assuming `files` is a Vec<(PathBuf, SystemTime)> or similar
+    files.sort_by(|a, b| b.1.cmp(&a.1));
 
-// Create a vector to hold formatted strings for each file
-let mut file_infos: Vec<String> = Vec::new();
+    // Create a vector to hold formatted strings for each file
+    let mut file_infos: Vec<String> = Vec::new();
 
-for (file, modified_date) in files.iter() {
-    let formatted_date = system_time_to_date_time(*modified_date)
-        .format("%Y-%m-%d %H:%M:%S")
-        .to_string();
-    if let Some(file_name) = file.file_name().and_then(|n| n.to_str()) {
-        // Format each file's information and push it to the vector
-        let file_info = format!(
-            "{} (Modified: {})",
-            file_name,
-            formatted_date
-        );
-        file_infos.push(file_info);
+    for (file, modified_date) in files.iter() {
+        let formatted_date = system_time_to_date_time(*modified_date)
+            .format("%Y-%m-%d %H:%M:%S")
+            .to_string();
+        if let Some(file_name) = file.file_name().and_then(|n| n.to_str()) {
+            // Format each file's information and push it to the vector
+            let file_info = format!("{} (Modified: {})", file_name, formatted_date);
+            file_infos.push(file_info);
+        }
     }
-}
 
-// Convert Vec<String> to Vec<&str> for `print_list`
-let file_info_slices: Vec<&str> = file_infos.iter().map(AsRef::as_ref).collect();
+    // Convert Vec<String> to Vec<&str> for `print_list`
+    let file_info_slices: Vec<&str> = file_infos.iter().map(AsRef::as_ref).collect();
 
-// Call `print_list` with the vector of file information
-print_list(&file_info_slices);
-
-
+    // Call `print_list` with the vector of file information
+    print_list(&file_info_slices);
 
     let choice = get_user_input("Enter the serial number of the file to open: ");
 
@@ -776,52 +776,6 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
 }
 
 pub fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
-
-    /*
-    fn determine_action(input: &str, has_data: bool, has_headers: bool) -> &'static str {
-        let mut actions = Vec::new();
-
-        // Add "update headers" or "set headers" based on has_headers
-        if has_headers {
-            actions.push("update_headers");
-        } else {
-            actions.push("set_headers");
-        }
-
-        // Add "add row" if has_data is true
-        if has_data {
-            actions.push("show_all_rows");
-            actions.push("search");
-            actions.push("calibrate");
-            actions.push("add_rows");
-            actions.push("update_row");
-            actions.push("inspect");
-            actions.push("pivot");
-            actions.push("join");
-            actions.push("delete_rows");
-            actions.push("sort");
-        }
-
-        // Always add "save" and "back"
-        actions.push("save");
-        actions.push("save_as");
-        actions.push("back");
-
-        let mut highest_score = 0;
-        let mut best_match = "";
-
-        for &action in &actions {
-            let score = fuzz::ratio(input, action);
-            if score > highest_score {
-                highest_score = score;
-                best_match = action;
-            }
-        }
-
-        best_match
-    }
-    */
-
     let current_file_path: Option<PathBuf> = file_path_option.map(PathBuf::from);
 
     if builder.has_data() {
@@ -855,7 +809,7 @@ pub fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
                     "sort",
                     "save",
                     "save_as",
-                    "Go back",
+                    "back",
                 ];
             } else {
                 menu_options = vec![
@@ -872,23 +826,22 @@ pub fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
                     "sort",
                     "save",
                     "save_as",
-                    "Go back",
+                    "back",
                 ];
             }
         } else {
             if has_headers {
-                menu_options = vec!["update_headers", "Go back"];
+                menu_options = vec!["update_headers", "back"];
             } else {
-                menu_options = vec!["set_headers", "Go back"];
+                menu_options = vec!["set_headers", "back"];
             }
         };
 
         print_list(&menu_options);
-        let choice = get_user_input("Enter your choice").to_lowercase();
+        let choice = get_user_input("Enter your choice: ").to_lowercase();
         let selected_option = determine_action_as_text(&menu_options, &choice);
 
         match selected_option {
-
             Some(ref action) if action == "show_all_rows" => {
                 if builder.has_data() {
                     builder.print_table_all_rows();
@@ -928,48 +881,6 @@ SYNTAX
                 // Get user input
                 let calib_json = get_edited_user_json_input(calib_syntax.to_string());
                 //dbg!(&calib_json);
-
-                // Parse the user input
-                /*
-                let calib_config = {
-                    let parsed_calib_config =
-                        match serde_json::from_str::<serde_json::Value>(&calib_json) {
-                            Ok(config) => config,
-                            Err(e) => {
-                                eprintln!("Error parsing JSON: {}", e);
-                                return; // Exit the function early
-                            }
-                        };
-
-                    // Extract calibration settings
-                    let header_row = Box::leak(
-                        parsed_calib_config["header_is_at_row"]
-                            .as_str()
-                            .unwrap_or_default()
-                            .to_string()
-                            .into_boxed_str(),
-                    );
-                    let start_range = Box::leak(
-                        parsed_calib_config["rows_range_from"][0]
-                            .as_str()
-                            .unwrap_or_default()
-                            .to_string()
-                            .into_boxed_str(),
-                    );
-                    let end_range = Box::leak(
-                        parsed_calib_config["rows_range_from"][1]
-                            .as_str()
-                            .unwrap_or_default()
-                            .to_string()
-                            .into_boxed_str(),
-                    );
-
-                    CalibConfig {
-                        header_is_at_row: header_row.to_string(),
-                        rows_range_from: (start_range.to_string(), end_range.to_string()),
-                    }
-                };
-                */
 
                 // Parse the user input
                 let calib_config = {
@@ -1120,28 +1031,27 @@ SYNTAX
             }
 
             Some(ref action) if action == "add_rows" => {
-
                 if has_data {
-                println!();
+                    println!();
 
-                if let Some(headers) = builder.get_headers() {
-                    // Start defining the JSON array syntax
-                    let mut json_array_str = "[\n  {\n".to_string();
+                    if let Some(headers) = builder.get_headers() {
+                        // Start defining the JSON array syntax
+                        let mut json_array_str = "[\n  {\n".to_string();
 
-                    // Loop through headers and append them as keys in the JSON array string, excluding auto-computed columns
-                    for (i, header) in headers.iter().enumerate() {
-                        if header != "id" && header != "c@" && header != "u@" {
-                            json_array_str.push_str(&format!("    \"{}\": \"\"", header));
-                            if i < headers.len() - 1 {
-                                json_array_str.push_str(",\n");
+                        // Loop through headers and append them as keys in the JSON array string, excluding auto-computed columns
+                        for (i, header) in headers.iter().enumerate() {
+                            if header != "id" && header != "c@" && header != "u@" {
+                                json_array_str.push_str(&format!("    \"{}\": \"\"", header));
+                                if i < headers.len() - 1 {
+                                    json_array_str.push_str(",\n");
+                                }
                             }
                         }
-                    }
 
-                    // Close the first JSON object and start the syntax explanation
-                    json_array_str.push_str("\n  }\n]");
+                        // Close the first JSON object and start the syntax explanation
+                        json_array_str.push_str("\n  }\n]");
 
-                    let syntax_explanation = r#"
+                        let syntax_explanation = r#"
 
 SYNTAX
 ======
@@ -1164,80 +1074,83 @@ SYNTAX
 
         "#;
 
-                    // Combine the dynamic JSON syntax with the syntax explanation
-                    let full_syntax = json_array_str + syntax_explanation;
+                        // Combine the dynamic JSON syntax with the syntax explanation
+                        let full_syntax = json_array_str + syntax_explanation;
 
-                    // Get user input
-                    let rows_json_str = get_edited_user_json_input(full_syntax);
+                        // Get user input
+                        let rows_json_str = get_edited_user_json_input(full_syntax);
 
-                    // Parse the user input
-                    let rows_json: Vec<serde_json::Value> =
-                        match serde_json::from_str(&rows_json_str) {
-                            Ok(json) => json,
-                            Err(e) => {
-                                eprintln!("Error parsing JSON string: {}", e);
-                                return; // Exit the function early if there's an error
+                        // Parse the user input
+                        let rows_json: Vec<serde_json::Value> =
+                            match serde_json::from_str(&rows_json_str) {
+                                Ok(json) => json,
+                                Err(e) => {
+                                    eprintln!("Error parsing JSON string: {}", e);
+                                    return; // Exit the function early if there's an error
+                                }
+                            };
+
+                        let mut all_rows = Vec::new();
+
+                        // Logic to find the current maximum ID
+                        let mut next_id = builder
+                            .get_data()
+                            .iter()
+                            .filter_map(|row| {
+                                row.get(headers.iter().position(|h| h == "id").unwrap_or(0))
+                            })
+                            .filter_map(|id_str| id_str.parse::<usize>().ok())
+                            .max()
+                            .unwrap_or(0)
+                            + 1; // Start from the next available ID
+
+                        for row_json in rows_json {
+                            let mut row_data_owned = Vec::new();
+
+                            for header in headers {
+                                if header == "id" {
+                                    row_data_owned.push(next_id.to_string()); // Use the next available ID
+                                    next_id += 1; // Increment for the next row
+                                } else if header == "c@" {
+                                    // Handle c@ column
+                                } else if header == "u@" {
+                                    // Handle u@ column
+                                } else {
+                                    let cell_value = match &row_json[header] {
+                                        serde_json::Value::String(s) => s.to_string(),
+                                        serde_json::Value::Array(arr) => {
+                                            serde_json::to_string(arr).unwrap_or_default()
+                                        }
+                                        serde_json::Value::Object(obj) => {
+                                            serde_json::to_string(obj).unwrap_or_default()
+                                        }
+                                        // Add more cases as needed
+                                        _ => row_json[header]
+                                            .as_str()
+                                            .unwrap_or_default()
+                                            .to_string(),
+                                    };
+                                    row_data_owned.push(cell_value);
+                                }
                             }
-                        };
 
-                    let mut all_rows = Vec::new();
-
-                    // Logic to find the current maximum ID
-                    let mut next_id = builder
-                        .get_data()
-                        .iter()
-                        .filter_map(|row| {
-                            row.get(headers.iter().position(|h| h == "id").unwrap_or(0))
-                        })
-                        .filter_map(|id_str| id_str.parse::<usize>().ok())
-                        .max()
-                        .unwrap_or(0)
-                        + 1; // Start from the next available ID
-
-                    for row_json in rows_json {
-                        let mut row_data_owned = Vec::new();
-
-                        for header in headers {
-                            if header == "id" {
-                                row_data_owned.push(next_id.to_string()); // Use the next available ID
-                                next_id += 1; // Increment for the next row
-                            } else if header == "c@" {
-                                // Handle c@ column
-                            } else if header == "u@" {
-                                // Handle u@ column
-                            } else {
-                                let cell_value = match &row_json[header] {
-                                    serde_json::Value::String(s) => s.to_string(),
-                                    serde_json::Value::Array(arr) => {
-                                        serde_json::to_string(arr).unwrap_or_default()
-                                    }
-                                    serde_json::Value::Object(obj) => {
-                                        serde_json::to_string(obj).unwrap_or_default()
-                                    }
-                                    // Add more cases as needed
-                                    _ => row_json[header].as_str().unwrap_or_default().to_string(),
-                                };
-                                row_data_owned.push(cell_value);
-                            }
+                            all_rows.push(row_data_owned);
                         }
 
-                        all_rows.push(row_data_owned);
+                        // Convert each Vec<String> to Vec<&str> before passing to add_rows
+                        let rows_as_str_slices = all_rows
+                            .iter()
+                            .map(|row| row.iter().map(AsRef::as_ref).collect::<Vec<&str>>())
+                            .collect::<Vec<Vec<&str>>>();
+
+                        builder.add_rows(rows_as_str_slices);
+                        builder.print_table();
+                        println!();
+                        continue;
+                    } else {
+                        print_insight("No headers set. Cannot add rows.");
                     }
-
-                    // Convert each Vec<String> to Vec<&str> before passing to add_rows
-                    let rows_as_str_slices = all_rows
-                        .iter()
-                        .map(|row| row.iter().map(AsRef::as_ref).collect::<Vec<&str>>())
-                        .collect::<Vec<Vec<&str>>>();
-
-                    builder.add_rows(rows_as_str_slices);
-                    builder.print_table();
-                    println!();
-                    continue;
-                } else {
-                    print_insight("No headers set. Cannot add rows.");
                 }
-            }
             }
 
             Some(ref action) if action == "update_row" => {
@@ -1540,13 +1453,28 @@ SYNTAX
             }
 
             Some(ref action) if action == "save" => {
-
                 if has_data {
-                if let Some(ref path) = current_file_path {
-                    // Save to the existing file path
-                    let _ = builder.save_as(path.to_str().unwrap());
-                    print_insight(&format!("CSV file saved at {}", path.display()));
-                } else {
+                    if let Some(ref path) = current_file_path {
+                        // Save to the existing file path
+                        let _ = builder.save_as(path.to_str().unwrap());
+                        print_insight(&format!("CSV file saved at {}", path.display()));
+                    } else {
+                        let file_name =
+                            get_user_input_level_2("Enter file name to save (without extension): ");
+                        let full_file_name = if file_name.ends_with(".csv") {
+                            file_name
+                        } else {
+                            format!("{}.csv", file_name)
+                        };
+                        let file_path = csv_db_path.join(full_file_name);
+                        let _ = builder.save_as(file_path.to_str().unwrap());
+                        print_insight(&format!("CSV file saved at {}", file_path.display()));
+                    }
+                }
+            }
+
+            Some(ref action) if action == "save_as" => {
+                if has_data {
                     let file_name =
                         get_user_input_level_2("Enter file name to save (without extension): ");
                     let full_file_name = if file_name.ends_with(".csv") {
@@ -1557,25 +1485,8 @@ SYNTAX
                     let file_path = csv_db_path.join(full_file_name);
                     let _ = builder.save_as(file_path.to_str().unwrap());
                     print_insight(&format!("CSV file saved at {}", file_path.display()));
+                    //break; // Exit the loop after saving
                 }
-            }
-            }
-
-            Some(ref action) if action == "save_as" => { 
-
-                if has_data {
-                let file_name =
-                    get_user_input_level_2("Enter file name to save (without extension): ");
-                let full_file_name = if file_name.ends_with(".csv") {
-                    file_name
-                } else {
-                    format!("{}.csv", file_name)
-                };
-                let file_path = csv_db_path.join(full_file_name);
-                let _ = builder.save_as(file_path.to_str().unwrap());
-                print_insight(&format!("CSV file saved at {}", file_path.display()));
-                //break; // Exit the loop after saving
-            }
             }
 
             Some(ref action) if action == "back" => {
@@ -1584,7 +1495,6 @@ SYNTAX
             //"done" => break,
             Some(_) => print_insight("Unrecognized action, please try again."),
             None => print_insight("No action determined"),
-
         }
     }
 }

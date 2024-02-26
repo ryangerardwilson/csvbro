@@ -1,6 +1,7 @@
 // csv_searcher.rs
-use crate::user_interaction::{get_user_input_level_2, print_insight_level_2, print_list};
-use fuzzywuzzy::fuzz;
+use crate::user_interaction::{
+    determine_action_as_number, get_user_input_level_2, print_insight_level_2, print_list_level_2,
+};
 use rgwml::csv_utils::CsvBuilder;
 
 pub fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
@@ -17,37 +18,10 @@ pub fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::er
 
     loop {
         print_insight_level_2("Select an option to search CSV data:");
-        print_list(&menu_options);
-
-        /*
-        for (index, option) in menu_options.iter().enumerate() {
-            print_list(&format!("{}: {}", index + 1, option));
-        }
-        */
+        print_list_level_2(&menu_options);
 
         let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-        let mut selected_option = None;
-
-        // Check for direct numeric input
-        if let Ok(index) = choice.parse::<usize>() {
-            if index > 0 && index <= menu_options.len() {
-                selected_option = Some(index);
-            }
-        }
-
-        // If no direct numeric input, use fuzzy matching
-        if selected_option.is_none() {
-            let (best_match_index, _) = menu_options
-                .iter()
-                .enumerate()
-                .map(|(index, option)| (index + 1, fuzz::ratio(&choice, &option.to_lowercase())))
-                .max_by_key(|&(_, score)| score)
-                .unwrap_or((0, 0));
-
-            if best_match_index > 0 && best_match_index <= menu_options.len() {
-                selected_option = Some(best_match_index);
-            }
-        }
+        let selected_option = determine_action_as_number(&menu_options, &choice);
 
         match selected_option {
             Some(1) => {
