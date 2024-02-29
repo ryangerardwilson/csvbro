@@ -220,6 +220,138 @@ SYNTAX
         Ok((new_column_name, expression_names, result_expression))
     }
 
+    fn get_append_linear_regression_expression() -> Result<
+        (String, Vec<Vec<String>>, Vec<f64>, Vec<f64>, Vec<String>),
+        Box<dyn std::error::Error>,
+    > {
+        let syntax = r#"{
+  "new_column_name": "",
+  "output_range": [0, 100],
+  "training_data": [
+   [
+     "",
+     {
+       "": "",
+       "": ""
+     }
+   ],
+   [
+     "",
+     {
+       "": "",
+       "": ""
+     }
+   ]
+  ]
+}
+
+SYNTAX
+======
+
+{
+  "new_column_name": "predictions",
+  "output_range": [20.2, 100],
+  "training_data": [
+   [
+     "90",
+     {
+       "action": "told_outage",
+       "agent_name": "ANIKET"
+     }
+   ],
+   [
+     "70",
+     {
+       "action": "told_plan_inactive",
+       "agent_name": "ANIKET"
+     }
+   ],
+   [
+     "60",
+     {
+       "action": "ticketing",
+       "agent_name": "Vishal"
+     }
+   ],
+   [
+     "50",
+     {
+       "action": "ticketing",
+       "agent_name": "Ankita"
+     }
+   ]
+  ]
+}
+
+  "#;
+
+        let exp_json = get_edited_user_json_input((&syntax).to_string());
+
+        //dbg!(&exp_json);
+
+        // Assume `last_exp_json` is a String containing your JSON data
+        let parsed_json: Value = serde_json::from_str(&exp_json)?;
+
+        //dbg!(&parsed_json);
+
+        // Assuming `parsed_json` is already defined and contains the user input data
+
+        // Extract new column name
+        let new_column_name = parsed_json["new_column_name"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+
+        // Initialize vectors to hold training predictors and outputs
+        let mut training_predictors = Vec::new();
+        let mut training_outputs = Vec::new();
+
+        // Deduce column names from the first item of the training data
+        let first_item = parsed_json["training_data"][0][1].as_object().unwrap();
+        let predictor_column_names: Vec<String> = first_item.keys().cloned().collect();
+
+        // Parse training data
+        for item in parsed_json["training_data"].as_array().unwrap() {
+            let outcome = item[0]
+                .as_str()
+                .unwrap_or_default()
+                .parse::<f64>()
+                .unwrap_or_default();
+            let data_object = item[1].as_object().unwrap();
+
+            let mut row = Vec::new();
+            for key in &predictor_column_names {
+                let value = data_object[key].as_str().unwrap_or_default();
+                row.push(value.to_string());
+            }
+
+            training_predictors.push(row);
+            training_outputs.push(outcome);
+        }
+
+        // Parse output range
+        let output_range = parsed_json["output_range"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_f64().unwrap_or_default())
+            .collect::<Vec<f64>>();
+
+        // Return the structured data
+        Ok((
+            new_column_name,
+            training_predictors,
+            training_outputs,
+            output_range,
+            predictor_column_names,
+        ))
+
+        /*
+            // You will need to implement the logic for gathering and parsing this data from user input.
+            Ok(("Predictions".to_string(), vec![vec!["90".to_string(), "95".to_string()], vec!["70".to_string(), "72".to_string()]], vec![72.0, 65.0], vec![0.0, 100.0], vec!["Feature1".to_string(), "Feature2".to_string()]))
+        */
+    }
+
     fn get_append_category_expression(
         data_store: &mut ExpStore,
     ) -> Result<(String, Vec<(String, Vec<(String, Exp)>, String)>), Box<dyn std::error::Error>>
@@ -838,6 +970,7 @@ SYNTAX
         "Append category columns by spliting date/timestamp column",
         "Append fuzzai analysis column",
         "Append fuzzai analysis column where",
+        "Append linear regression column",
         "Pivot",
         "Inspect",
         "Print all rows",
@@ -1089,6 +1222,44 @@ SYNTAX
             }
 
             Some(7) => {
+                match get_append_linear_regression_expression() {
+                    Ok((
+                        new_column_name,
+                        training_predictors,
+                        training_outputs,
+                        output_range,
+                        test_predictors_column_names,
+                    )) => {
+                        // Check if the new column name is empty
+                        if new_column_name.trim().is_empty() {
+                            print_insight_level_2(
+                                "No new column name provided. Operation aborted.",
+                            );
+                            continue; // Skip the rest of the process
+                        }
+
+                        // Append the new derived linear regression column
+                        csv_builder.append_derived_linear_regression_column(
+                            &new_column_name,
+                            training_predictors,
+                            training_outputs,
+                            output_range,
+                            test_predictors_column_names,
+                        );
+                        if csv_builder.has_data() {
+                            csv_builder.print_table();
+                            println!();
+                        }
+                        print_insight_level_2("Derived linear regression column appended.");
+                    }
+                    Err(e) => {
+                        println!("Error getting expressions: {}", e);
+                        continue; // Return to the menu to let the user try again or choose another option
+                    }
+                }
+            }
+
+            Some(8) => {
                 // This matches the case in your project's workflow for the pivot operation
                 match get_pivot_input() {
                     Ok((piv, save_as_path)) => {
@@ -1146,21 +1317,21 @@ SYNTAX
                 }
             }
 
-            Some(8) => {
+            Some(9) => {
                 if let Err(e) = handle_inspect(csv_builder) {
                     println!("Error during inspection: {}", e);
                     continue;
                 }
             }
 
-            Some(9) => {
+            Some(10) => {
                 if csv_builder.has_data() {
                     csv_builder.print_table_all_rows();
                     println!();
                 }
             }
 
-            Some(10) => {
+            Some(11) => {
                 let home_dir = env::var("HOME").expect("Unable to determine user home directory");
                 let desktop_path = Path::new(&home_dir).join("Desktop");
                 let csv_db_path = desktop_path.join("csv_db");
@@ -1177,11 +1348,11 @@ SYNTAX
                 print_insight_level_2(&format!("CSV file saved at {}", file_path.display()));
             }
 
-            Some(11) => {
+            Some(12) => {
                 break; // Exit the inspect handler
             }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 10.");
+                println!("Invalid option. Please enter a number from 1 to 12.");
                 continue; // Ask for the choice again
             }
         }
