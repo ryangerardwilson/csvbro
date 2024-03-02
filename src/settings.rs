@@ -1,5 +1,4 @@
 // settings.rs
-use fuzzywuzzy::fuzz;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::env;
@@ -8,7 +7,8 @@ use std::fs;
 use std::path::Path;
 
 use crate::user_interaction::{
-    get_edited_user_sql_input, get_user_input, get_user_input_level_2, print_insight, print_list,
+    determine_action_as_text, get_edited_user_sql_input, get_user_input, get_user_input_level_2,
+    print_insight, print_list,
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -21,37 +21,119 @@ pub struct DbPreset {
     pub database: String,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct OpenAiPreset {
+    pub api_key: String,
+}
+
 #[derive(Serialize, Deserialize)]
-pub struct Config {
+pub struct DbConfig {
     pub db_presets: Vec<DbPreset>,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct OpenAiConfig {
+    pub open_ai_presets: Vec<OpenAiPreset>,
+}
+
 pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
-    fn determine_action(input: &str, actions: &[&str]) -> String {
-        let mut highest_score = 0;
-        let mut best_match = String::new();
+    // Additional settings options here
+    loop {
+        print_insight("Decision time! What are you vibing with?");
+        let menu_options = vec!["db presets", "open ai presets", "back"];
+        print_list(&menu_options);
+        let choice = get_user_input("Enter your choice: ").to_lowercase();
+        let selected_option = determine_action_as_text(&menu_options, &choice);
 
-        for &action in actions {
-            let mut score = fuzz::ratio(input, action);
+        match selected_option {
+            Some(ref action) if action == "db presets" => loop {
+                print_insight("Configure Db Presets");
+                let menu_options = vec![
+                    "add db preset",
+                    "update db preset",
+                    "delete db preset",
+                    "view db presets",
+                    "back",
+                ];
+                print_list(&menu_options);
+                let choice = get_user_input("Enter your choice: ").to_lowercase();
+                let selected_option = determine_action_as_text(&menu_options, &choice);
 
-            // Check if the first characters match and boost score if they do
-            if input.chars().next() == action.chars().next() {
-                score += 20;
+                match selected_option {
+                    Some(ref action) if action == "add db preset" => {
+                        add_db_preset()?;
+                        continue;
+                    }
+                    Some(ref action) if action == "update db preset" => {
+                        update_db_preset()?;
+                        continue;
+                    }
+                    Some(ref action) if action == "delete db preset" => {
+                        delete_db_preset()?;
+                        continue;
+                    }
+                    Some(ref action) if action == "view db preset" => {
+                        view_db_presets()?;
+                        continue;
+                    }
+                    Some(ref action) if action == "back" => {
+                        break;
+                    }
+                    //"done" => break,
+                    Some(_) => print_insight("Unrecognized action, please try again."),
+                    None => print_insight("No action determined"),
+                }
+            },
+            Some(ref action) if action == "open ai presets" => loop {
+                print_insight("Configure OpenAI Presets");
+                let menu_options = vec![
+                    "add open ai preset",
+                    "update open ai preset",
+                    "delete open ai preset",
+                    "view open ai preset",
+                    "back",
+                ];
+                print_list(&menu_options);
+                let choice = get_user_input("Enter your choice: ").to_lowercase();
+                let selected_option = determine_action_as_text(&menu_options, &choice);
+
+                match selected_option {
+                    Some(ref action) if action == "add open ai preset" => {
+                        add_open_ai_preset()?;
+                        continue;
+                    }
+                    Some(ref action) if action == "update open ai preset" => {
+                        update_open_ai_preset()?;
+                        continue;
+                    }
+                    Some(ref action) if action == "delete open ai preset" => {
+                        delete_open_ai_preset()?;
+                        continue;
+                    }
+                    Some(ref action) if action == "view open ai preset" => {
+                        view_open_ai_preset()?;
+                        continue;
+                    }
+                    Some(ref action) if action == "back" => {
+                        break;
+                    }
+                    //"done" => break,
+                    Some(_) => print_insight("Unrecognized action, please try again."),
+                    None => print_insight("No action determined"),
+                }
+            },
+
+            Some(ref action) if action == "back" => {
+                break;
             }
-
-            if score > highest_score {
-                highest_score = score;
-                best_match = action.to_string();
-            }
+            //"done" => break,
+            Some(_) => print_insight("Unrecognized action, please try again."),
+            None => print_insight("No action determined"),
         }
-
-        best_match
     }
 
-    // Additional settings options here
-
-    let choice = get_user_input("Decision time! What are you vibing with?\ndb_presets: ");
-    let actions = ["db_presets"];
+    /*
+    let actions = ["db_presets", "api_presets"];
     let matched_action = determine_action(&choice, &actions);
 
     match matched_action.as_str() {
@@ -82,14 +164,47 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                 "back" => break,
                 _ => print_insight("Invalid option"),
             }
+        }
+
+
+        ,
+        "api_presets" => loop {
+            // Sub-menu for DB preset management
+            let api_choice =
+                get_user_input("api_presets => choose action\nadd/update/delete/view/back: ");
+            let api_actions = ["add", "update", "delete", "view", "back"];
+            let matched_api_action = determine_action(&api_choice, &api_actions);
+
+            match matched_api_action.as_str() {
+                "add" => {
+                    add_api_preset()?;
+                    continue;
+                }
+                "update" => {
+                    update_api_preset()?;
+                    continue;
+                }
+                "delete" => {
+                    delete_api_preset()?;
+                    continue;
+                }
+                "view" => {
+                    view_api_presets()?;
+                    continue;
+                }
+                "back" => break,
+                _ => print_insight("Invalid option"),
+            }
         },
         // Handle other settings options here
         _ => print_insight("Invalid option"),
     }
+    */
+
     Ok(())
 }
 
-pub fn manage_config_file<F: FnOnce(&mut Config) -> Result<(), Box<dyn Error>>>(
+pub fn manage_db_config_file<F: FnOnce(&mut DbConfig) -> Result<(), Box<dyn Error>>>(
     op: F,
 ) -> Result<(), Box<dyn Error>> {
     let home_dir = match env::var("HOME") {
@@ -118,13 +233,13 @@ pub fn manage_config_file<F: FnOnce(&mut Config) -> Result<(), Box<dyn Error>>>(
         let contents = fs::read_to_string(&path)?;
         if contents.is_empty() {
             //println!("Config file is empty, initializing new Config.");
-            Config { db_presets: vec![] }
+            DbConfig { db_presets: vec![] }
         } else {
             serde_json::from_str(&contents)?
         }
     } else {
         //println!("Config file does not exist, creating new Config instance.");
-        Config { db_presets: vec![] }
+        DbConfig { db_presets: vec![] }
     };
 
     //println!("Performing operation on config.");
@@ -166,7 +281,7 @@ fn add_db_preset() -> Result<(), Box<dyn std::error::Error>> {
     //println!("New preset parsed from JSON: {:?}", new_preset);
 
     // Add the new preset to the configuration file
-    manage_config_file(|config| {
+    manage_db_config_file(|config| {
         config.db_presets.push(new_preset);
         //println!("New preset added to config");
         Ok(())
@@ -177,7 +292,7 @@ fn update_db_preset() -> Result<(), Box<dyn Error>> {
     view_db_presets()?;
     let input = get_user_input("Enter the name or the number of the preset to update: ");
 
-    manage_config_file(|config| {
+    manage_db_config_file(|config| {
         let maybe_preset = if let Ok(index) = input.parse::<usize>() {
             // User entered a number, adjust for 0-based index
             config.db_presets.get_mut(index - 1)
@@ -206,7 +321,7 @@ fn delete_db_preset() -> Result<(), Box<dyn std::error::Error>> {
     view_db_presets()?;
     let input = get_user_input_level_2("Enter the name or the number of the preset to delete: ");
 
-    manage_config_file(|config| {
+    manage_db_config_file(|config| {
         if let Ok(index) = input.parse::<usize>() {
             // User entered a number, adjust for 0-based index
             if index == 0 || index > config.db_presets.len() {
@@ -223,7 +338,7 @@ fn delete_db_preset() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub fn view_db_presets() -> Result<(), Box<dyn std::error::Error>> {
-    manage_config_file(|config| {
+    manage_db_config_file(|config| {
         println!();
         // Initialize a vector to hold the formatted preset strings
         let mut formatted_presets = Vec::new();
@@ -254,4 +369,134 @@ pub fn view_db_presets() -> Result<(), Box<dyn std::error::Error>> {
         println!();
         Ok(())
     })
+}
+
+pub fn manage_open_ai_config_file<F: FnOnce(&mut OpenAiConfig) -> Result<(), Box<dyn Error>>>(
+    op: F,
+) -> Result<(), Box<dyn Error>> {
+    let home_dir = match env::var("HOME") {
+        Ok(home) => home,
+        Err(_) => match env::var("USERPROFILE") {
+            Ok(userprofile) => userprofile,
+            Err(_) => {
+                eprintln!("Unable to determine user home directory.");
+                std::process::exit(1);
+            }
+        },
+    };
+
+    let desktop_path = Path::new(&home_dir).join("Desktop");
+    let mut path = desktop_path.join("csv_db");
+
+    //println!("Checking if path exists: {:?}", path);
+    if !path.exists() {
+        println!("Path does not exist, creating directory.");
+        fs::create_dir_all(&path)?;
+    }
+    path.push("open_ai_config.json");
+    //println!("Final path for config file: {:?}", path);
+
+    let mut config = if path.exists() {
+        let contents = fs::read_to_string(&path)?;
+        if contents.is_empty() {
+            //println!("Config file is empty, initializing new Config.");
+            OpenAiConfig {
+                open_ai_presets: vec![],
+            }
+        } else {
+            serde_json::from_str(&contents)?
+        }
+    } else {
+        //println!("Config file does not exist, creating new Config instance.");
+        OpenAiConfig {
+            open_ai_presets: vec![],
+        }
+    };
+
+    //println!("Performing operation on config.");
+    op(&mut config)?;
+
+    //println!("Serializing config.");
+    let serialized = serde_json::to_string(&config)?;
+    //println!("Serialized config: {}", serialized);
+
+    //println!("Writing config to file.");
+    fs::write(path, serialized)?;
+    //println!("Config written to file successfully.");
+
+    Ok(())
+}
+
+fn add_open_ai_preset() -> Result<(), Box<dyn std::error::Error>> {
+    let empty_preset = OpenAiPreset {
+        api_key: String::new(),
+    };
+
+    let preset_json = serde_json::to_string_pretty(&empty_preset)?;
+    let edited_json = get_edited_user_sql_input(preset_json);
+    let new_preset: OpenAiPreset = serde_json::from_str(&edited_json)?;
+
+    manage_open_ai_config_file(|config| {
+        if config.open_ai_presets.is_empty() {
+            config.open_ai_presets.push(new_preset);
+        } else {
+            config.open_ai_presets[0] = new_preset;
+        }
+        Ok(())
+    })
+}
+
+fn update_open_ai_preset() -> Result<(), Box<dyn Error>> {
+    manage_open_ai_config_file(|config| {
+        // Check if there is an existing preset to update
+        if !config.open_ai_presets.is_empty() {
+            // Serialize the existing preset to JSON for editing
+            let preset_json = serde_json::to_string_pretty(&config.open_ai_presets[0])?;
+            // Get edited JSON from the user
+            let edited_json = get_edited_user_sql_input(preset_json);
+            // Deserialize the edited JSON back into the OpenAiPreset struct
+            config.open_ai_presets[0] = serde_json::from_str(&edited_json)?;
+            Ok(())
+        } else {
+            // If there are no presets, inform the user and return an error
+            print_insight("No OpenAI preset found.");
+            Err("No OpenAI preset found.".into())
+        }
+    })
+}
+
+fn delete_open_ai_preset() -> Result<(), Box<dyn Error>> {
+    manage_open_ai_config_file(|config| {
+        // Check if there is an existing preset to update
+        if !config.open_ai_presets.is_empty() {
+            config.open_ai_presets[0].api_key = String::new();
+            Ok(())
+        } else {
+            // If there are no presets, inform the user and return an error
+            print_insight("No OpenAI preset found.");
+            Err("No OpenAI preset found.".into())
+        }
+    })
+}
+
+pub fn view_open_ai_preset() -> Result<(), Box<dyn std::error::Error>> {
+    match manage_open_ai_config_file(|config| {
+        if !config.open_ai_presets.is_empty() {
+            let message = format!(
+                "Current OpenAI API Key: {}",
+                config.open_ai_presets[0].api_key
+            );
+            print_insight(&message);
+        } else {
+            print_insight("No OpenAI preset found.");
+        }
+        Ok(())
+    }) {
+        Ok(_) => Ok(()),
+        Err(_e) => {
+            // Handle errors specifically if needed, for now, just print a generic message
+            print_insight("No OpenAI preset found.");
+            Ok(()) // You might want to return Err(e) if you want the caller to know the operation failed
+        }
+    }
 }

@@ -68,7 +68,7 @@ async fn main() {
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 0.2.7");
+        print_insight("csvbro 0.2.8");
         std::process::exit(0);
     }
 
@@ -140,7 +140,7 @@ async fn main() {
                     match open_csv_file(&csv_db_path_buf) {
                         Some((csv_builder, file_path)) => {
                             if let Some(path_str) = file_path.to_str() {
-                                chain_builder(csv_builder, Some(path_str));
+                                chain_builder(csv_builder, Some(path_str)).await;
                             } else {
                                 println!("Error: Unable to convert file path to string.");
                                 continue;

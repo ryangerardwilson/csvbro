@@ -1,11 +1,13 @@
 // csv_pivoter.rs
 use crate::csv_inspector::handle_inspect;
+use crate::settings::manage_open_ai_config_file;
 use crate::user_interaction::{
     determine_action_as_number, get_edited_user_json_input, get_user_input_level_2,
     print_insight_level_2, print_list_level_2,
 };
 use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal, Piv, Train};
 use serde_json::Value;
+use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::fs;
@@ -54,7 +56,7 @@ impl ExpStore {
     }
 }
 
-pub fn handle_pivot(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn handle_pivot(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
     fn get_append_boolean_expression(
         data_store: &mut ExpStore,
     ) -> Result<(String, Vec<(String, usize)>, String), Box<dyn std::error::Error>> {
@@ -218,6 +220,63 @@ SYNTAX
             .to_string();
 
         Ok((new_column_name, expression_names, result_expression))
+    }
+
+    fn get_append_open_ai_analysis_expression(
+    ) -> Result<(String, HashMap<String, String>, String), Box<dyn Error>> {
+        let syntax = r#"{
+  "target_column_name": "",
+  "analysis_query": {
+    "": "",
+    "": ""
+  },
+  "model": "gpt-3.5-turbo-0125"
+}
+
+SYNTAX
+======
+
+{
+  "target_column_name": "transcribed_text",
+  "analysis_query": {
+    "customer_query": "extract the gist of the query raised by customer in the conversation text",
+    "agent_response": "extract the gist of the response given by agent to customer in the conversation text"
+  },
+  "model": "gpt-3.5-turbo-0125" // Other compatible models inlcude "gpt-4-turbo-preview"
+}
+
+  "#;
+
+        let exp_json = get_edited_user_json_input((&syntax).to_string());
+
+        //dbg!(&exp_json);
+
+        let parsed_json: Value = serde_json::from_str(&exp_json)?;
+
+        //dbg!(&parsed_json);
+
+        let target_column_name = parsed_json["target_column_name"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+
+        let model = parsed_json["model"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+
+        // Extract analysis_query and convert it to HashMap<String, String>
+        let analysis_query_json = &parsed_json["analysis_query"];
+        let mut analysis_query = HashMap::new();
+        if let Some(obj) = analysis_query_json.as_object() {
+            for (key, value) in obj {
+                if let Some(val_str) = value.as_str() {
+                    analysis_query.insert(key.clone(), val_str.to_string());
+                }
+            }
+        }
+
+        Ok((target_column_name, analysis_query, model))
     }
 
     fn get_append_linear_regression_expression() -> Result<
@@ -970,6 +1029,7 @@ SYNTAX
         "Append category columns by spliting date/timestamp column",
         "Append fuzzai analysis column",
         "Append fuzzai analysis column where",
+        "Append openai analysis columns",
         "Append linear regression column",
         "Pivot",
         "Inspect",
@@ -1222,6 +1282,47 @@ SYNTAX
             }
 
             Some(7) => {
+                match get_append_open_ai_analysis_expression() {
+                    Ok((target_column_name, analysis_query, model)) => {
+                        // Check if the new column name is empty
+                        if target_column_name.trim().is_empty() {
+                            print_insight_level_2(
+                                "No target column name provided. Operation aborted.",
+                            );
+                            continue; // Skip the rest of the process
+                        }
+
+                        let mut presets = Vec::new();
+                        let _ = manage_open_ai_config_file(|config| {
+                            presets = config.open_ai_presets.clone(); // Assign the presets here
+                            Ok(()) // Return Ok(()) as expected by the function signature
+                        });
+
+                        let api_key = &presets[0].api_key;
+
+                        let result = csv_builder
+                            .append_derived_openai_analysis_columns(
+                                &target_column_name,
+                                analysis_query,
+                                api_key,
+                                &model,
+                            )
+                            .await;
+
+                        if result.has_data() {
+                            csv_builder.print_table();
+                            println!();
+                            print_insight_level_2("OpenAI analysis complete.");
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error getting expressions: {}", e);
+                        continue; // Return to the menu to let the user try again or choose another option
+                    }
+                }
+            }
+
+            Some(8) => {
                 match get_append_linear_regression_expression() {
                     Ok((
                         new_column_name,
@@ -1259,7 +1360,7 @@ SYNTAX
                 }
             }
 
-            Some(8) => {
+            Some(9) => {
                 // This matches the case in your project's workflow for the pivot operation
                 match get_pivot_input() {
                     Ok((piv, save_as_path)) => {
@@ -1317,21 +1418,21 @@ SYNTAX
                 }
             }
 
-            Some(9) => {
+            Some(10) => {
                 if let Err(e) = handle_inspect(csv_builder) {
                     println!("Error during inspection: {}", e);
                     continue;
                 }
             }
 
-            Some(10) => {
+            Some(11) => {
                 if csv_builder.has_data() {
                     csv_builder.print_table_all_rows();
                     println!();
                 }
             }
 
-            Some(11) => {
+            Some(12) => {
                 let home_dir = env::var("HOME").expect("Unable to determine user home directory");
                 let desktop_path = Path::new(&home_dir).join("Desktop");
                 let csv_db_path = desktop_path.join("csv_db");
@@ -1348,11 +1449,11 @@ SYNTAX
                 print_insight_level_2(&format!("CSV file saved at {}", file_path.display()));
             }
 
-            Some(12) => {
+            Some(13) => {
                 break; // Exit the inspect handler
             }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 12.");
+                println!("Invalid option. Please enter a number from 1 to 13.");
                 continue; // Ask for the choice again
             }
         }

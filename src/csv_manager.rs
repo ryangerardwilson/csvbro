@@ -3,7 +3,7 @@ use crate::csv_inspector::handle_inspect;
 use crate::csv_joiner::handle_join;
 use crate::csv_pivoter::handle_pivot;
 use crate::csv_searcher::handle_search;
-use crate::settings::{manage_config_file, DbPreset};
+use crate::settings::{manage_db_config_file, DbPreset};
 use crate::user_interaction::{
     determine_action_as_text,
     //determine_action_as_text_or_number
@@ -363,7 +363,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
 
         let mut presets = Vec::new(); // Declare a variable to store presets
 
-        let _ = manage_config_file(|config| {
+        let _ = manage_db_config_file(|config| {
             presets = config.db_presets.clone(); // Assign the presets here
             Ok(()) // Return Ok(()) as expected by the function signature
         });
@@ -707,7 +707,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                 }
             }
             "pivot" => {
-                if let Err(e) = handle_pivot(&mut csv_builder) {
+                if let Err(e) = handle_pivot(&mut csv_builder).await {
                     println!("Error during pivot operation: {}", e);
                     continue;
                 }
@@ -775,7 +775,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
     Ok(csv_builder)
 }
 
-pub fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
+pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
     let current_file_path: Option<PathBuf> = file_path_option.map(PathBuf::from);
 
     if builder.has_data() {
@@ -1305,7 +1305,7 @@ SYNTAX
             }
 
             Some(ref action) if action == "pivot" => {
-                if let Err(e) = handle_pivot(&mut builder) {
+                if let Err(e) = handle_pivot(&mut builder).await {
                     println!("Error during pivot operation: {}", e);
                     continue;
                 }
