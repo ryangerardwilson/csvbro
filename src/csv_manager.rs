@@ -411,46 +411,6 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
         process_option(best_match_index, &presets, db_choice_index)
     }
 
-    fn get_confirmation_input() -> Result<String, Box<dyn std::error::Error>> {
-        let input = get_user_input_level_2(
-            "What next? (retry/show all rows/search/inspect/pivot/join/save as/back): ",
-        )
-        .to_lowercase();
-        let options = &[
-            "retry",
-            "show all rows",
-            "search",
-            "inspect",
-            "pivot",
-            "join",
-            "save as",
-            "back",
-        ];
-        let mut highest_score = 0;
-        let mut best_match = "";
-
-        for &option in options {
-            let score = fuzz::ratio(&input, option);
-            if score > highest_score {
-                highest_score = score;
-                best_match = option;
-            }
-        }
-
-        match best_match {
-            "yes" => Ok("yes".to_string()),
-            "retry" => Ok("retry".to_string()),
-            "show all rows" => Ok("show all rows".to_string()),
-            "search" => Ok("search".to_string()),
-            "back" => Ok("back".to_string()),
-            "inspect" => Ok("inspect".to_string()),
-            "pivot" => Ok("pivot".to_string()),
-            "join" => Ok("join".to_string()),
-            "save as" => Ok("save as".to_string()),
-            _ => Err("Invalid option".into()),
-        }
-    }
-
     fn get_query_failed_confirmation_input() -> Result<String, Box<dyn std::error::Error>> {
         let input = get_user_input_level_2("Do you want to retry? (retry/back): ").to_lowercase();
         let options = &["retry", "back"];
@@ -666,59 +626,51 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
         // Ask user for confirmation
         println!();
 
-        match get_confirmation_input() {
-            Ok(response) => confirmation = response, // Removed 'let', updates existing variable
-            Err(_) => {
-                println!("Invalid option. Please enter 'yes', 'retry', or 'back'.");
-                continue; // Ask for confirmation again
+        let menu_options = vec![
+            "retry",
+            "show all rows",
+            "search",
+            "inspect",
+            "pivot",
+            "join",
+            "save as",
+            "back",
+        ];
+
+        print_list(&menu_options);
+        let choice = get_user_input("Enter your choice: ").to_lowercase();
+        let selected_option = determine_action_as_text(&menu_options, &choice);
+        confirmation = selected_option.clone().expect("REASON");
+
+        match selected_option {
+            Some(ref action) if action == "retry" => {
+                continue;
             }
-        };
-
-        match confirmation.as_str() {
-            "yes" => break,
-            "retry" => continue,
-            "show all rows" => {
-                if csv_builder.has_data() {
-                    csv_builder.print_table_all_rows();
-                    println!();
-                }
-            }
-            "search" => {
-                /*
-                if csv_builder.has_data() {
-                    let query =
-                    get_user_input_level_2("Enter search term: ");
-
-
-                    csv_builder.contains_search(&query);
-                    println!();
-                }
-                */
-
+            Some(ref action) if action == "search" => {
                 if let Err(e) = handle_search(&mut csv_builder) {
                     println!("Error during search: {}", e);
                     continue;
                 }
             }
-            "inspect" => {
+            Some(ref action) if action == "inspect" => {
                 if let Err(e) = handle_inspect(&mut csv_builder) {
                     println!("Error during inspection: {}", e);
                     continue;
                 }
             }
-            "pivot" => {
+            Some(ref action) if action == "pivot" => {
                 if let Err(e) = handle_pivot(&mut csv_builder).await {
                     println!("Error during pivot operation: {}", e);
                     continue;
                 }
             }
-            "join" => {
+            Some(ref action) if action == "join" => {
                 if let Err(e) = handle_join(&mut csv_builder) {
                     println!("Error during join operation: {}", e);
                     continue;
                 }
             }
-            "save as" => {
+            Some(ref action) if action == "save as" => {
                 let home_dir = env::var("HOME").expect("Unable to determine user home directory");
                 let desktop_path = Path::new(&home_dir).join("Desktop");
                 let csv_db_path = desktop_path.join("csv_db");
@@ -733,11 +685,8 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                 let file_path = csv_db_path.join(full_file_name);
                 let _ = csv_builder.save_as(file_path.to_str().unwrap());
                 print_insight_level_2(&format!("CSV file saved at {}", file_path.display()));
-
-                //dbg!(&csv_builder);
             }
-            "back" => {
-                // Get the database type and preset again for a new query, handle "back" option
+            Some(ref action) if action == "back" => {
                 let result = get_db_type();
                 match result {
                     Ok((new_db_type, new_preset)) => {
@@ -766,8 +715,10 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                         }
                     }
                 }
+                break;
             }
-            _ => unreachable!(), // This case should not occur as get_confirmation_input handles it
+            Some(_) => print_insight("Unrecognized action, please try again."),
+            None => print_insight("No action determined"),
         }
     }
 

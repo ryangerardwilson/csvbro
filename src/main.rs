@@ -68,7 +68,7 @@ async fn main() {
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 0.2.8");
+        print_insight("csvbro 0.2.9");
         std::process::exit(0);
     }
 
@@ -134,7 +134,24 @@ async fn main() {
 
             match selected_option {
                 Some(ref action) if action == "new" => {
-                    break CsvBuilder::new();
+                    //break
+
+                    let home_dir =
+                        env::var("HOME").expect("Unable to determine user home directory");
+                    let desktop_path = Path::new(&home_dir).join("Desktop");
+                    let csv_db_path = desktop_path.join("csv_db");
+
+                    let file_name = get_user_input("Enter file name to save (without extension): ");
+                    let full_file_name = if file_name.ends_with(".csv") {
+                        file_name
+                    } else {
+                        format!("{}.csv", file_name)
+                    };
+                    let file_path = csv_db_path.join(full_file_name);
+                    let file_path_str = file_path.to_str();
+                    let mut csv_builder = CsvBuilder::new();
+                    let _ = csv_builder.save_as(file_path.to_str().unwrap());
+                    chain_builder(csv_builder, file_path_str).await;
                 }
                 Some(ref action) if action == "open" => {
                     match open_csv_file(&csv_db_path_buf) {

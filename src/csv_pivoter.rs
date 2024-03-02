@@ -1300,6 +1300,8 @@ SYNTAX
 
                         let api_key = &presets[0].api_key;
 
+                        dbg!(&presets, &api_key);
+
                         let result = csv_builder
                             .append_derived_openai_analysis_columns(
                                 &target_column_name,
