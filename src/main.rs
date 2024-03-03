@@ -68,7 +68,7 @@ async fn main() {
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 0.2.9");
+        print_insight("csvbro 0.3.0");
         std::process::exit(0);
     }
 
@@ -123,7 +123,7 @@ async fn main() {
     );
 
     let menu_options = vec![
-        "new", "open", "import", "query", "delete", "settings", "exit",
+        "NEW", "OPEN", "IMPORT", "QUERY", "DELETE", "SETTINGS", "EXIT",
     ];
 
     loop {
@@ -133,7 +133,7 @@ async fn main() {
             let selected_option = determine_action_as_text(&menu_options, &choice);
 
             match selected_option {
-                Some(ref action) if action == "new" => {
+                Some(ref action) if action == "NEW" => {
                     //break
 
                     let home_dir =
@@ -153,7 +153,7 @@ async fn main() {
                     let _ = csv_builder.save_as(file_path.to_str().unwrap());
                     chain_builder(csv_builder, file_path_str).await;
                 }
-                Some(ref action) if action == "open" => {
+                Some(ref action) if action == "OPEN" => {
                     match open_csv_file(&csv_db_path_buf) {
                         Some((csv_builder, file_path)) => {
                             if let Some(path_str) = file_path.to_str() {
@@ -167,13 +167,13 @@ async fn main() {
                         None => continue,
                     }
                 }
-                Some(ref action) if action == "import" => {
+                Some(ref action) if action == "IMPORT" => {
                     match import(&desktop_path_buf, &downloads_path_buf) {
                         Some(csv_builder) => break csv_builder,
                         None => continue,
                     }
                 }
-                Some(ref action) if action == "query" => match query().await {
+                Some(ref action) if action == "QUERY" => match query().await {
                     Ok(csv_builder) => break csv_builder,
                     Err(e) => {
                         if e.to_string() == "User chose to go back" {
@@ -182,15 +182,15 @@ async fn main() {
                         continue;
                     }
                 },
-                Some(ref action) if action == "delete" => {
+                Some(ref action) if action == "DELETE" => {
                     delete_csv_file(&csv_db_path_buf); // No return value expected
                     continue; // Continue the loop after deletion
                 }
-                Some(ref action) if action == "settings" => {
+                Some(ref action) if action == "SETTINGS" => {
                     let _ = open_settings(); // No return value expected
                     continue; // Continue the loop after settings are adjusted
                 }
-                Some(ref action) if action == "exit" => {
+                Some(ref action) if action == "EXIT" => {
                     std::process::exit(0);
                     //return; // Exit the program
                 }

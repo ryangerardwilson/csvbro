@@ -1,10 +1,15 @@
 // csv_searcher.rs
+use crate::csv_inspector::handle_inspect;
+use crate::csv_pivoter::handle_pivot;
+use crate::csv_joiner::handle_join;
 use crate::user_interaction::{
     determine_action_as_number, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
 use rgwml::csv_utils::CsvBuilder;
+use std::path::Path;
+use std::env;
 
-pub fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
     fn apply_filter_changes_menu(
         csv_builder: &mut CsvBuilder,
         prev_iteration_builder: &CsvBuilder,
@@ -53,8 +58,16 @@ pub fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::er
         "STARTS WITH (NOT) search",
         "LEVENSHTEIN RAW search",
         "LEVENSHTEIN VECTORIZED search",
-        "Print all rows",
-        "Go back",
+        "LIMIT search",
+        "LIMIT DISTRIBUTED RAW search",
+        "LIMIT DISTRIBUTED CATEGORY search",
+        "LIMIT RANDOM search",
+        "INSPECT",
+        "JOIN",
+        "PIVOT",
+        "PRINT ALL ROWS",
+        "SAVE AS",
+        "BACK",
     ];
 
     let original_csv_builder = CsvBuilder::from_copy(csv_builder);
@@ -262,13 +275,18 @@ pub fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::er
             }
 
             Some(7) => {
-                if csv_builder.has_data() {
-                    csv_builder.print_table_all_rows();
-                    println!();
+                let query = get_user_input_level_2("Enter limit value: ");
+                match query.parse::<usize>() {
+                    Ok(query_int) => {
+                        csv_builder.limit(query_int).print_table_all_rows();
+                        println!();
+                    }
+                    Err(_) => {
+                        println!("Please enter a valid integer.");
+                        // Here, you could loop back and ask again or handle the error differently.
+                    }
                 }
-            }
 
-            Some(8) => {
                 match apply_filter_changes_menu(
                     csv_builder,
                     &prev_iteration_builder,
@@ -277,14 +295,174 @@ pub fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::er
                     Ok(_) => (),
                     Err(e) => {
                         println!("{}", e);
-                        continue;
+                        continue; // Ask for the choice again if there was an error
                     }
                 }
+            }
+            Some(8) => {
+                let query = get_user_input_level_2("Enter distributed limit value: ");
+                match query.parse::<usize>() {
+                    Ok(query_int) => {
+                        csv_builder
+                            .limit_distributed_raw(query_int)
+                            .print_table_all_rows();
+                        println!();
+                    }
+                    Err(_) => {
+                        println!("Please enter a valid integer.");
+                        // Here, you could loop back and ask again or handle the error differently.
+                    }
+                }
+
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+            }
+            Some(9) => {
+                let query = get_user_input_level_2("Enter comma-separated distributed limit value, and column name (i.e. 10, column7): ");
+                let parts: Vec<&str> = query.split(',').map(|s| s.trim()).collect();
+
+                if parts.len() == 2 {
+                    match parts[0].parse::<usize>() {
+                        Ok(query_int) => {
+                            let column_name = parts[1]; // No need to parse, it's already a &str
+                            println!();
+                            csv_builder
+                                .print_unique_count(&column_name)
+                                .print_freq(vec![&column_name])
+                                .limit_distributed_category(query_int, &column_name)
+                                .print_table_all_rows();
+                            println!();
+                        }
+                        Err(_) => {
+                            println!("Please enter a valid number for the limit.");
+                            // Here, you could loop back and ask again or handle the error differently.
+                        }
+                    }
+                } else {
+                    println!("Please enter the limit and column name in the correct format (i.e. 10, column7).");
+                    // Optionally, loop back and ask again or handle this scenario differently.
+                }
+
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+            }
+            Some(10) => {
+                let query = get_user_input_level_2("Enter random limit value: ");
+                match query.parse::<usize>() {
+                    Ok(query_int) => {
+                        csv_builder.limit_random(query_int).print_table_all_rows();
+                        println!();
+                    }
+                    Err(_) => {
+                        println!("Please enter a valid integer.");
+                        // Here, you could loop back and ask again or handle the error differently.
+                    }
+                }
+
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+            }
+
+            /*
+            Some(11) => {
+                if csv_builder.has_data() {
+                    csv_builder.print_table_all_rows();
+                    println!();
+                }
+            }
+            */
+
+
+
+
+
+
+            Some(11) => {
+                if let Err(e) = handle_inspect(csv_builder) {
+                    println!("Error during inspection: {}", e);
+                    continue;
+                }
+            }
+
+            Some(12) => {
+                if let Err(e) = handle_join(csv_builder) {
+                    println!("Error during join: {}", e);
+                    continue;
+                }
+            }
+
+            Some(13) => {
+                if let Err(e) = handle_pivot(csv_builder).await {
+                    println!("Error during pivot: {}", e);
+                    continue;
+                }
+            }
+
+
+
+
+            Some(14) => {
+                if csv_builder.has_data() {
+                    csv_builder.print_table_all_rows();
+                    println!();
+                }
+            }
+
+            Some(15) => {
+                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+                let desktop_path = Path::new(&home_dir).join("Desktop");
+                let csv_db_path = desktop_path.join("csv_db");
+
+                let file_name =
+                    get_user_input_level_2("Enter file name to save (without extension): ");
+                let full_file_name = if file_name.ends_with(".csv") {
+                    file_name
+                } else {
+                    format!("{}.csv", file_name)
+                };
+                let file_path = csv_db_path.join(full_file_name);
+                let _ = csv_builder.save_as(file_path.to_str().unwrap());
+                print_insight_level_2(&format!("CSV file saved at {}", file_path.display()));
+            }
+            Some(16) => {
+                /*
+                if csv_builder.has_data() {
+                    csv_builder.print_table_all_rows();
+                    println!();
+                }
+                */
 
                 break;
             }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 8.");
+                println!("Invalid option. Please enter a number from 1 to 16.");
                 continue;
             }
         }

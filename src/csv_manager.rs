@@ -647,7 +647,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                 continue;
             }
             Some(ref action) if action == "search" => {
-                if let Err(e) = handle_search(&mut csv_builder) {
+                if let Err(e) = handle_search(&mut csv_builder).await {
                     println!("Error during search: {}", e);
                     continue;
                 }
@@ -747,44 +747,45 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         if has_data {
             if has_headers {
                 menu_options = vec![
-                    "show_all_rows",
-                    "calibrate",
-                    "search",
-                    "update_headers",
-                    "add_rows",
-                    "update_row",
-                    "inspect",
-                    "pivot",
-                    "join",
-                    "delete_rows",
-                    "sort",
-                    "save",
-                    "save_as",
-                    "back",
+                    "CALIBRATE",
+                    "UPDATE HEADERS",
+                    "ADD ROWS",
+                    "UPDATE ROW",
+                    "DELETE ROWS",
+                    "SHOW ALL ROWS",
+                    "SEARCH",
+                    "INSPECT",
+                    "PIVOT",
+                    "JOIN",
+                    "SORT",
+                    "SAVE",
+                    "SAVE AS",
+                    "BACK",
                 ];
             } else {
                 menu_options = vec![
-                    "show_all_rows",
-                    "calibrate",
-                    "search",
-                    "set_headers",
-                    "add_rows",
-                    "update_row",
-                    "inspect",
-                    "pivot",
-                    "join",
-                    "delete_rows",
-                    "sort",
-                    "save",
-                    "save_as",
-                    "back",
-                ];
+                    "CALIBRATE",
+                    "SET HEADERS",
+                    "ADD ROWS",
+                    "UPDATE ROW",
+                    "DELETE ROWS",
+                    "SHOW ALL ROWS",
+                    "SEARCH",
+                    "INSPECT",
+                    "PIVOT",
+                    "JOIN",
+                    "SORT",
+                    "SAVE",
+                    "SAVE AS",
+                    "BACK",
+                ]; 
+
             }
         } else {
             if has_headers {
-                menu_options = vec!["update_headers", "back"];
+                menu_options = vec!["UPDATE HEADERS", "BACK"];
             } else {
-                menu_options = vec!["set_headers", "back"];
+                menu_options = vec!["SET HEADERS", "BACK"];
             }
         };
 
@@ -793,14 +794,14 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         let selected_option = determine_action_as_text(&menu_options, &choice);
 
         match selected_option {
-            Some(ref action) if action == "show_all_rows" => {
+            Some(ref action) if action == "SHOW ALL ROWS" => {
                 if builder.has_data() {
                     builder.print_table_all_rows();
                     println!();
                 }
             }
 
-            Some(ref action) if action == "calibrate" => {
+            Some(ref action) if action == "CALIBRATE" => {
                 println!();
 
                 // Define the JSON syntax for calibration settings
@@ -873,7 +874,7 @@ SYNTAX
                 }
             }
 
-            Some(ref action) if action == "set_headers" => {
+            Some(ref action) if action == "SET HEADERS" => {
                 println!();
 
                 let headers_json = json!({
@@ -923,7 +924,7 @@ SYNTAX
                 }
             }
 
-            Some(ref action) if action == "update_headers" => {
+            Some(ref action) if action == "UPDATE HEADERS" => {
                 println!();
 
                 let existing_headers = builder.get_headers().unwrap_or(&[]).to_vec();
@@ -981,7 +982,7 @@ SYNTAX
                 }
             }
 
-            Some(ref action) if action == "add_rows" => {
+            Some(ref action) if action == "ADD ROWS" => {
                 if has_data {
                     println!();
 
@@ -1104,7 +1105,7 @@ SYNTAX
                 }
             }
 
-            Some(ref action) if action == "update_row" => {
+            Some(ref action) if action == "UPDATE ROW" => {
                 println!();
 
                 if !builder.has_data() {
@@ -1232,7 +1233,7 @@ SYNTAX
                 println!();
             }
 
-            Some(ref action) if action == "search" => {
+            Some(ref action) if action == "SEARCH" => {
                 /*
                 if builder.has_data() {
                     let query =
@@ -1242,33 +1243,33 @@ SYNTAX
                 }
                 */
 
-                if let Err(e) = handle_search(&mut builder) {
+                if let Err(e) = handle_search(&mut builder).await {
                     println!("Error during search: {}", e);
                     continue;
                 }
             }
 
-            Some(ref action) if action == "inspect" => {
+            Some(ref action) if action == "INSPECT" => {
                 if let Err(e) = handle_inspect(&mut builder) {
                     println!("Error during inspection: {}", e);
                     continue;
                 }
             }
 
-            Some(ref action) if action == "pivot" => {
+            Some(ref action) if action == "PIVOT" => {
                 if let Err(e) = handle_pivot(&mut builder).await {
                     println!("Error during pivot operation: {}", e);
                     continue;
                 }
             }
 
-            Some(ref action) if action == "join" => {
+            Some(ref action) if action == "JOIN" => {
                 if let Err(e) = handle_join(&mut builder) {
                     println!("Error during join operation: {}", e);
                     continue;
                 }
             }
-            Some(ref action) if action == "delete_rows" => {
+            Some(ref action) if action == "DELETE ROWS" => {
                 println!();
 
                 if !builder.has_data() {
@@ -1342,7 +1343,7 @@ SYNTAX
                 println!();
             }
 
-            Some(ref action) if action == "sort" => {
+            Some(ref action) if action == "SORT" => {
                 println!();
 
                 // Define the JSON syntax for sort settings
@@ -1403,7 +1404,7 @@ SYNTAX
                 }
             }
 
-            Some(ref action) if action == "save" => {
+            Some(ref action) if action == "SAVE" => {
                 if has_data {
                     if let Some(ref path) = current_file_path {
                         // Save to the existing file path
@@ -1424,7 +1425,7 @@ SYNTAX
                 }
             }
 
-            Some(ref action) if action == "save_as" => {
+            Some(ref action) if action == "SAVE AS" => {
                 if has_data {
                     let file_name =
                         get_user_input_level_2("Enter file name to save (without extension): ");
@@ -1440,7 +1441,7 @@ SYNTAX
                 }
             }
 
-            Some(ref action) if action == "back" => {
+            Some(ref action) if action == "BACK" => {
                 break;
             }
             //"done" => break,

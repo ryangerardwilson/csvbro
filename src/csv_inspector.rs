@@ -50,6 +50,7 @@ impl ExpStore {
 }
 
 pub fn handle_inspect(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
+//pub async fn handle_inspect(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
     fn get_filter_expressions(
         data_store: &mut ExpStore,
     ) -> Result<(Vec<(String, usize)>, String), Box<dyn std::error::Error>> {
@@ -233,15 +234,15 @@ SYNTAX
     }
 
     let menu_options = vec![
-        "Print first row",
-        "Print last row",
-        "Print rows",
-        "Print rows where",
-        "Print freq of multiple column values",
-        "Print unique column values",
-        "Print count where",
-        "Print all rows",
-        "Go back",
+        "PRINT FIRST ROW",
+        "PRINT LAST ROW",
+        "PRINT ROWS",
+        "PRINT ALL ROWS",
+        "PRINT ROWS WHERE",
+        "PRINT FREQ OF MULTIPLE COLUMN VALUES",
+        "PRINT UNIQUE COLUMN VALUES",
+        "PRINT COUNT WHERE",
+        "BACK",
     ];
 
     loop {
@@ -269,7 +270,17 @@ SYNTAX
 
                 csv_builder.print_rows_range(start, end);
             }
+
             Some(4) => {
+                if csv_builder.has_data() {
+                    csv_builder.print_table_all_rows();
+                    println!();
+                }
+            }
+
+
+
+            Some(5) => {
                 let mut exp_store = ExpStore {
                     expressions: Vec::new(),
                 };
@@ -290,19 +301,19 @@ SYNTAX
                     }
                 }
             }
-            Some(5) => {
+            Some(6) => {
                 let column_names =
                     get_user_input_level_2("Enter column names separated by commas: ");
                 let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
                 csv_builder.print_freq(columns);
             }
-            Some(6) => {
+            Some(7) => {
                 let column_name = get_user_input_level_2("Enter the column name: ");
                 csv_builder.print_unique(&column_name.trim());
             }
 
             // In your handle_inspect method
-            Some(7) => {
+            Some(8) => {
                 let mut exp_store = ExpStore {
                     expressions: Vec::new(),
                 };
@@ -323,18 +334,12 @@ SYNTAX
                 }
             }
 
-            Some(8) => {
-                if csv_builder.has_data() {
-                    csv_builder.print_table_all_rows();
-                    println!();
-                }
-            }
 
             Some(9) => {
                 break; // Exit the inspect handler
             }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 6.");
+                println!("Invalid option. Please enter a number from 1 to 9.");
                 continue; // Ask for the choice again
             }
         }
