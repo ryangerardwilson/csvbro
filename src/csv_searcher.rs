@@ -1,13 +1,13 @@
 // csv_searcher.rs
 use crate::csv_inspector::handle_inspect;
-use crate::csv_pivoter::handle_pivot;
 use crate::csv_joiner::handle_join;
+use crate::csv_pivoter::handle_pivot;
 use crate::user_interaction::{
     determine_action_as_number, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
 use rgwml::csv_utils::CsvBuilder;
-use std::path::Path;
 use std::env;
+use std::path::Path;
 
 pub async fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
     fn apply_filter_changes_menu(
@@ -398,12 +398,6 @@ pub async fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn s
                 }
             }
             */
-
-
-
-
-
-
             Some(11) => {
                 if let Err(e) = handle_inspect(csv_builder) {
                     println!("Error during inspection: {}", e);
@@ -424,9 +418,6 @@ pub async fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn s
                     continue;
                 }
             }
-
-
-
 
             Some(14) => {
                 if csv_builder.has_data() {

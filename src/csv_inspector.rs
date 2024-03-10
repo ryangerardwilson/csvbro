@@ -50,7 +50,7 @@ impl ExpStore {
 }
 
 pub fn handle_inspect(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
-//pub async fn handle_inspect(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
+    //pub async fn handle_inspect(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
     fn get_filter_expressions(
         data_store: &mut ExpStore,
     ) -> Result<(Vec<(String, usize)>, String), Box<dyn std::error::Error>> {
@@ -278,8 +278,6 @@ SYNTAX
                 }
             }
 
-
-
             Some(5) => {
                 let mut exp_store = ExpStore {
                     expressions: Vec::new(),
@@ -333,7 +331,6 @@ SYNTAX
                     }
                 }
             }
-
 
             Some(9) => {
                 break; // Exit the inspect handler

@@ -40,7 +40,7 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
     // Additional settings options here
     loop {
         print_insight("Decision time! What are you vibing with?");
-        let menu_options = vec!["db presets", "open ai presets", "back"];
+        let menu_options = vec!["db presets", "open ai presets", "BACK"];
         print_list(&menu_options);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
         let selected_option = determine_action_as_text(&menu_options, &choice);
@@ -53,7 +53,7 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                     "update db preset",
                     "delete db preset",
                     "view db presets",
-                    "back",
+                    "BACK",
                 ];
                 print_list(&menu_options);
                 let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -76,7 +76,7 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                         view_db_presets()?;
                         continue;
                     }
-                    Some(ref action) if action == "back" => {
+                    Some(ref action) if action == "BACK" => {
                         break;
                     }
                     //"done" => break,
@@ -91,7 +91,7 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                     "update open ai preset",
                     "delete open ai preset",
                     "view open ai preset",
-                    "back",
+                    "BACK",
                 ];
                 print_list(&menu_options);
                 let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -114,7 +114,7 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                         view_open_ai_preset()?;
                         continue;
                     }
-                    Some(ref action) if action == "back" => {
+                    Some(ref action) if action == "BACK" => {
                         break;
                     }
                     //"done" => break,
@@ -123,7 +123,7 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                 }
             },
 
-            Some(ref action) if action == "back" => {
+            Some(ref action) if action == "BACK" => {
                 break;
             }
             //"done" => break,
@@ -131,75 +131,6 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
             None => print_insight("No action determined"),
         }
     }
-
-    /*
-    let actions = ["db_presets", "api_presets"];
-    let matched_action = determine_action(&choice, &actions);
-
-    match matched_action.as_str() {
-        "db_presets" => loop {
-            // Sub-menu for DB preset management
-            let db_choice =
-                get_user_input("db_presets => choose action\nadd/update/delete/view/back: ");
-            let db_actions = ["add", "update", "delete", "view", "back"];
-            let matched_db_action = determine_action(&db_choice, &db_actions);
-
-            match matched_db_action.as_str() {
-                "add" => {
-                    add_db_preset()?;
-                    continue;
-                }
-                "update" => {
-                    update_db_preset()?;
-                    continue;
-                }
-                "delete" => {
-                    delete_db_preset()?;
-                    continue;
-                }
-                "view" => {
-                    view_db_presets()?;
-                    continue;
-                }
-                "back" => break,
-                _ => print_insight("Invalid option"),
-            }
-        }
-
-
-        ,
-        "api_presets" => loop {
-            // Sub-menu for DB preset management
-            let api_choice =
-                get_user_input("api_presets => choose action\nadd/update/delete/view/back: ");
-            let api_actions = ["add", "update", "delete", "view", "back"];
-            let matched_api_action = determine_action(&api_choice, &api_actions);
-
-            match matched_api_action.as_str() {
-                "add" => {
-                    add_api_preset()?;
-                    continue;
-                }
-                "update" => {
-                    update_api_preset()?;
-                    continue;
-                }
-                "delete" => {
-                    delete_api_preset()?;
-                    continue;
-                }
-                "view" => {
-                    view_api_presets()?;
-                    continue;
-                }
-                "back" => break,
-                _ => print_insight("Invalid option"),
-            }
-        },
-        // Handle other settings options here
-        _ => print_insight("Invalid option"),
-    }
-    */
 
     Ok(())
 }

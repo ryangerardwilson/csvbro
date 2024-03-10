@@ -11,9 +11,6 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
-
-
-
 pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
     fn get_csv_db_path() -> String {
         let home_dir = env::var("HOME").expect("Unable to determine user home directory");
@@ -101,21 +98,19 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
         "Go back",
     ];
     */
-let menu_options = vec![
-    "SET UNION (ALL) WITH {1,2,3,3,4,5}",
-    "SET UNION (ALL WITHOUT DUPLICATES) WITH {1,2,3,4,5}",
-    "SET UNION (LEFT JOIN) WITH",
-    "SET UNION (RIGHT JOIN) WITH",
-    "SET INTERSECTION WITH {3}",
-    "SET DIFFERENCE WITH {1,2}",
-    "SET SYMMETRIC DIFFERENCE WITH {1,2,4,5}",
-            "INSPECT",
+    let menu_options = vec![
+        "SET UNION (ALL) WITH {1,2,3,3,4,5}",
+        "SET UNION (ALL WITHOUT DUPLICATES) WITH {1,2,3,4,5}",
+        "SET UNION (LEFT JOIN) WITH",
+        "SET UNION (RIGHT JOIN) WITH",
+        "SET INTERSECTION WITH {3}",
+        "SET DIFFERENCE WITH {1,2}",
+        "SET SYMMETRIC DIFFERENCE WITH {1,2,4,5}",
+        "INSPECT",
         "PRINT ALL ROWS",
         "SAVE AS",
-
-    "BACK",
-];
-
+        "BACK",
+    ];
 
     loop {
         print_insight_level_2("Select an option to inspect CSV data:");
@@ -212,24 +207,20 @@ let menu_options = vec![
                     println!("No file was selected.");
                 }
             }
-/*
-            Some(8) => {
-                if csv_builder.has_data() {
-                    csv_builder.print_table_all_rows();
-                    println!();
-                }
-            }
-*/
-
+            /*
+                        Some(8) => {
+                            if csv_builder.has_data() {
+                                csv_builder.print_table_all_rows();
+                                println!();
+                            }
+                        }
+            */
             Some(8) => {
                 if let Err(e) = handle_inspect(csv_builder) {
                     println!("Error during inspection: {}", e);
                     continue;
                 }
             }
-
-
-
 
             Some(9) => {
                 if csv_builder.has_data() {
@@ -254,8 +245,6 @@ let menu_options = vec![
                 let _ = csv_builder.save_as(file_path.to_str().unwrap());
                 print_insight_level_2(&format!("CSV file saved at {}", file_path.display()));
             }
-
-
 
             Some(11) => {
                 break; // Exit the inspect handler

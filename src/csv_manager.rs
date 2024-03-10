@@ -60,12 +60,24 @@ pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
                 .collect();
 
             // Since print_list expects a Vec<&str>, convert Vec<String> to Vec<&str>
-            let file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
-
+            let mut file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
+            file_name_slices.push("BACK");
             // Now, call print_list with this vector
             print_list(&file_name_slices);
 
             let choice = get_user_input("What's it gonna be?: ").to_lowercase();
+
+
+// Assuming 'back' is always the last option
+let back_option_number = file_name_slices.len();
+
+// Check if the user's choice is a number and if it matches the serial number for 'back'
+if choice.parse::<usize>().ok() == Some(back_option_number) {
+    print_insight("Bailed on that. Heading back to the last menu, bro.");
+    return None; // Assuming this is within a function that can return None for some control flow
+} else {
+    // Handle other choices or input errors
+}
 
             // Fuzzy match logic for 'back'
             let options = &["back"];
@@ -161,33 +173,43 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
                 .filter_map(|file| file.file_name()?.to_str().map(String::from))
                 .collect();
 
-            // Since print_list expects a Vec<&str>, convert Vec<String> to Vec<&str>
-            let file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
+let mut file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
+file_name_slices.push("BACK");
 
-            // Now, call print_list with this vector
-            print_list(&file_name_slices);
+// Now, call print_list with this vector
+print_list(&file_name_slices);
 
-            let choice = get_user_input("Punch in the serial number or a slice of the file name to DELETE, or hit 'back' to bail.\nWhat's it gonna be?: ")
-                .to_lowercase();
+let choice = get_user_input("Punch in the serial number or a slice of the file name to DELETE, or hit 'back' to bail.\nWhat's it gonna be?: ")
+    .trim().to_lowercase();
 
-            // Fuzzy match logic for 'back'
-            let options = &["back"];
-            let mut highest_score = 0;
-            let mut best_match = "";
+// Assuming 'back' is always the last option
+let back_option_serial = file_name_slices.len();
 
-            for &option in options {
-                let score = fuzz::ratio(&choice, option);
-                if score > highest_score {
-                    highest_score = score;
-                    best_match = option;
-                }
-            }
+// Check if the user's choice is a number and matches the serial number for 'back'
+if choice.parse::<usize>().ok().map_or(false, |num| num == back_option_serial) {
+    print_insight("Bailed on that. Heading back to the last menu, bro.");
+    return; // Assuming this is within a function that allows for an early return
+} else {
+    // Fuzzy match logic for 'back'
+    let options = &["back"];
+    let mut highest_score = 0;
+    let mut best_match = "";
 
-            // Check if the best match is 'back' with a score above 60
-            if best_match == "back" && highest_score > 60 {
-                print_insight("Bailed on that. Heading back to the last menu, bro.");
-                return;
-            }
+    for &option in options {
+        let score = fuzz::ratio(&choice, option);
+        if score > highest_score {
+            highest_score = score;
+            best_match = option;
+        }
+    }
+
+    // Check if the best match is 'back' with a score above 60
+    if best_match == "back" && highest_score > 60 {
+        print_insight("Bailed on that. Heading back to the last menu, bro.");
+        return;
+    }
+    // Continue with additional logic for handling other inputs or choices
+}
 
             let mut file_deleted = false;
 
@@ -291,12 +313,43 @@ pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBui
     }
 
     // Convert Vec<String> to Vec<&str> for `print_list`
-    let file_info_slices: Vec<&str> = file_infos.iter().map(AsRef::as_ref).collect();
-
+    let mut file_info_slices: Vec<&str> = file_infos.iter().map(AsRef::as_ref).collect();
+    file_info_slices.push("BACK");
     // Call `print_list` with the vector of file information
     print_list(&file_info_slices);
 
     let choice = get_user_input("Enter the serial number of the file to open: ");
+
+    let back_option_serial = file_info_slices.len();
+
+if choice.parse::<usize>().ok().map_or(false, |num| num == back_option_serial) {
+    print_insight("Bailed on that. Heading back to the last menu, bro.");
+    return None; // Assuming this is within a function that allows for an early return
+} else {
+    // Fuzzy match logic for 'back'
+    let options = &["back"];
+    let mut highest_score = 0;
+    let mut best_match = "";
+
+    for &option in options {
+        let score = fuzz::ratio(&choice, option);
+        if score > highest_score {
+            highest_score = score;
+            best_match = option;
+        }
+    }
+
+    // Check if the best match is 'back' with a score above 60
+    if best_match == "back" && highest_score > 60 {
+        print_insight("Bailed on that. Heading back to the last menu, bro.");
+        return None;
+    }
+    // Continue with additional logic for handling other inputs or choices
+}
+
+
+
+
 
     if let Ok(serial) = choice.parse::<usize>() {
         if serial > 0 && serial <= files.len() {
@@ -338,6 +391,7 @@ enum DbType {
 }
 
 #[allow(unused_assignments)]
+//pub async fn query() {
 pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
     fn get_db_type() -> Result<(DbType, Option<DbPreset>), Box<dyn std::error::Error>> {
         fn process_option(
@@ -360,13 +414,13 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                 _ => Err("return_to_main".into()), // This is for the "back" option
             }
         }
-
         let mut presets = Vec::new(); // Declare a variable to store presets
 
         let _ = manage_db_config_file(|config| {
             presets = config.db_presets.clone(); // Assign the presets here
             Ok(()) // Return Ok(()) as expected by the function signature
         });
+
         let mut options = presets
             .iter()
             .map(|p| p.name.to_lowercase())
@@ -380,23 +434,21 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
         print_insight_level_2("Choose a database:");
         print_list(&options_slices);
 
-        /*
-        for (index, option) in options.iter().enumerate() {
-            let formatted_message = format!("{}: {}", index + 1, option);
-            print_list(&formatted_message);
-        }
-        */
-
         let input = get_user_input_level_2("Enter your choice: ").to_lowercase();
 
-        // Check if input directly matches an index
+        // Direct Index Selection
         if let Ok(index) = input.parse::<usize>() {
             if index > 0 && index <= options.len() {
                 return process_option(index - 1, &presets, db_choice_index);
             }
         }
 
-        // Fuzzy match logic if no direct index match
+        // Starts With Match
+        if let Some(index) = options.iter().position(|option| option.starts_with(&input)) {
+            return process_option(index, &presets, db_choice_index);
+        }
+
+        // Existing Fuzzy Match Logic
         let (best_match_index, best_match_score) = options
             .iter()
             .enumerate()
@@ -411,28 +463,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
         process_option(best_match_index, &presets, db_choice_index)
     }
 
-    fn get_query_failed_confirmation_input() -> Result<String, Box<dyn std::error::Error>> {
-        let input = get_user_input_level_2("Do you want to retry? (retry/back): ").to_lowercase();
-        let options = &["retry", "back"];
-        let mut highest_score = 0;
-        let mut best_match = "";
-
-        for &option in options {
-            let score = fuzz::ratio(&input, option);
-            if score > highest_score {
-                highest_score = score;
-                best_match = option;
-            }
-        }
-
-        match best_match {
-            "retry" => Ok("retry".to_string()),
-            "back" => Ok("back".to_string()),
-            _ => Err("Invalid option".into()),
-        }
-    }
-
-    let (mut db_type, mut preset_option) = match get_db_type() {
+    let (db_type, preset_option) = match get_db_type() {
         Ok(db) => db,
         Err(e) => {
             if e.to_string() == "return_to_main" {
@@ -443,7 +474,8 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
         }
     };
 
-    let mut csv_builder: CsvBuilder;
+    //let mut csv_builder: CsvBuilder;
+    let mut csv_builder: CsvBuilder = CsvBuilder::new();
     let mut last_sql_query = String::new();
     let mut confirmation = String::new();
 
@@ -498,16 +530,6 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     last_sql_query.clone()
                 };
 
-                let back_score = fuzz::ratio(&sql_query.to_lowercase(), "back");
-                if back_score > 65 {
-                    let result = get_db_type(); // Return to database selection
-                    if let Ok((new_db_type, new_preset)) = result {
-                        db_type = new_db_type;
-                        preset_option = new_preset;
-                        continue; // Return to database selection
-                    }
-                }
-
                 let start_time = Instant::now();
                 let query_execution_result = CsvBuilder::from_mssql_query(
                     &username, &password, &host, &database, &sql_query,
@@ -518,20 +540,22 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                 if let Err(e) = query_execution_result {
                     println!("Failed to execute query: {}", e);
 
-                    match get_query_failed_confirmation_input() {
-                        Ok(response) => {
-                            if response == "retry" {
-                                confirmation = "retry".to_string(); // Set confirmation to retry for the next loop iteration
-                                continue; // User chose to retry
-                            } else {
-                                println!("Returning to the main menu.");
-                                return Err("Query execution failed".into());
-                            }
+                    let menu_options = vec!["retry", "back"];
+
+                    print_list(&menu_options);
+                    let choice = get_user_input("Enter your choice: ").to_lowercase();
+                    let selected_option = determine_action_as_text(&menu_options, &choice);
+                    confirmation = selected_option.clone().expect("REASON");
+
+                    match selected_option {
+                        Some(ref action) if action == "retry" => {
+                            continue;
                         }
-                        Err(_) => {
-                            println!("Invalid option. Please try again.");
-                            continue; // Ask for confirmation again
+                        Some(ref action) if action == "back" => {
+                            break Ok(CsvBuilder::new());
                         }
+                        Some(_) => print_insight("Unrecognized action, please try again."),
+                        None => print_insight("No action determined"),
                     }
                 } else {
                     csv_builder = query_execution_result.unwrap();
@@ -578,16 +602,6 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     last_sql_query.clone()
                 };
 
-                let back_score = fuzz::ratio(&sql_query.to_lowercase(), "back");
-                if back_score > 65 {
-                    let result = get_db_type();
-                    if let Ok((new_db_type, new_preset)) = result {
-                        db_type = new_db_type;
-                        preset_option = new_preset;
-                        continue; // Return to database selection
-                    }
-                }
-
                 let start_time = Instant::now();
                 let query_execution_result = CsvBuilder::from_mysql_query(
                     &username, &password, &host, &database, &sql_query,
@@ -598,20 +612,23 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                 if let Err(e) = query_execution_result {
                     println!("Failed to execute query: {}", e);
 
-                    match get_query_failed_confirmation_input() {
-                        Ok(response) => {
-                            if response == "retry" {
-                                confirmation = "retry".to_string(); // Set confirmation to retry for the next loop iteration
-                                continue; // User chose to retry
-                            } else {
-                                println!("Returning to the main menu.");
-                                return Err("Query execution failed".into());
-                            }
+                    let menu_options = vec!["retry", "back"];
+
+                    print_list(&menu_options);
+                    let choice = get_user_input("Enter your choice: ").to_lowercase();
+                    let selected_option = determine_action_as_text(&menu_options, &choice);
+                    confirmation = selected_option.clone().expect("REASON");
+
+                    match selected_option {
+                        Some(ref action) if action == "retry" => {
+                            continue;
                         }
-                        Err(_) => {
-                            println!("Invalid option. Please try again.");
-                            continue; // Ask for confirmation again
+
+                        Some(ref action) if action == "back" => {
+                            break Ok(CsvBuilder::new());
                         }
+                        Some(_) => print_insight("Unrecognized action, please try again."),
+                        None => print_insight("No action determined"),
                     }
                 } else {
                     csv_builder = query_execution_result.unwrap();
@@ -619,23 +636,12 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     println!("Executiom Time: {:?}", elapsed_time);
                     confirmation = String::new(); // Reset confirmation for the next loop iteration
                 }
-            } // DbType::MySql and other cases
-              // ...
+            }
         };
 
-        // Ask user for confirmation
         println!();
 
-        let menu_options = vec![
-            "retry",
-            "show all rows",
-            "search",
-            "inspect",
-            "pivot",
-            "join",
-            "save as",
-            "back",
-        ];
+        let menu_options = vec!["retry", "save as", "back"];
 
         print_list(&menu_options);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -645,30 +651,6 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
         match selected_option {
             Some(ref action) if action == "retry" => {
                 continue;
-            }
-            Some(ref action) if action == "search" => {
-                if let Err(e) = handle_search(&mut csv_builder).await {
-                    println!("Error during search: {}", e);
-                    continue;
-                }
-            }
-            Some(ref action) if action == "inspect" => {
-                if let Err(e) = handle_inspect(&mut csv_builder) {
-                    println!("Error during inspection: {}", e);
-                    continue;
-                }
-            }
-            Some(ref action) if action == "pivot" => {
-                if let Err(e) = handle_pivot(&mut csv_builder).await {
-                    println!("Error during pivot operation: {}", e);
-                    continue;
-                }
-            }
-            Some(ref action) if action == "join" => {
-                if let Err(e) = handle_join(&mut csv_builder) {
-                    println!("Error during join operation: {}", e);
-                    continue;
-                }
             }
             Some(ref action) if action == "save as" => {
                 let home_dir = env::var("HOME").expect("Unable to determine user home directory");
@@ -685,45 +667,15 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                 let file_path = csv_db_path.join(full_file_name);
                 let _ = csv_builder.save_as(file_path.to_str().unwrap());
                 print_insight_level_2(&format!("CSV file saved at {}", file_path.display()));
+                break Ok(CsvBuilder::new());
             }
             Some(ref action) if action == "back" => {
-                let result = get_db_type();
-                match result {
-                    Ok((new_db_type, new_preset)) => {
-                        db_type = new_db_type;
-                        preset_option = new_preset;
-
-                        // Reset the preset details if a new preset is selected
-                        if let Some(preset) = &preset_option {
-                            username = preset.username.clone();
-                            password = preset.password.clone();
-                            host = preset.host.clone(); // Assuming 'host' is equivalent to 'server'
-                            database = preset.database.clone();
-                        } else {
-                            // Clear the details if no preset is selected
-                            username.clear();
-                            password.clear();
-                            host.clear();
-                            database.clear();
-                        }
-                    }
-                    Err(e) => {
-                        if e.to_string() == "return_to_main" {
-                            return Err("User chose to go back".into());
-                        } else {
-                            return Err(e);
-                        }
-                    }
-                }
-                break;
+                break Ok(CsvBuilder::new());
             }
             Some(_) => print_insight("Unrecognized action, please try again."),
             None => print_insight("No action determined"),
         }
     }
-
-    // dbg!(&csv_builder.headers, &csv_builder.data); // Optionally, debug print the CsvBuilder
-    Ok(csv_builder)
 }
 
 pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
@@ -778,8 +730,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     "SAVE",
                     "SAVE AS",
                     "BACK",
-                ]; 
-
+                ];
             }
         } else {
             if has_headers {
