@@ -236,8 +236,9 @@ SYNTAX
     let menu_options = vec![
         "PRINT FIRST ROW",
         "PRINT LAST ROW",
-        "PRINT ROWS",
-        "PRINT ALL ROWS",
+        "PRINT ROWS (JSON)",
+        "PRINT ALL ROWS (JSON)",
+        "PRINT ALL ROWS (TABULATED)",
         "PRINT ROWS WHERE",
         "PRINT FREQ OF MULTIPLE COLUMN VALUES",
         "PRINT UNIQUE COLUMN VALUES",
@@ -271,14 +272,29 @@ SYNTAX
                 csv_builder.print_rows_range(start, end);
             }
 
+
             Some(4) => {
+
+                if csv_builder.has_data() {
+                    csv_builder.print_rows();
+                    println!();
+                }
+
+
+            }
+
+
+            Some(5) => {
                 if csv_builder.has_data() {
                     csv_builder.print_table_all_rows();
                     println!();
                 }
             }
 
-            Some(5) => {
+
+
+
+            Some(6) => {
                 let mut exp_store = ExpStore {
                     expressions: Vec::new(),
                 };
@@ -299,19 +315,19 @@ SYNTAX
                     }
                 }
             }
-            Some(6) => {
+            Some(7) => {
                 let column_names =
                     get_user_input_level_2("Enter column names separated by commas: ");
                 let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
                 csv_builder.print_freq(columns);
             }
-            Some(7) => {
+            Some(8) => {
                 let column_name = get_user_input_level_2("Enter the column name: ");
                 csv_builder.print_unique(&column_name.trim());
             }
 
             // In your handle_inspect method
-            Some(8) => {
+            Some(9) => {
                 let mut exp_store = ExpStore {
                     expressions: Vec::new(),
                 };
@@ -332,11 +348,12 @@ SYNTAX
                 }
             }
 
-            Some(9) => {
+            Some(10) => {
+                csv_builder.print_table();
                 break; // Exit the inspect handler
             }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 9.");
+                println!("Invalid option. Please enter a number from 1 to 10.");
                 continue; // Ask for the choice again
             }
         }

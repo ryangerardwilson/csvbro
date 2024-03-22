@@ -1,5 +1,4 @@
 // csv_pivoter.rs
-use crate::csv_inspector::handle_inspect;
 use crate::settings::manage_open_ai_config_file;
 use crate::user_interaction::{
     determine_action_as_number, get_edited_user_json_input, get_user_input_level_2,
@@ -1023,19 +1022,16 @@ SYNTAX
     }
 
     let menu_options = vec![
-        "Append derived boolean column",
-        "Append derived category column",
-        "Append derived concatenation column",
-        "Append category columns by spliting date/timestamp column",
-        "Append fuzzai analysis column",
-        "Append fuzzai analysis column where",
-        "Append openai analysis columns",
-        "Append linear regression column",
-        "Pivot",
-        "Inspect",
-        "Print all rows",
-        "Save as",
-        "Go back",
+        "APPEND DERIVED BOOLEAN COLUMN",
+        "APPEND DERIVED CATEGORY COLUMN",
+        "APPEND DERIVED CONCATENATION COLUMN",
+        "APPEND CATEGORY COLUMNS BY SPLITTING DATE/TIMESTAMP COLUMN",
+        "APPEND FUZZAI ANALYSIS COLUMN",
+        "APPEND FUZZAI ANALYSIS COLUMN WHERE",
+        "APPEND OPENAI ANALYSIS COLUMNS",
+        "APPEND LINEAR REGRESSION COLUMN",
+        "PIVOT",
+        "GO BACK",
     ];
 
     loop {
@@ -1420,42 +1416,13 @@ SYNTAX
                 }
             }
 
+
             Some(10) => {
-                if let Err(e) = handle_inspect(csv_builder) {
-                    println!("Error during inspection: {}", e);
-                    continue;
-                }
-            }
-
-            Some(11) => {
-                if csv_builder.has_data() {
-                    csv_builder.print_table_all_rows();
-                    println!();
-                }
-            }
-
-            Some(12) => {
-                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
-                let desktop_path = Path::new(&home_dir).join("Desktop");
-                let csv_db_path = desktop_path.join("csv_db");
-
-                let file_name =
-                    get_user_input_level_2("Enter file name to save (without extension): ");
-                let full_file_name = if file_name.ends_with(".csv") {
-                    file_name
-                } else {
-                    format!("{}.csv", file_name)
-                };
-                let file_path = csv_db_path.join(full_file_name);
-                let _ = csv_builder.save_as(file_path.to_str().unwrap());
-                print_insight_level_2(&format!("CSV file saved at {}", file_path.display()));
-            }
-
-            Some(13) => {
+                csv_builder.print_table();
                 break; // Exit the inspect handler
             }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 13.");
+                println!("Invalid option. Please enter a number from 1 to 10.");
                 continue; // Ask for the choice again
             }
         }

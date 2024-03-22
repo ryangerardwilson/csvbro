@@ -693,7 +693,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
     loop {
         let has_data = builder.has_data();
         let has_headers = builder.has_headers(); // Assuming this method exists
-
         print_insight("Choose an action:");
         let menu_options;
         if has_data {
@@ -704,7 +703,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     "ADD ROWS",
                     "UPDATE ROW",
                     "DELETE ROWS",
-                    "SHOW ALL ROWS",
                     "SEARCH",
                     "INSPECT",
                     "PIVOT",
@@ -721,7 +719,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     "ADD ROWS",
                     "UPDATE ROW",
                     "DELETE ROWS",
-                    "SHOW ALL ROWS",
                     "SEARCH",
                     "INSPECT",
                     "PIVOT",
@@ -745,12 +742,16 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         let selected_option = determine_action_as_text(&menu_options, &choice);
 
         match selected_option {
+
+
+            /*
             Some(ref action) if action == "SHOW ALL ROWS" => {
                 if builder.has_data() {
                     builder.print_table_all_rows();
                     println!();
                 }
             }
+            */
 
             Some(ref action) if action == "CALIBRATE" => {
                 println!();

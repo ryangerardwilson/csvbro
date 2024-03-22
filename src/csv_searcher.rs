@@ -1,13 +1,8 @@
 // csv_searcher.rs
-use crate::csv_inspector::handle_inspect;
-use crate::csv_joiner::handle_join;
-use crate::csv_pivoter::handle_pivot;
 use crate::user_interaction::{
     determine_action_as_number, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
 use rgwml::csv_utils::CsvBuilder;
-use std::env;
-use std::path::Path;
 
 pub async fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
     fn apply_filter_changes_menu(
@@ -62,11 +57,6 @@ pub async fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn s
         "LIMIT DISTRIBUTED RAW search",
         "LIMIT DISTRIBUTED CATEGORY search",
         "LIMIT RANDOM search",
-        "INSPECT",
-        "JOIN",
-        "PIVOT",
-        "PRINT ALL ROWS",
-        "SAVE AS",
         "BACK",
     ];
 
@@ -399,61 +389,12 @@ pub async fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn s
             }
             */
             Some(11) => {
-                if let Err(e) = handle_inspect(csv_builder) {
-                    println!("Error during inspection: {}", e);
-                    continue;
-                }
-            }
-
-            Some(12) => {
-                if let Err(e) = handle_join(csv_builder) {
-                    println!("Error during join: {}", e);
-                    continue;
-                }
-            }
-
-            Some(13) => {
-                if let Err(e) = handle_pivot(csv_builder).await {
-                    println!("Error during pivot: {}", e);
-                    continue;
-                }
-            }
-
-            Some(14) => {
-                if csv_builder.has_data() {
-                    csv_builder.print_table_all_rows();
-                    println!();
-                }
-            }
-
-            Some(15) => {
-                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
-                let desktop_path = Path::new(&home_dir).join("Desktop");
-                let csv_db_path = desktop_path.join("csv_db");
-
-                let file_name =
-                    get_user_input_level_2("Enter file name to save (without extension): ");
-                let full_file_name = if file_name.ends_with(".csv") {
-                    file_name
-                } else {
-                    format!("{}.csv", file_name)
-                };
-                let file_path = csv_db_path.join(full_file_name);
-                let _ = csv_builder.save_as(file_path.to_str().unwrap());
-                print_insight_level_2(&format!("CSV file saved at {}", file_path.display()));
-            }
-            Some(16) => {
-                /*
-                if csv_builder.has_data() {
-                    csv_builder.print_table_all_rows();
-                    println!();
-                }
-                */
+                csv_builder.print_table();
 
                 break;
             }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 16.");
+                println!("Invalid option. Please enter a number from 1 to 11.");
                 continue;
             }
         }

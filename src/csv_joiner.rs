@@ -1,5 +1,4 @@
 // csv_joiner.rs
-use crate::csv_inspector::handle_inspect;
 use crate::user_interaction::{
     determine_action_as_number, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
@@ -106,9 +105,6 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
         "SET INTERSECTION WITH {3}",
         "SET DIFFERENCE WITH {1,2}",
         "SET SYMMETRIC DIFFERENCE WITH {1,2,4,5}",
-        "INSPECT",
-        "PRINT ALL ROWS",
-        "SAVE AS",
         "BACK",
     ];
 
@@ -215,42 +211,13 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
                             }
                         }
             */
+
             Some(8) => {
-                if let Err(e) = handle_inspect(csv_builder) {
-                    println!("Error during inspection: {}", e);
-                    continue;
-                }
-            }
-
-            Some(9) => {
-                if csv_builder.has_data() {
-                    csv_builder.print_table_all_rows();
-                    println!();
-                }
-            }
-
-            Some(10) => {
-                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
-                let desktop_path = Path::new(&home_dir).join("Desktop");
-                let csv_db_path = desktop_path.join("csv_db");
-
-                let file_name =
-                    get_user_input_level_2("Enter file name to save (without extension): ");
-                let full_file_name = if file_name.ends_with(".csv") {
-                    file_name
-                } else {
-                    format!("{}.csv", file_name)
-                };
-                let file_path = csv_db_path.join(full_file_name);
-                let _ = csv_builder.save_as(file_path.to_str().unwrap());
-                print_insight_level_2(&format!("CSV file saved at {}", file_path.display()));
-            }
-
-            Some(11) => {
+                csv_builder.print_table();
                 break; // Exit the inspect handler
             }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 11.");
+                println!("Invalid option. Please enter a number from 1 to 8.");
                 continue; // Ask for the choice again
             }
         }
