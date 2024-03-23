@@ -1049,36 +1049,32 @@ SYNTAX
             print_insight_level_2(r#"Documentation
 
 Appends a column whose value would be either 0 or 1, contingent on the evaluation of conditions.
-==========================================================================================================
+
 {
-  "new_column_name": "is_abhishek",
+  "new_column_name": "is_big_expense",
   "expressions": [
     [
       "Exp1",
       {
-        "column": "agent_name",
-        "operator": "STARTS_WITH",
-        "compare_with": "Abhishek",
-        "compare_as": "=="
+        "column": "value",
+        "operator": ">",
+        "compare_with": "1000",
+        "compare_as": "NUMBERS"
       }
     ]
   ],
   "evaluation": "Exp1"
 }
 
-|call_id                             |agent_name         |call_duration |actual_speak_time |is_abhishek |
----------------------------------------------------------------------------------------------------------
-|1711007272.414489                   |End call rating IVR|128           |128.0             |0           |
-|1711007259.414452                   |                   |1             |0.0               |0           |
-|1711007258.414449                   |                   |4             |0.0               |0           |
-|1711007254.414438                   |                   |18            |0.0               |0           |
-|ae4d319c-e2ee-4275-b529-10ffea2bda64|                   |29            |0.0               |0           |
-<<+290 rows>>
-|c3fd5dc6-3fa5-4734-9666-1e1df9eac38b|                   |14            |0.0               |0           |
-|1711007572.415233                   |Abhishek Kumar IE  |298           |295.0             |0           |
-|1711007571.415232                   |                   |65            |0.0               |0           |
-|1711007571.415231                   |End call rating IVR|119           |116.0             |0           |
-|24256341-a8dc-4702-b725-5f87eae648bf|Ajeet prajapati    |171           |156.0             |0           |
+|id |item    |value |is_big_expense |
+-------------------------------------
+|1  |books   |1000  |0              |
+|2  |snacks  |200   |0              |
+|3  |cab fare|300   |0              |
+|4  |rent    |20000 |1              |
+|5  |movies  |1500  |1              |
+Total rows: 5
+
 "#);
         } else {
 
@@ -1126,6 +1122,83 @@ Appends a column whose value would be either 0 or 1, contingent on the evaluatio
             }
 
             Some(2) => {
+
+
+        if choice.to_lowercase() == "2d" {
+            print_insight_level_2(r#"DOCUMENTATION
+
+Appends a column whose value would be assigned category flags, contingent on the evaluation of conditions.
+
+{
+  "new_column_name": "type",
+  "expressions": [
+    {
+      "category_name": "big",
+      "category_filters": [
+        {
+          "Exp1": {
+            "column": "value",
+            "operator": ">",
+            "compare_with": "5000",
+            "compare_as": "NUMBERS"
+          }
+        }
+      ],
+      "category_evaluation": "Exp1"
+    },
+    {
+      "category_name": "medium",
+      "category_filters": [
+        {
+          "Exp1": {
+            "column": "value",
+            "operator": ">",
+            "compare_with": "1000",
+            "compare_as": "NUMBERS"
+          }
+        },
+        {
+          "Exp2": {
+            "column": "value",
+            "operator": "<",
+            "compare_with": "5000",
+            "compare_as": "NUMBERS"
+          }
+        }
+      ],
+      "category_evaluation": "Exp1 && Exp2"
+    },
+    {
+      "category_name": "small",
+      "category_filters": [
+        {
+          "Exp1": {
+            "column": "value",
+            "operator": "<",
+            "compare_with": "1000",
+            "compare_as": "NUMBERS"
+          }
+        }
+      ],
+      "category_evaluation": "Exp1"
+    }
+  ]
+}
+
+|id |item    |value |type         |
+-----------------------------------
+|1  |books   |1000  |Uncategorized|
+|2  |snacks  |200   |small        |
+|3  |cab fare|300   |small        |
+|4  |rent    |20000 |big          |
+|5  |movies  |1500  |medium       |
+Total rows: 5
+
+"#);
+        } else {
+
+
+
                 let mut exp_store = ExpStore {
                     expressions: Vec::new(),
                 };
@@ -1187,7 +1260,8 @@ Appends a column whose value would be either 0 or 1, contingent on the evaluatio
                         continue;
                     }
                 }
-            }
+}
+}
 
             Some(3) => {
                 match get_concatenation_input() {
