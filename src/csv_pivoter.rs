@@ -1043,6 +1043,46 @@ SYNTAX
 
         match selected_option {
             Some(1) => {
+
+
+        if choice.to_lowercase() == "1d" {
+            print_insight_level_2(r#"Documentation
+
+Appends a column whose value would be either 0 or 1, contingent on the evaluation of conditions.
+==========================================================================================================
+{
+  "new_column_name": "is_abhishek",
+  "expressions": [
+    [
+      "Exp1",
+      {
+        "column": "agent_name",
+        "operator": "STARTS_WITH",
+        "compare_with": "Abhishek",
+        "compare_as": "=="
+      }
+    ]
+  ],
+  "evaluation": "Exp1"
+}
+
+|call_id                             |agent_name         |call_duration |actual_speak_time |is_abhishek |
+---------------------------------------------------------------------------------------------------------
+|1711007272.414489                   |End call rating IVR|128           |128.0             |0           |
+|1711007259.414452                   |                   |1             |0.0               |0           |
+|1711007258.414449                   |                   |4             |0.0               |0           |
+|1711007254.414438                   |                   |18            |0.0               |0           |
+|ae4d319c-e2ee-4275-b529-10ffea2bda64|                   |29            |0.0               |0           |
+<<+290 rows>>
+|c3fd5dc6-3fa5-4734-9666-1e1df9eac38b|                   |14            |0.0               |0           |
+|1711007572.415233                   |Abhishek Kumar IE  |298           |295.0             |0           |
+|1711007571.415232                   |                   |65            |0.0               |0           |
+|1711007571.415231                   |End call rating IVR|119           |116.0             |0           |
+|24256341-a8dc-4702-b725-5f87eae648bf|Ajeet prajapati    |171           |156.0             |0           |
+"#);
+        } else {
+
+
                 let mut exp_store = ExpStore {
                     expressions: Vec::new(),
                 };
@@ -1079,6 +1119,10 @@ SYNTAX
                         continue; // Return to the menu to let the user try again or choose another option
                     }
                 }
+        }
+
+
+
             }
 
             Some(2) => {

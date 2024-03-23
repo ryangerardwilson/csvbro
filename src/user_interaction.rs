@@ -222,6 +222,7 @@ pub fn determine_action_as_text(menu_options: &[&str], choice: &str) -> Option<S
     }
 }
 
+/*
 pub fn determine_action_as_number(menu_options: &[&str], choice: &str) -> Option<usize> {
     let choice = choice.to_lowercase();
 
@@ -272,6 +273,65 @@ pub fn determine_action_as_number(menu_options: &[&str], choice: &str) -> Option
         None
     }
 }
+*/
+
+pub fn determine_action_as_number(menu_options: &[&str], choice: &str) -> Option<usize> {
+    let choice = choice.to_lowercase();
+
+    // Check for direct numeric input or numeric followed by "d"
+    let parsed_choice = if choice.ends_with('d') {
+        choice.trim_end_matches('d').parse::<usize>()
+    } else {
+        choice.parse::<usize>()
+    };
+
+    if let Ok(index) = parsed_choice {
+        if index > 0 && index <= menu_options.len() {
+            return Some(index);
+        }
+    }
+
+    // Collect "starts with" matches
+    let starts_with_indices: Vec<usize> = menu_options
+        .iter()
+        .enumerate()
+        .filter_map(|(index, option)| {
+            if option.to_lowercase().starts_with(&choice) {
+                Some(index + 1)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    // If there's exactly one "starts with" match, return it
+    if starts_with_indices.len() == 1 {
+        return Some(starts_with_indices[0]);
+    }
+
+    // Apply fuzzy logic to either the filtered "starts with" options or all options
+    let target_indices = if starts_with_indices.is_empty() {
+        (1..=menu_options.len()).collect::<Vec<usize>>()
+    } else {
+        starts_with_indices
+    };
+
+    let (best_match_index, _) = target_indices
+        .iter()
+        .map(|&index| {
+            let option = &menu_options[index - 1];
+            (index, fuzz::ratio(&choice, &option.to_lowercase()))
+        })
+        .max_by_key(|&(_, score)| score)
+        .unwrap_or((0, 0));
+
+    if best_match_index > 0 && best_match_index <= menu_options.len() {
+        Some(best_match_index)
+    } else {
+        None
+    }
+}
+
 
 /// Prints a message in bold yellow font.
 pub fn print_insight(message: &str) {

@@ -695,7 +695,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         let has_headers = builder.has_headers(); // Assuming this method exists
         print_insight("Choose an action:");
         let menu_options;
-        if has_data {
+        if has_data { 
             if has_headers {
                 menu_options = vec![
                     "CALIBRATE",
@@ -703,6 +703,8 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     "ADD ROWS",
                     "UPDATE ROW",
                     "DELETE ROWS",
+                    "DROP COLUMNS",
+                    "RETAIN COLUMNS",
                     "SEARCH",
                     "INSPECT",
                     "PIVOT",
@@ -719,6 +721,8 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     "ADD ROWS",
                     "UPDATE ROW",
                     "DELETE ROWS",
+                    "DROP COLUMNS",
+                    "RETAIN COLUMNS",
                     "SEARCH",
                     "INSPECT",
                     "PIVOT",
@@ -1293,6 +1297,28 @@ SYNTAX
                 // Print updated table
                 builder.print_table();
                 println!();
+            }
+
+            Some(ref action) if action == "DROP COLUMNS" => {
+
+    let columns_input = get_user_input_level_2("Please type a comma-separated list of columns: ");
+
+    let columns: Vec<&str> = columns_input.trim().split(',').map(|s| s.trim()).collect();
+
+
+                builder.drop_columns(columns).print_table();
+
+            }
+
+            Some(ref action) if action == "RETAIN COLUMNS" => {
+
+    let columns_input = get_user_input_level_2("Please type a comma-separated list of columns: ");
+
+    let columns: Vec<&str> = columns_input.trim().split(',').map(|s| s.trim()).collect();
+
+
+                builder.retain_columns(columns).print_table();
+
             }
 
             Some(ref action) if action == "SORT" => {
