@@ -1074,7 +1074,6 @@ Appends a column whose value would be either 0 or 1, contingent on the evaluatio
 |4  |rent    |20000 |1              |
 |5  |movies  |1500  |1              |
 Total rows: 5
-
 "#);
         } else {
 
@@ -1193,7 +1192,6 @@ Appends a column whose value would be assigned category flags, contingent on the
 |4  |rent    |20000 |big          |
 |5  |movies  |1500  |medium       |
 Total rows: 5
-
 "#);
         } else {
 
