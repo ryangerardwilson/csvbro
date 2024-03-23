@@ -272,17 +272,12 @@ SYNTAX
                 csv_builder.print_rows_range(start, end);
             }
 
-
             Some(4) => {
-
                 if csv_builder.has_data() {
                     csv_builder.print_rows();
                     println!();
                 }
-
-
             }
-
 
             Some(5) => {
                 if csv_builder.has_data() {
@@ -290,9 +285,6 @@ SYNTAX
                     println!();
                 }
             }
-
-
-
 
             Some(6) => {
                 let mut exp_store = ExpStore {

@@ -332,7 +332,6 @@ pub fn determine_action_as_number(menu_options: &[&str], choice: &str) -> Option
     }
 }
 
-
 /// Prints a message in bold yellow font.
 pub fn print_insight(message: &str) {
     // ANSI escape code for bold yellow font

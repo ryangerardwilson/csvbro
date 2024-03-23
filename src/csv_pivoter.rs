@@ -1043,10 +1043,9 @@ SYNTAX
 
         match selected_option {
             Some(1) => {
-
-
-        if choice.to_lowercase() == "1d" {
-            print_insight_level_2(r#"Documentation
+                if choice.to_lowercase() == "1d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
 
 Appends a column whose value would be either 0 or 1, contingent on the evaluation of conditions.
 
@@ -1074,57 +1073,54 @@ Appends a column whose value would be either 0 or 1, contingent on the evaluatio
 |4  |rent    |20000 |1              |
 |5  |movies  |1500  |1              |
 Total rows: 5
-"#);
-        } else {
+"#,
+                    );
+                } else {
+                    let mut exp_store = ExpStore {
+                        expressions: Vec::new(),
+                    };
 
+                    match get_append_boolean_expression(&mut exp_store) {
+                        Ok((new_column_name, expression_names, result_expression)) => {
+                            // Check if the new column name is empty
+                            if new_column_name.trim().is_empty() {
+                                print_insight_level_2(
+                                    "No new column name provided. Operation aborted.",
+                                );
+                                continue; // Skip the rest of the process
+                            }
 
-                let mut exp_store = ExpStore {
-                    expressions: Vec::new(),
-                };
+                            let expressions_refs: Vec<(&str, Exp)> = expression_names
+                                .iter()
+                                .map(|(name, index)| {
+                                    (name.as_str(), exp_store.get_exp(*index).clone())
+                                })
+                                .collect();
 
-                match get_append_boolean_expression(&mut exp_store) {
-                    Ok((new_column_name, expression_names, result_expression)) => {
-                        // Check if the new column name is empty
-                        if new_column_name.trim().is_empty() {
-                            print_insight_level_2(
-                                "No new column name provided. Operation aborted.",
+                            // Append the new derived column
+                            csv_builder.append_derived_boolean_column(
+                                &new_column_name,
+                                expressions_refs,
+                                &result_expression,
                             );
-                            continue; // Skip the rest of the process
+                            if csv_builder.has_data() {
+                                csv_builder.print_table();
+                                println!();
+                            }
+                            print_insight_level_2("Derived boolean column appended.");
                         }
-
-                        let expressions_refs: Vec<(&str, Exp)> = expression_names
-                            .iter()
-                            .map(|(name, index)| (name.as_str(), exp_store.get_exp(*index).clone()))
-                            .collect();
-
-                        // Append the new derived column
-                        csv_builder.append_derived_boolean_column(
-                            &new_column_name,
-                            expressions_refs,
-                            &result_expression,
-                        );
-                        if csv_builder.has_data() {
-                            csv_builder.print_table();
-                            println!();
+                        Err(e) => {
+                            println!("Error getting expressions: {}", e);
+                            continue; // Return to the menu to let the user try again or choose another option
                         }
-                        print_insight_level_2("Derived boolean column appended.");
-                    }
-                    Err(e) => {
-                        println!("Error getting expressions: {}", e);
-                        continue; // Return to the menu to let the user try again or choose another option
                     }
                 }
-        }
-
-
-
             }
 
             Some(2) => {
-
-
-        if choice.to_lowercase() == "2d" {
-            print_insight_level_2(r#"DOCUMENTATION
+                if choice.to_lowercase() == "2d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
 
 Appends a column whose value would be assigned category flags, contingent on the evaluation of conditions.
 
@@ -1192,104 +1188,127 @@ Appends a column whose value would be assigned category flags, contingent on the
 |4  |rent    |20000 |big          |
 |5  |movies  |1500  |medium       |
 Total rows: 5
-"#);
-        } else {
+"#,
+                    );
+                } else {
+                    let mut exp_store = ExpStore {
+                        expressions: Vec::new(),
+                    };
 
+                    match get_append_category_expression(&mut exp_store) {
+                        Ok((new_column_name, category_expressions)) => {
+                            if new_column_name.trim().is_empty() {
+                                print_insight_level_2(
+                                    "No new column name provided. Operation aborted.",
+                                );
+                                continue;
+                            }
 
+                            let mut string_storage = Vec::new();
+                            // First pass: collect all strings
+                            for (cat_name, filters, cat_eval) in &category_expressions {
+                                string_storage.push(cat_name.clone());
+                                for (filter_name, _) in filters {
+                                    string_storage.push(filter_name.clone());
+                                }
+                                string_storage.push(cat_eval.clone());
+                            }
 
-                let mut exp_store = ExpStore {
-                    expressions: Vec::new(),
-                };
+                            // Second pass: create references
+                            let mut string_index = 0;
+                            let category_expressions: Vec<(&str, Vec<(&str, Exp)>, &str)> =
+                                category_expressions
+                                    .into_iter()
+                                    .map(|(_, filters, _)| {
+                                        let cat_name = &string_storage[string_index];
+                                        string_index += 1;
 
-                match get_append_category_expression(&mut exp_store) {
-                    Ok((new_column_name, category_expressions)) => {
-                        if new_column_name.trim().is_empty() {
-                            print_insight_level_2(
-                                "No new column name provided. Operation aborted.",
+                                        let filters: Vec<(&str, Exp)> = filters
+                                            .into_iter()
+                                            .map(|(_, exp)| {
+                                                let filter_name = &string_storage[string_index];
+                                                string_index += 1;
+                                                (filter_name.as_str(), exp)
+                                            })
+                                            .collect();
+
+                                        let cat_eval = &string_storage[string_index];
+                                        string_index += 1;
+
+                                        (cat_name.as_str(), filters, cat_eval.as_str())
+                                    })
+                                    .collect();
+
+                            csv_builder.append_derived_category_column(
+                                &new_column_name,
+                                category_expressions,
                             );
+                            if csv_builder.has_data() {
+                                csv_builder.print_table();
+                                println!();
+                            }
+                            print_insight_level_2("Derived category column appended.");
+                        }
+                        Err(e) => {
+                            println!("Error getting expressions: {}", e);
                             continue;
                         }
-
-                        let mut string_storage = Vec::new();
-                        // First pass: collect all strings
-                        for (cat_name, filters, cat_eval) in &category_expressions {
-                            string_storage.push(cat_name.clone());
-                            for (filter_name, _) in filters {
-                                string_storage.push(filter_name.clone());
-                            }
-                            string_storage.push(cat_eval.clone());
-                        }
-
-                        // Second pass: create references
-                        let mut string_index = 0;
-                        let category_expressions: Vec<(&str, Vec<(&str, Exp)>, &str)> =
-                            category_expressions
-                                .into_iter()
-                                .map(|(_, filters, _)| {
-                                    let cat_name = &string_storage[string_index];
-                                    string_index += 1;
-
-                                    let filters: Vec<(&str, Exp)> = filters
-                                        .into_iter()
-                                        .map(|(_, exp)| {
-                                            let filter_name = &string_storage[string_index];
-                                            string_index += 1;
-                                            (filter_name.as_str(), exp)
-                                        })
-                                        .collect();
-
-                                    let cat_eval = &string_storage[string_index];
-                                    string_index += 1;
-
-                                    (cat_name.as_str(), filters, cat_eval.as_str())
-                                })
-                                .collect();
-
-                        csv_builder
-                            .append_derived_category_column(&new_column_name, category_expressions);
-                        if csv_builder.has_data() {
-                            csv_builder.print_table();
-                            println!();
-                        }
-                        print_insight_level_2("Derived category column appended.");
-                    }
-                    Err(e) => {
-                        println!("Error getting expressions: {}", e);
-                        continue;
                     }
                 }
-}
-}
+            }
 
             Some(3) => {
-                match get_concatenation_input() {
-                    Ok((new_column_name, items_to_concatenate)) => {
-                        if new_column_name.trim().is_empty() {
-                            print_insight_level_2(
-                                "No new column name provided. Operation aborted.",
+                if choice.to_lowercase() == "3d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Appends a column whose value is a concatenation of other columns.
+
+{
+    "new_column_name": "item_value",
+    "concatenation_items": ["item", "value"]
+}
+
+|id |item    |value |item_value |
+---------------------------------
+|1  |books   |1000  |books1000  |
+|2  |snacks  |200   |snacks200  |
+|3  |cab fare|300   |cab fare300|
+|4  |rent    |20000 |rent20000  |
+|5  |movies  |1500  |movies1500 |
+Total rows: 5
+"#,
+                    );
+                } else {
+                    match get_concatenation_input() {
+                        Ok((new_column_name, items_to_concatenate)) => {
+                            if new_column_name.trim().is_empty() {
+                                print_insight_level_2(
+                                    "No new column name provided. Operation aborted.",
+                                );
+                                continue;
+                            }
+
+                            // Convert Vec<String> to Vec<&str>
+                            let items_to_concatenate_refs: Vec<&str> =
+                                items_to_concatenate.iter().map(|s| s.as_str()).collect();
+
+                            // Now pass the vector of string slices
+                            csv_builder.append_derived_concatenation_column(
+                                &new_column_name,
+                                items_to_concatenate_refs,
                             );
+
+                            if csv_builder.has_data() {
+                                csv_builder.print_table();
+                                println!();
+                            }
+                            print_insight_level_2("Derived concatenation column appended.");
+                        }
+                        Err(e) => {
+                            println!("Error getting concatenation details: {}", e);
                             continue;
                         }
-
-                        // Convert Vec<String> to Vec<&str>
-                        let items_to_concatenate_refs: Vec<&str> =
-                            items_to_concatenate.iter().map(|s| s.as_str()).collect();
-
-                        // Now pass the vector of string slices
-                        csv_builder.append_derived_concatenation_column(
-                            &new_column_name,
-                            items_to_concatenate_refs,
-                        );
-
-                        if csv_builder.has_data() {
-                            csv_builder.print_table();
-                            println!();
-                        }
-                        print_insight_level_2("Derived concatenation column appended.");
-                    }
-                    Err(e) => {
-                        println!("Error getting concatenation details: {}", e);
-                        continue;
                     }
                 }
             }
@@ -1531,7 +1550,6 @@ Total rows: 5
                     Err(e) => println!("Error getting pivot details: {}", e),
                 }
             }
-
 
             Some(10) => {
                 csv_builder.print_table();

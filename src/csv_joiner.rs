@@ -211,7 +211,6 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
                             }
                         }
             */
-
             Some(8) => {
                 csv_builder.print_table();
                 break; // Exit the inspect handler

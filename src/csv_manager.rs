@@ -67,17 +67,16 @@ pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
 
             let choice = get_user_input("What's it gonna be?: ").to_lowercase();
 
+            // Assuming 'back' is always the last option
+            let back_option_number = file_name_slices.len();
 
-// Assuming 'back' is always the last option
-let back_option_number = file_name_slices.len();
-
-// Check if the user's choice is a number and if it matches the serial number for 'back'
-if choice.parse::<usize>().ok() == Some(back_option_number) {
-    print_insight("Bailed on that. Heading back to the last menu, bro.");
-    return None; // Assuming this is within a function that can return None for some control flow
-} else {
-    // Handle other choices or input errors
-}
+            // Check if the user's choice is a number and if it matches the serial number for 'back'
+            if choice.parse::<usize>().ok() == Some(back_option_number) {
+                print_insight("Bailed on that. Heading back to the last menu, bro.");
+                return None; // Assuming this is within a function that can return None for some control flow
+            } else {
+                // Handle other choices or input errors
+            }
 
             // Fuzzy match logic for 'back'
             let options = &["back"];
@@ -173,43 +172,47 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
                 .filter_map(|file| file.file_name()?.to_str().map(String::from))
                 .collect();
 
-let mut file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
-file_name_slices.push("BACK");
+            let mut file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
+            file_name_slices.push("BACK");
 
-// Now, call print_list with this vector
-print_list(&file_name_slices);
+            // Now, call print_list with this vector
+            print_list(&file_name_slices);
 
-let choice = get_user_input("Punch in the serial number or a slice of the file name to DELETE, or hit 'back' to bail.\nWhat's it gonna be?: ")
+            let choice = get_user_input("Punch in the serial number or a slice of the file name to DELETE, or hit 'back' to bail.\nWhat's it gonna be?: ")
     .trim().to_lowercase();
 
-// Assuming 'back' is always the last option
-let back_option_serial = file_name_slices.len();
+            // Assuming 'back' is always the last option
+            let back_option_serial = file_name_slices.len();
 
-// Check if the user's choice is a number and matches the serial number for 'back'
-if choice.parse::<usize>().ok().map_or(false, |num| num == back_option_serial) {
-    print_insight("Bailed on that. Heading back to the last menu, bro.");
-    return; // Assuming this is within a function that allows for an early return
-} else {
-    // Fuzzy match logic for 'back'
-    let options = &["back"];
-    let mut highest_score = 0;
-    let mut best_match = "";
+            // Check if the user's choice is a number and matches the serial number for 'back'
+            if choice
+                .parse::<usize>()
+                .ok()
+                .map_or(false, |num| num == back_option_serial)
+            {
+                print_insight("Bailed on that. Heading back to the last menu, bro.");
+                return; // Assuming this is within a function that allows for an early return
+            } else {
+                // Fuzzy match logic for 'back'
+                let options = &["back"];
+                let mut highest_score = 0;
+                let mut best_match = "";
 
-    for &option in options {
-        let score = fuzz::ratio(&choice, option);
-        if score > highest_score {
-            highest_score = score;
-            best_match = option;
-        }
-    }
+                for &option in options {
+                    let score = fuzz::ratio(&choice, option);
+                    if score > highest_score {
+                        highest_score = score;
+                        best_match = option;
+                    }
+                }
 
-    // Check if the best match is 'back' with a score above 60
-    if best_match == "back" && highest_score > 60 {
-        print_insight("Bailed on that. Heading back to the last menu, bro.");
-        return;
-    }
-    // Continue with additional logic for handling other inputs or choices
-}
+                // Check if the best match is 'back' with a score above 60
+                if best_match == "back" && highest_score > 60 {
+                    print_insight("Bailed on that. Heading back to the last menu, bro.");
+                    return;
+                }
+                // Continue with additional logic for handling other inputs or choices
+            }
 
             let mut file_deleted = false;
 
@@ -322,34 +325,34 @@ pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBui
 
     let back_option_serial = file_info_slices.len();
 
-if choice.parse::<usize>().ok().map_or(false, |num| num == back_option_serial) {
-    print_insight("Bailed on that. Heading back to the last menu, bro.");
-    return None; // Assuming this is within a function that allows for an early return
-} else {
-    // Fuzzy match logic for 'back'
-    let options = &["back"];
-    let mut highest_score = 0;
-    let mut best_match = "";
-
-    for &option in options {
-        let score = fuzz::ratio(&choice, option);
-        if score > highest_score {
-            highest_score = score;
-            best_match = option;
-        }
-    }
-
-    // Check if the best match is 'back' with a score above 60
-    if best_match == "back" && highest_score > 60 {
+    if choice
+        .parse::<usize>()
+        .ok()
+        .map_or(false, |num| num == back_option_serial)
+    {
         print_insight("Bailed on that. Heading back to the last menu, bro.");
-        return None;
+        return None; // Assuming this is within a function that allows for an early return
+    } else {
+        // Fuzzy match logic for 'back'
+        let options = &["back"];
+        let mut highest_score = 0;
+        let mut best_match = "";
+
+        for &option in options {
+            let score = fuzz::ratio(&choice, option);
+            if score > highest_score {
+                highest_score = score;
+                best_match = option;
+            }
+        }
+
+        // Check if the best match is 'back' with a score above 60
+        if best_match == "back" && highest_score > 60 {
+            print_insight("Bailed on that. Heading back to the last menu, bro.");
+            return None;
+        }
+        // Continue with additional logic for handling other inputs or choices
     }
-    // Continue with additional logic for handling other inputs or choices
-}
-
-
-
-
 
     if let Ok(serial) = choice.parse::<usize>() {
         if serial > 0 && serial <= files.len() {
@@ -695,7 +698,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         let has_headers = builder.has_headers(); // Assuming this method exists
         print_insight("Choose an action:");
         let menu_options;
-        if has_data { 
+        if has_data {
             if has_headers {
                 menu_options = vec![
                     "CALIBRATE",
@@ -746,8 +749,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         let selected_option = determine_action_as_text(&menu_options, &choice);
 
         match selected_option {
-
-
             /*
             Some(ref action) if action == "SHOW ALL ROWS" => {
                 if builder.has_data() {
@@ -756,7 +757,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 }
             }
             */
-
             Some(ref action) if action == "CALIBRATE" => {
                 println!();
 
@@ -1300,25 +1300,23 @@ SYNTAX
             }
 
             Some(ref action) if action == "DROP COLUMNS" => {
+                let columns_input =
+                    get_user_input_level_2("Please type a comma-separated list of columns: ");
 
-    let columns_input = get_user_input_level_2("Please type a comma-separated list of columns: ");
-
-    let columns: Vec<&str> = columns_input.trim().split(',').map(|s| s.trim()).collect();
-
+                let columns: Vec<&str> =
+                    columns_input.trim().split(',').map(|s| s.trim()).collect();
 
                 builder.drop_columns(columns).print_table();
-
             }
 
             Some(ref action) if action == "RETAIN COLUMNS" => {
+                let columns_input =
+                    get_user_input_level_2("Please type a comma-separated list of columns: ");
 
-    let columns_input = get_user_input_level_2("Please type a comma-separated list of columns: ");
-
-    let columns: Vec<&str> = columns_input.trim().split(',').map(|s| s.trim()).collect();
-
+                let columns: Vec<&str> =
+                    columns_input.trim().split(',').map(|s| s.trim()).collect();
 
                 builder.retain_columns(columns).print_table();
-
             }
 
             Some(ref action) if action == "SORT" => {
