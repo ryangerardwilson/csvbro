@@ -3,6 +3,7 @@ use crate::csv_inspector::handle_inspect;
 use crate::csv_joiner::handle_join;
 use crate::csv_pivoter::handle_pivot;
 use crate::csv_searcher::handle_search;
+use crate::csv_tinkerer::handle_tinker;
 use crate::settings::{manage_db_config_file, DbPreset};
 use crate::user_interaction::{
     determine_action_as_text,
@@ -702,10 +703,13 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
             if has_headers {
                 menu_options = vec![
                     "CALIBRATE",
+                    "TINKER",
                     "UPDATE HEADERS",
                     "ADD ROWS",
                     "UPDATE ROW",
+                    "UPDATE ROWS (OVER ENTIRE TABLE)",
                     "DELETE ROWS",
+                    "ADD COLUMNS",
                     "DROP COLUMNS",
                     "RETAIN COLUMNS",
                     "SEARCH",
@@ -720,10 +724,13 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
             } else {
                 menu_options = vec![
                     "CALIBRATE",
+                    "TINKER",
                     "SET HEADERS",
                     "ADD ROWS",
                     "UPDATE ROW",
+                    "UPDATE ROWS (OVER ENTIRE TABLE)",
                     "DELETE ROWS",
+                    "ADD COLUMNS",
                     "DROP COLUMNS",
                     "RETAIN COLUMNS",
                     "SEARCH",
@@ -1189,15 +1196,260 @@ SYNTAX
                 println!();
             }
 
-            Some(ref action) if action == "SEARCH" => {
-                /*
-                if builder.has_data() {
-                    let query =
-                    get_user_input_level_2("Enter search term: ");
-                    builder.contains_search(&query);
+
+
+            Some(ref action) if action == "ADD COLUMNS" => {
+                if has_data {
+
+                    let new_columns_input = get_user_input("Enter new column names: ");
                     println!();
+                    //let new_columns: Vec<&str> = new_columns_input.trim().split(',').collect();
+
+let new_columns: Vec<String> = new_columns_input
+    .trim() // Trim the whole input to remove leading/trailing whitespace around the input
+    .split(',') // Split the input into individual column names
+    .map(|name| name.trim().to_string()) // Trim each column name and convert to String
+    .collect();
+
+                    if !new_columns.is_empty() {
+
+
+    let existing_data = builder.get_data();
+    let existing_headers = builder.get_headers().unwrap_or(&[]); // Assuming get_headers() method exists
+
+    let mut json_array_str = "[".to_string();
+
+    for (row_index, row) in existing_data.iter().enumerate() {
+        json_array_str.push_str("\n  {");
+
+        // Include existing row values
+        for (col_index, value) in row.iter().enumerate() {
+            json_array_str.push_str(&format!(
+                "\n    \"{}\": \"{}\"", 
+                existing_headers[col_index], 
+                value
+            ));
+            if col_index < existing_headers.len() - 1 || !new_columns.is_empty() {
+                json_array_str.push(',');
+            }
+        }
+
+        // Add placeholders for new columns
+        for (new_col_index, new_col) in new_columns.iter().enumerate() {
+            json_array_str.push_str(&format!("\n    \"{}\": \"\"", new_col));
+            if new_col_index < new_columns.len() - 1 {
+                json_array_str.push(',');
+            }
+        }
+
+        json_array_str.push_str("\n  }");
+        if row_index < existing_data.len() - 1 {
+            json_array_str.push(',');
+        }
+    }
+
+    json_array_str.push_str("\n]");
+
+    let syntax_explanation = r#"
+
+SYNTAX
+======
+
+### Example
+
+[
+    {
+        "new_column1": "value1",
+        "new_column2": "value2",
+        // ...
+    },
+    {
+        "new_column1": "value1",
+        "new_column2": "value2",
+        // ...
+    }
+    // ...
+]
+
+    "#;
+let full_syntax = json_array_str + syntax_explanation;
+
+let rows_json_str = get_edited_user_json_input(full_syntax);
+
+
+    let rows_json: Vec<serde_json::Value> = match serde_json::from_str(&rows_json_str) {
+        Ok(json) => json,
+        Err(e) => {
+            eprintln!("Error parsing JSON string: {}", e);
+            return; // Exit the function early if there's an error
+        }
+    };
+let new_columns_str_slices: Vec<&str> = new_columns.iter().map(AsRef::as_ref).collect();
+
+// Now call add_column_headers with the corrected type
+builder.add_column_headers(new_columns_str_slices);
+
+    // Add new column headers
+    //builder.add_column_headers(new_columns.clone());
+
+for (row_index, row_json) in rows_json.iter().enumerate() {
+    // Collect new and existing values for the current row
+    let mut row_values = Vec::new();
+    if let Some(headers) = builder.get_headers() {
+        for header in headers {
+            if let Some(value) = row_json.get(header).and_then(|v| v.as_str()) {
+                row_values.push(value);
+            } else {
+                // For new columns or missing values, default to an empty string
+                row_values.push("");
+            }
+        }
+    }
+
+    // Update existing rows or add new ones
+    if row_index < builder.get_data().len() {
+        // Update existing row with new and existing values
+        builder.update_row_by_row_number(row_index + 1, row_values.clone());
+    } else {
+        // Add new rows with the provided values
+        builder.add_row(row_values);
+    }
+}
+
+
+    builder.print_table();
+
+
+
+
+
+                    } else {
+                        println!("No columns entered. Exiting ADD COLUMNS function.");
+                    }
+
+                
+            }
+
+}
+
+
+            Some(ref action) if action == "UPDATE ROWS (OVER ENTIRE TABLE)" => {
+                if has_data {
+
+                    //let new_columns_input = get_user_input("Enter new column names: ");
+                    println!();
+                    //let new_columns: Vec<&str> = new_columns_input.trim().split(',').collect();
+
+    let existing_data = builder.get_data();
+    //let existing_headers = builder.get_headers().unwrap_or(&[]);
+
+let existing_headers: Vec<String> = builder.get_headers()
+    .unwrap_or(&[])
+    .iter()
+    .cloned() // Clone each String in the Vec
+    .collect();
+
+    let mut json_array_str = "[".to_string();
+
+    for (row_index, row) in existing_data.iter().enumerate() {
+        json_array_str.push_str("\n  {");
+
+        for (col_index, value) in row.iter().enumerate() {
+            json_array_str.push_str(&format!(
+                "\n    \"{}\": \"{}\"",
+                existing_headers[col_index],
+                value
+            ));
+            if col_index < existing_headers.len() - 1 {
+                json_array_str.push(',');
+            }
+        }
+
+        json_array_str.push_str("\n  }");
+        if row_index < existing_data.len() - 1 {
+            json_array_str.push(',');
+        }
+    }
+    json_array_str.push_str("\n]");
+
+
+    let syntax_explanation = r#"
+
+SYNTAX
+======
+
+### Example
+
+[
+    {
+        "new_column1": "value1",
+        "new_column2": "value2",
+        // ...
+    },
+    {
+        "new_column1": "value1",
+        "new_column2": "value2",
+        // ...
+    }
+    // ...
+]
+
+    "#;
+let full_syntax = json_array_str + syntax_explanation;
+
+let rows_json_str = get_edited_user_json_input(full_syntax);
+
+
+    // Step 3: Parse the Edited JSON String
+    let rows_json: Vec<serde_json::Value> = match serde_json::from_str(&rows_json_str) {
+        Ok(json) => json,
+        Err(e) => {
+            eprintln!("Error parsing JSON string: {}", e);
+            return; // Exit the function early if there's an error
+        }
+    };
+
+    // Step 4: Update the Table
+    for (row_index, row_json) in rows_json.iter().enumerate() {
+        let mut row_values = Vec::new();
+        for header in &existing_headers {
+            if let Some(value) = row_json.get(header).and_then(|v| v.as_str()) {
+                row_values.push(value);
+            } else {
+                row_values.push(""); // Use existing value or empty string if not found
+            }
+        }
+
+        if row_index < builder.get_data().len() {
+            builder.update_row_by_row_number(row_index + 1, row_values.clone());
+        } else {
+            builder.add_row(row_values);
+        }
+    }
+
+    builder.print_table();
+
+
+
+
+
+
+            }
+
+}
+
+
+            Some(ref action) if action == "TINKER" => {
+
+                if let Err(e) = handle_tinker(&mut builder).await {
+                    println!("Error during tinker: {}", e);
+                    continue;
                 }
-                */
+            }
+
+
+
+            Some(ref action) if action == "SEARCH" => {
 
                 if let Err(e) = handle_search(&mut builder).await {
                     println!("Error during search: {}", e);

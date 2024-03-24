@@ -6,3 +6,4 @@ pub mod csv_inspector;
 pub mod csv_pivoter;
 pub mod csv_joiner;
 pub mod csv_searcher;
+pub mod csv_tinkerer;

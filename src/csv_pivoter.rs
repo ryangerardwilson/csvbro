@@ -1262,7 +1262,11 @@ Total rows: 5
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
-Appends a column whose value is a concatenation of other columns.
+Appends a column whose value is a concatenation of other columns. This can be useful in the following scenarios:
+
+(1) Crating Unique Identifiers: Concatenated columns can create unique identifiers (IDs) for records when individual columns alone might not contain unique information. This is especially useful in scenarios where composite keys are required to uniquely identify records in relational databases.
+
+(2) Granular Data Segmentation: Creating more granular category flags by appending a column that concatenates other columns can be incredibly useful in data science, particularly for enhancing data granularity, improving analysis specificity, and enabling more detailed segmentation. For instance, in a retail context, rather than analyzing all electronics together, creating flags for specific types of electronics (e.g., "laptop_high_end", "smartphone_entry_level") can reveal more nuanced consumer behavior.
 
 {
     "new_column_name": "item_value",
@@ -1313,7 +1317,32 @@ Total rows: 5
                 }
             }
 
-            Some(4) => match get_date_split_input() {
+            Some(4) => {
+
+                if choice.to_lowercase() == "4d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Appends a column whose value is a concatenation of other columns.
+
+{
+    "new_column_name": "item_value",
+    "concatenation_items": ["item", "value"]
+}
+
+|id |item    |value |item_value |
+---------------------------------
+|1  |books   |1000  |books1000  |
+|2  |snacks  |200   |snacks200  |
+|3  |cab fare|300   |cab fare300|
+|4  |rent    |20000 |rent20000  |
+|5  |movies  |1500  |movies1500 |
+Total rows: 5
+"#,
+                    );
+                } else {
+
+match get_date_split_input() {
                 Ok((column_name, date_format)) => {
                     if column_name.trim().is_empty() || date_format.trim().is_empty() {
                         print_insight_level_2(
@@ -1334,7 +1363,13 @@ Total rows: 5
                     println!("Error getting date split details: {}", e);
                     continue;
                 }
-            },
+            
+                }
+
+                }
+
+                },
+
 
             Some(5) => {
                 // This matches the case in your project's workflow

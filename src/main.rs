@@ -3,6 +3,7 @@ mod csv_joiner;
 mod csv_manager;
 mod csv_pivoter;
 mod csv_searcher;
+mod csv_tinkerer;
 mod settings;
 mod user_interaction;
 mod utils;
