@@ -22,7 +22,6 @@ use calamine::{open_workbook, Reader, Xls};
 use chrono::{DateTime, Local};
 use fuzzywuzzy::fuzz;
 use rgwml::csv_utils::{CalibConfig, CsvBuilder};
-use serde_json::json;
 use std::env;
 use std::error::Error;
 use std::fs::{self};
@@ -696,7 +695,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
 
     loop {
         let has_data = builder.has_data();
-        let has_headers = builder.has_headers(); // Assuming this method exists
         print_insight("Choose an action:");
         
                 let menu_options = vec![
