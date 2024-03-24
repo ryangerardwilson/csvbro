@@ -48,6 +48,7 @@ pub async fn handle_tinker(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn s
     }
 
     let menu_options = vec![
+                    "SET HEADERS",
                     "UPDATE HEADERS",
                     "ADD ROWS",
                     "UPDATE ROW",
@@ -71,7 +72,76 @@ pub async fn handle_tinker(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn s
         let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
 
         match selected_option {
+
             Some(1) => {
+                // let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
+
+
+                let headers_json = json!({
+                    "headers": Vec::<String>::new()
+                });
+
+                let headers_json_str = match serde_json::to_string_pretty(&headers_json) {
+                    Ok(json) => json,
+                    Err(e) => {
+                        eprintln!("Error creating JSON string: {}", e);
+                        //return;
+                        return Err("An error occurred".to_string().into());
+                    }
+                };
+
+                let edited_json = get_edited_user_sql_input(headers_json_str);
+
+                let edited_headers: serde_json::Value = match serde_json::from_str(&edited_json) {
+                    Ok(headers) => headers,
+                    Err(e) => {
+                        eprintln!("Error parsing JSON string: {}", e);
+                        //return;
+                        return Err("An error occurred".to_string().into());
+                    }
+                };
+
+                let headers = match edited_headers["headers"].as_array() {
+                    Some(array) => array
+                        .iter()
+                        .map(|val| {
+                            val.as_str()
+                                .unwrap_or_default()
+                                .to_lowercase()
+                                .replace(" ", "_")
+                        })
+                        .collect::<Vec<String>>(),
+                    None => {
+                        eprintln!("Invalid format for new headers");
+                        //return;
+                        return Err("An error occurred".to_string().into());
+                    }
+                };
+
+                let header_slices: Vec<&str> = headers.iter().map(AsRef::as_ref).collect();
+                csv_builder.set_header(header_slices);
+
+                if csv_builder.has_data() {
+                    csv_builder.print_table();
+                    println!();
+                }
+
+
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+            }
+
+
+            Some(2) => {
                 // let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
 
 
@@ -150,7 +220,7 @@ pub async fn handle_tinker(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn s
 
 
 
-            Some(2) => {
+            Some(3) => {
 
 
                     println!();
@@ -289,7 +359,7 @@ SYNTAX
                 }
             }
 
-            Some(3) => {
+            Some(4) => {
 
 
                 println!();
@@ -446,7 +516,7 @@ SYNTAX
                     }
                 }
             }
-            Some(4) => {
+            Some(5) => {
 
                     //let new_columns_input = get_user_input("Enter new column names: ");
                     println!();
@@ -559,7 +629,7 @@ let rows_json_str = get_edited_user_json_input(full_syntax);
                     }
                 }
             }
-            Some(5) => {
+            Some(6) => {
 
 
                 println!();
@@ -657,7 +727,7 @@ let rows_json_str = get_edited_user_json_input(full_syntax);
 
 
 
-            Some(6) => {
+            Some(7) => {
 
 
                     let new_columns_input = get_user_input_level_2("Enter new column names: ");
@@ -804,7 +874,7 @@ for (row_index, row_json) in rows_json.iter().enumerate() {
                 }
             }
 
-            Some(7) => {
+            Some(8) => {
 
                 let columns_input =
                     get_user_input_level_2("Please type a comma-separated list of columns: ");
@@ -827,7 +897,7 @@ for (row_index, row_json) in rows_json.iter().enumerate() {
                     }
                 }
             }
-            Some(8) => {
+            Some(9) => {
 
                 let columns_input =
                     get_user_input_level_2("Please type a comma-separated list of columns: ");
@@ -850,13 +920,13 @@ for (row_index, row_json) in rows_json.iter().enumerate() {
                     }
                 }
             }
-            Some(9) => {
+            Some(10) => {
                 csv_builder.print_table();
 
                 break;
             }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 9.");
+                println!("Invalid option. Please enter a number from 1 to 10.");
                 continue;
             }
         }
