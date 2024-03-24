@@ -1322,22 +1322,6 @@ Total rows: 5
                 if choice.to_lowercase() == "4d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
-
-Appends a column whose value is a concatenation of other columns.
-
-{
-    "new_column_name": "item_value",
-    "concatenation_items": ["item", "value"]
-}
-
-|id |item    |value |item_value |
----------------------------------
-|1  |books   |1000  |books1000  |
-|2  |snacks  |200   |snacks200  |
-|3  |cab fare|300   |cab fare300|
-|4  |rent    |20000 |rent20000  |
-|5  |movies  |1500  |movies1500 |
-Total rows: 5
 "#,
                     );
                 } else {
