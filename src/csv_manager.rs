@@ -696,19 +696,19 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
     loop {
         let has_data = builder.has_data();
         print_insight("Choose an action:");
-        
-                let menu_options = vec![
-                    "CALIBRATE",
-                    "TINKER",
-                    "SEARCH",
-                    "INSPECT",
-                    "PIVOT",
-                    "JOIN",
-                    "SORT",
-                    "SAVE",
-                    "SAVE AS",
-                    "BACK",
-                ];
+
+        let menu_options = vec![
+            "CALIBRATE",
+            "TINKER",
+            "SEARCH",
+            "INSPECT",
+            "PIVOT",
+            "JOIN",
+            "SORT",
+            "SAVE",
+            "SAVE AS",
+            "BACK",
+        ];
 
         print_list(&menu_options);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -788,9 +788,7 @@ SYNTAX
                 }
             }
 
-
             Some(ref action) if action == "TINKER" => {
-
                 if let Err(e) = handle_tinker(&mut builder).await {
                     println!("Error during tinker: {}", e);
                     continue;
@@ -798,7 +796,6 @@ SYNTAX
             }
 
             Some(ref action) if action == "SEARCH" => {
-
                 if let Err(e) = handle_search(&mut builder).await {
                     println!("Error during search: {}", e);
                     continue;
