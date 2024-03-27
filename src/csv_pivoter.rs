@@ -2039,7 +2039,7 @@ Example 2:
     "operation": "SUM",
     "seggregate_by": [
         {"column": "relates_to_travel", "type": "AS_BOOLEAN"},
-	    {"column": "type", "type": "AS_CATEGORY"}
+        {"column": "type", "type": "AS_CATEGORY"}
     ],
     "save_as": ""
 }
