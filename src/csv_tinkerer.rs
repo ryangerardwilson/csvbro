@@ -316,7 +316,6 @@ Note the implications of the limit_type value:
 2. RANDOM: Selects 'n' random entries from the dataset, providing a sample that does not necessarily reflect the original distribution but ensures unpredictability.
 3. RAW_DISTRIBUTION: Selects a representative sample from a larger dataset in a way that the selected sample mirrors the overall structure and distribution of the original data.
 4. COLUMN_DISTRIBUTION: Balances the sample based on the distribution of values within a specified column, aiming to maintain proportional representation across different categories or values.
-
 "#;
 
         let exp_json = get_edited_user_json_input((&syntax).to_string());
@@ -1535,6 +1534,75 @@ Allows you to limit rows.
 |10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
 Total rows: 10
 
+Example 1: NORMAL
+{
+  "limit_value": "5",
+  "limit_type": "NORMAL",
+  "column_name_for_column_distribution": ""
+}
+
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+Total rows: 5
+
+Example 2: RANDOM
+{
+  "limit_value": "5",
+  "limit_type": "RANDOM",
+  "column_name_for_column_distribution": ""
+}
+
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+Total rows: 5
+
+Example 3: RAW_DISTRIBUTION
+{
+  "limit_value": "5",
+  "limit_type": "RAW_DISTRIBUTION",
+  "column_name_for_column_distribution": ""
+}
+
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+Total rows: 5
+
+Example 4: COLUMN_DISTRIBUTION
+{
+  "limit_value": "5",
+  "limit_type": "COLUMN_DISTRIBUTION",
+  "column_name_for_column_distribution": "type"
+}
+
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+Total rows: 5
+
+Note the implications of the limit_type value:
+1. NORMAL: Directly restricts the dataset to the first 'n' entries, where 'n' is the specified limit, without considering distribution.
+2. RANDOM: Selects 'n' random entries from the dataset, providing a sample that does not necessarily reflect the original distribution but ensures unpredictability.
+3. RAW_DISTRIBUTION: Selects a representative sample from a larger dataset in a way that the selected sample mirrors the overall structure and distribution of the original data.
+4. COLUMN_DISTRIBUTION: Balances the sample based on the distribution of values within a specified column, aiming to maintain proportional representation across different categories or values.
 "#,
                     );
                     continue;
