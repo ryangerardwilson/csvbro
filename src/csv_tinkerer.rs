@@ -280,6 +280,107 @@ SYNTAX
         }
     }
 
+
+    fn apply_limit(
+        csv_builder: &mut CsvBuilder
+    ) -> Result<&mut CsvBuilder, String> {
+
+
+        let syntax = r#"{
+  "limit_value": "",
+  "limit_type": "",
+  "column_name_for_column_distribution": ""
+}
+
+SYNTAX
+======
+
+### Example 1
+
+{
+  "limit_value": "7",
+  "limit_type": "NORMAL", // Also, "RANDOM", "RAW_DISTRIBUTION", "COLUMN_DISTRIBUTION"
+  "column_name_for_column_distribution": "" // Leave empty if not applicable
+}
+
+### Example 2
+
+{
+  "limit_value": "7",
+  "limit_type": "COLUMN_DISTRIBUTION", // Also, "RANDOM", "RAW_DISTRIBUTION", "COLUMN_DISTRIBUTION"
+  "column_name_for_column_distribution": "Column7"
+}
+
+Note the implications of the limit_type value:
+1. NORMAL: Directly restricts the dataset to the first 'n' entries, where 'n' is the specified limit, without considering distribution.
+2. RANDOM: Selects 'n' random entries from the dataset, providing a sample that does not necessarily reflect the original distribution but ensures unpredictability.
+3. RAW_DISTRIBUTION: Selects a representative sample from a larger dataset in a way that the selected sample mirrors the overall structure and distribution of the original data.
+4. COLUMN_DISTRIBUTION: Balances the sample based on the distribution of values within a specified column, aiming to maintain proportional representation across different categories or values.
+
+"#;
+
+        let exp_json = get_edited_user_json_input((&syntax).to_string());
+
+        //dbg!(&exp_json);
+
+        //let parsed_json: Value = serde_json::from_str(&exp_json)?;
+
+let parsed_json: Value = serde_json::from_str(&exp_json)
+    .map_err(|e| e.to_string())?; // Convert the serde_json::Error into a String
+
+
+        //dbg!(&parsed_json); 
+
+        let limit_value = parsed_json["limit_value"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+
+        let limit_type = parsed_json["limit_type"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+
+        let column_name_for_column_distribution = parsed_json["column_name_for_column_distribution"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+
+            let limit = match limit_value.parse::<usize>() {
+    Ok(num) => num,
+    Err(_) => return Err("Invalid limit value".to_string()),
+};
+
+        //dbg!(&limit_value, &limit_type, &column_name_for_column_distribution);
+
+
+match limit_type.as_str() {
+    "NORMAL" => {
+        csv_builder.limit(limit);
+    },
+    "RAW_DISTRIBUTION" => {
+        csv_builder.limit_distributed_raw(limit);
+    },
+    "COLUMN_DISTRIBUTION" => {
+        if column_name_for_column_distribution.is_empty() {
+            return Err("Column name for column distribution is required but was empty".to_string());
+        }
+        csv_builder.limit_distributed_category(limit, &column_name_for_column_distribution);
+    },
+    "RANDOM" => {
+        csv_builder.limit_random(limit);
+    },
+    _ => {
+        return Err("Unsupported limit type".to_string());
+    }
+}
+
+        Ok(csv_builder)
+
+    }
+
+
+
     let menu_options = vec![
         "SET HEADERS",
         "UPDATE HEADERS",
@@ -289,6 +390,7 @@ SYNTAX
         "EDIT TABLE (DESC)",
         "DELETE ROWS",
         "FILTER ROWS",
+        "LIMIT ROWS",
         "ADD COLUMNS",
         "DROP COLUMNS",
         "RETAIN COLUMNS",
@@ -1412,8 +1514,106 @@ Total rows: 4
             }
 
 
+
             Some(9) => {
                 if choice.to_lowercase() == "9d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Allows you to limit rows.
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
+|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+Total rows: 10
+
+"#,
+                    );
+                    continue;
+                }
+
+                if !csv_builder.has_data() {
+                    eprintln!("No data available for deletion.");
+                    //return;
+                    return Err("An error occurred".to_string().into());
+                }
+
+                /*
+                let mut exp_store = ExpStore {
+                    expressions: Vec::new(),
+                };
+
+                match get_filter_expressions(&mut exp_store) {
+                    Ok((expression_names, result_expression)) => {
+                        let expressions_refs: Vec<(&str, Exp)> = expression_names
+                            .iter()
+                            .map(|(name, index)| (name.as_str(), exp_store.get_exp(*index).clone()))
+                            .collect();
+
+                        //dbg!(&expressions_refs, &result_expression);
+                        csv_builder.where_(expressions_refs, &result_expression);
+                
+
+                csv_builder.print_table();
+                println!();
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+
+
+                    }
+                    Err(e) => {
+                        println!("Error getting limit expressions: {}", e);
+                        continue; // Return to the menu to let the user try again or choose another option
+                    }
+                }
+                */
+
+match apply_limit(csv_builder) {
+    Ok(csv_builder) => {
+        csv_builder.print_table();
+        println!();
+        match apply_filter_changes_menu(
+            csv_builder,
+            &prev_iteration_builder,
+            &original_csv_builder,
+        ) {
+            Ok(_) => (),
+            Err(e) => {
+                println!("{}", e);
+                continue; // Ask for the choice again if there was an error
+            }
+        }
+    }
+    Err(e) => {
+        println!("Error getting limit expressions: {}", e);
+        continue; // Return to the menu to let the user try again or choose another option
+    }
+}
+
+
+            }
+
+
+
+            Some(10) => {
+                if choice.to_lowercase() == "10d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1596,8 +1796,8 @@ SYNTAX
                 }
             }
 
-            Some(10) => {
-                if choice.to_lowercase() == "10d" {
+            Some(11) => {
+                if choice.to_lowercase() == "11d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1642,8 +1842,8 @@ Total rows: 3
                     }
                 }
             }
-            Some(11) => {
-                if choice.to_lowercase() == "11d" {
+            Some(12) => {
+                if choice.to_lowercase() == "12d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1692,13 +1892,13 @@ Total rows: 5
                     }
                 }
             }
-            Some(12) => {
+            Some(13) => {
                 csv_builder.print_table();
 
                 break;
             }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 12.");
+                println!("Invalid option. Please enter a number from 1 to 13.");
                 continue;
             }
         }
