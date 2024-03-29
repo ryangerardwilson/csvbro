@@ -49,11 +49,7 @@ impl ExpStore {
     }
 }
 
-
-
 pub async fn handle_tinker(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
-
-
     fn get_filter_expressions(
         data_store: &mut ExpStore,
     ) -> Result<(Vec<(String, usize)>, String), Box<dyn std::error::Error>> {
@@ -237,8 +233,6 @@ SYNTAX
         Ok((expression_names, result_expression))
     }
 
-
-
     fn apply_filter_changes_menu(
         csv_builder: &mut CsvBuilder,
         prev_iteration_builder: &CsvBuilder,
@@ -280,12 +274,7 @@ SYNTAX
         }
     }
 
-
-    fn apply_limit(
-        csv_builder: &mut CsvBuilder
-    ) -> Result<&mut CsvBuilder, String> {
-
-
+    fn apply_limit(csv_builder: &mut CsvBuilder) -> Result<&mut CsvBuilder, String> {
         let syntax = r#"{
   "limit_value": "",
   "limit_type": "",
@@ -324,11 +313,9 @@ Note the implications of the limit_type value:
 
         //let parsed_json: Value = serde_json::from_str(&exp_json)?;
 
-let parsed_json: Value = serde_json::from_str(&exp_json)
-    .map_err(|e| e.to_string())?; // Convert the serde_json::Error into a String
+        let parsed_json: Value = serde_json::from_str(&exp_json).map_err(|e| e.to_string())?; // Convert the serde_json::Error into a String
 
-
-        //dbg!(&parsed_json); 
+        //dbg!(&parsed_json);
 
         let limit_value = parsed_json["limit_value"]
             .as_str()
@@ -340,45 +327,44 @@ let parsed_json: Value = serde_json::from_str(&exp_json)
             .unwrap_or_default()
             .to_string();
 
-        let column_name_for_column_distribution = parsed_json["column_name_for_column_distribution"]
+        let column_name_for_column_distribution = parsed_json
+            ["column_name_for_column_distribution"]
             .as_str()
             .unwrap_or_default()
             .to_string();
 
-            let limit = match limit_value.parse::<usize>() {
-    Ok(num) => num,
-    Err(_) => return Err("Invalid limit value".to_string()),
-};
+        let limit = match limit_value.parse::<usize>() {
+            Ok(num) => num,
+            Err(_) => return Err("Invalid limit value".to_string()),
+        };
 
         //dbg!(&limit_value, &limit_type, &column_name_for_column_distribution);
 
-
-match limit_type.as_str() {
-    "NORMAL" => {
-        csv_builder.limit(limit);
-    },
-    "RAW_DISTRIBUTION" => {
-        csv_builder.limit_distributed_raw(limit);
-    },
-    "COLUMN_DISTRIBUTION" => {
-        if column_name_for_column_distribution.is_empty() {
-            return Err("Column name for column distribution is required but was empty".to_string());
+        match limit_type.as_str() {
+            "NORMAL" => {
+                csv_builder.limit(limit);
+            }
+            "RAW_DISTRIBUTION" => {
+                csv_builder.limit_distributed_raw(limit);
+            }
+            "COLUMN_DISTRIBUTION" => {
+                if column_name_for_column_distribution.is_empty() {
+                    return Err(
+                        "Column name for column distribution is required but was empty".to_string(),
+                    );
+                }
+                csv_builder.limit_distributed_category(limit, &column_name_for_column_distribution);
+            }
+            "RANDOM" => {
+                csv_builder.limit_random(limit);
+            }
+            _ => {
+                return Err("Unsupported limit type".to_string());
+            }
         }
-        csv_builder.limit_distributed_category(limit, &column_name_for_column_distribution);
-    },
-    "RANDOM" => {
-        csv_builder.limit_random(limit);
-    },
-    _ => {
-        return Err("Unsupported limit type".to_string());
-    }
-}
 
         Ok(csv_builder)
-
     }
-
-
 
     let menu_options = vec![
         "SET HEADERS",
@@ -1292,7 +1278,6 @@ SYNTAX
                 }
             }
 
-
             Some(7) => {
                 if choice.to_lowercase() == "7d" {
                     print_insight_level_2(
@@ -1407,7 +1392,6 @@ Total rows: 3
                 }
             }
 
-
             Some(8) => {
                 if choice.to_lowercase() == "8d" {
                     print_insight_level_2(
@@ -1486,33 +1470,26 @@ Total rows: 4
                         //dbg!(&expressions_refs, &result_expression);
                         csv_builder.where_(expressions_refs, &result_expression);
 
-
-                csv_builder.print_table();
-                println!();
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-
-
+                        csv_builder.print_table();
+                        println!();
+                        match apply_filter_changes_menu(
+                            csv_builder,
+                            &prev_iteration_builder,
+                            &original_csv_builder,
+                        ) {
+                            Ok(_) => (),
+                            Err(e) => {
+                                println!("{}", e);
+                                continue; // Ask for the choice again if there was an error
+                            }
+                        }
                     }
                     Err(e) => {
                         println!("Error getting filter expressions: {}", e);
                         continue; // Return to the menu to let the user try again or choose another option
                     }
                 }
-
-
             }
-
-
 
             Some(9) => {
                 if choice.to_lowercase() == "9d" {
@@ -1628,7 +1605,7 @@ Note the implications of the limit_type value:
 
                         //dbg!(&expressions_refs, &result_expression);
                         csv_builder.where_(expressions_refs, &result_expression);
-                
+
 
                 csv_builder.print_table();
                 println!();
@@ -1653,32 +1630,28 @@ Note the implications of the limit_type value:
                 }
                 */
 
-match apply_limit(csv_builder) {
-    Ok(csv_builder) => {
-        csv_builder.print_table();
-        println!();
-        match apply_filter_changes_menu(
-            csv_builder,
-            &prev_iteration_builder,
-            &original_csv_builder,
-        ) {
-            Ok(_) => (),
-            Err(e) => {
-                println!("{}", e);
-                continue; // Ask for the choice again if there was an error
+                match apply_limit(csv_builder) {
+                    Ok(csv_builder) => {
+                        csv_builder.print_table();
+                        println!();
+                        match apply_filter_changes_menu(
+                            csv_builder,
+                            &prev_iteration_builder,
+                            &original_csv_builder,
+                        ) {
+                            Ok(_) => (),
+                            Err(e) => {
+                                println!("{}", e);
+                                continue; // Ask for the choice again if there was an error
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error getting limit expressions: {}", e);
+                        continue; // Return to the menu to let the user try again or choose another option
+                    }
+                }
             }
-        }
-    }
-    Err(e) => {
-        println!("Error getting limit expressions: {}", e);
-        continue; // Return to the menu to let the user try again or choose another option
-    }
-}
-
-
-            }
-
-
 
             Some(10) => {
                 if choice.to_lowercase() == "10d" {
