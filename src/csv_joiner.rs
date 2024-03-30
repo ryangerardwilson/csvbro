@@ -47,7 +47,7 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
                     }
                 }
 
-                let choice = get_user_input_level_2("Punch in the serial number or a slice of the file name to LOAD, or hit 'back' to bail.\nWhat's it gonna be?: \n\n(For the Universe U = {1,2,3,4,5,6,7}, A = {1,2,3} and B = {3,4,5})")
+                let choice = get_user_input_level_2("Punch in the serial number or a slice of the file name to LOAD, or hit 'back' to bail.\nWhat's it gonna be?: ")
                 .to_lowercase();
 
                 // First, try to parse the choice as a number to select by index
@@ -84,21 +84,8 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
         None
     }
 
-    /*
     let menu_options = vec![
-        "Set union (all) with {1,2,3,3,4,5}",
-        "Set union (all without duplicates) with {1,2,3,4,5}",
-        "Set union (left join) with",
-        "Set union (right join) with",
-        "Set intersection with {3}",
-        "Set difference with {1,2}",
-        "Set symmetric difference with {1,2,4,5}",
-        "Print all rows",
-        "Go back",
-    ];
-    */
-    let menu_options = vec![
-        "SET UNION (ALL) WITH {1,2,3,3,4,5}",
+        "SET UNION (ALL) WITH",
         "SET UNION (ALL WITHOUT DUPLICATES) WITH {1,2,3,4,5}",
         "SET UNION (LEFT JOIN) WITH",
         "SET UNION (RIGHT JOIN) WITH",
@@ -119,6 +106,63 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
 
         match selected_option {
             Some(1) => {
+
+                if choice.to_lowercase() == "1d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Computes A U B. For the Universe U = {1,2,3,4,5,6,7}, A = {1,2,3} and B = {3,4,5}, it returns {1,2,3,3,4,5}
+
+TABLE A
++++++++
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+<<+2 rows>>
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+|11 |concert |2000  |OTHER |2024-03-27|0                 |Y2024-M03       |
+|12 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
+Total rows: 12
+
+TABLE B
++++++++
+|id |item         |value |type |date      |relates_to_travel |date_YEAR_MONTH |
+-------------------------------------------------------------------------------
+|1  |piano        |10000 |OTHER|2024-03-21|0                 |Y2024-M03       |
+|2  |dance classes|2000  |OTHER|2024-03-22|0                 |Y2024-M03       |
+|3  |computer     |3000  |OTHER|2024-03-23|0                 |Y2024-M03       |
+Total rows: 3
+
+  @LILbro: Punch in the serial number or a slice of the file name to LOAD, or hit 'back' to bail.
+What's it gonna be?: test3
+
+|id |item         |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+--------------------------------------------------------------------------------
+|1  |books        |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks       |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare     |300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent         |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies       |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+<<+5 rows>>
+|11 |concert      |2000  |OTHER |2024-03-27|0                 |Y2024-M03       |
+|12 |alcohol      |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
+|1  |piano        |10000 |OTHER |2024-03-21|0                 |Y2024-M03       |
+|2  |dance classes|2000  |OTHER |2024-03-22|0                 |Y2024-M03       |
+|3  |computer     |3000  |OTHER |2024-03-23|0                 |Y2024-M03       |
+Total rows: 15
+"#,
+                    );
+                    continue;
+                }
+
+
+
                 let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
                 if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
                     csv_builder
