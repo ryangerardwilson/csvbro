@@ -1591,44 +1591,6 @@ Note the implications of the limit_type value:
                     return Err("An error occurred".to_string().into());
                 }
 
-                /*
-                let mut exp_store = ExpStore {
-                    expressions: Vec::new(),
-                };
-
-                match get_filter_expressions(&mut exp_store) {
-                    Ok((expression_names, result_expression)) => {
-                        let expressions_refs: Vec<(&str, Exp)> = expression_names
-                            .iter()
-                            .map(|(name, index)| (name.as_str(), exp_store.get_exp(*index).clone()))
-                            .collect();
-
-                        //dbg!(&expressions_refs, &result_expression);
-                        csv_builder.where_(expressions_refs, &result_expression);
-
-
-                csv_builder.print_table();
-                println!();
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-
-
-                    }
-                    Err(e) => {
-                        println!("Error getting limit expressions: {}", e);
-                        continue; // Return to the menu to let the user try again or choose another option
-                    }
-                }
-                */
 
                 match apply_limit(csv_builder) {
                     Ok(csv_builder) => {
