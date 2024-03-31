@@ -255,7 +255,6 @@ SYNTAX
 
         match selected_option {
             Some(1) => {
-
                 if choice.to_lowercase() == "1d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
@@ -290,12 +289,9 @@ First row:
                     continue;
                 }
 
-
-
                 csv_builder.print_first_row();
             }
             Some(2) => {
-
                 if choice.to_lowercase() == "2d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
@@ -330,13 +326,9 @@ Last row:
                     continue;
                 }
 
-
-
                 csv_builder.print_last_row();
             }
             Some(3) => {
-
-
                 if choice.to_lowercase() == "3d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
@@ -394,8 +386,6 @@ Row 4:
                     continue;
                 }
 
-
-
                 let start = get_user_input_level_2("Enter the start row number: ")
                     .parse::<usize>()
                     .map_err(|_| "Invalid start row number")?;
@@ -408,8 +398,6 @@ Row 4:
             }
 
             Some(4) => {
-
-
                 if choice.to_lowercase() == "4d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
@@ -469,7 +457,6 @@ Total rows: 10
                     continue;
                 }
 
-
                 if csv_builder.has_data() {
                     csv_builder.print_rows();
                     println!();
@@ -477,7 +464,6 @@ Total rows: 10
             }
 
             Some(5) => {
-
                 if choice.to_lowercase() == "5d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
@@ -518,7 +504,6 @@ Total rows: 12
                     continue;
                 }
 
-
                 if csv_builder.has_data() {
                     csv_builder.print_table_all_rows();
                     println!();
@@ -526,7 +511,6 @@ Total rows: 12
             }
 
             Some(6) => {
-
                 if choice.to_lowercase() == "6d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
@@ -609,7 +593,6 @@ Total rows printed: 4
                     continue;
                 }
 
-
                 let mut exp_store = ExpStore {
                     expressions: Vec::new(),
                 };
@@ -631,9 +614,6 @@ Total rows printed: 4
                 }
             }
             Some(7) => {
-
-
-
                 if choice.to_lowercase() == "7d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
@@ -683,15 +663,12 @@ Frequency for column 'type':
                     continue;
                 }
 
-
-
                 let column_names =
                     get_user_input_level_2("Enter column names separated by commas: ");
                 let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
                 csv_builder.print_freq(columns);
             }
             Some(8) => {
-
                 if choice.to_lowercase() == "8d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
@@ -719,14 +696,12 @@ Unique values in 'value': 200, 1000, 20000, 1500, 2000, 300, 1100
                     continue;
                 }
 
-
                 let column_name = get_user_input_level_2("Enter the column name: ");
                 csv_builder.print_unique(&column_name.trim());
             }
 
             // In your handle_inspect method
             Some(9) => {
-
                 if choice.to_lowercase() == "9d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
@@ -768,8 +743,6 @@ Count: 7
                     );
                     continue;
                 }
-
-
 
                 let mut exp_store = ExpStore {
                     expressions: Vec::new(),

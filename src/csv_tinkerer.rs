@@ -379,6 +379,8 @@ Note the implications of the limit_type value:
         "ADD COLUMNS",
         "DROP COLUMNS",
         "RETAIN COLUMNS",
+        "REORDER COLUMNS",
+        "RESEQUENCE ID COLUMN",
         "BACK",
     ];
 
@@ -1591,7 +1593,6 @@ Note the implications of the limit_type value:
                     return Err("An error occurred".to_string().into());
                 }
 
-
                 match apply_limit(csv_builder) {
                     Ok(csv_builder) => {
                         csv_builder.print_table();
@@ -1895,13 +1896,180 @@ Total rows: 5
                     }
                 }
             }
+
             Some(13) => {
+                if choice.to_lowercase() == "13d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Allows you to re-order columns, without the need to specify an exact order, and referencing the existing arrangement with '...', in the manner shown below.
+
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
+|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+Total rows: 10
+
+  @LILbro: Specify new column order: type, date, ...
+
+|type  |date      |id |item    |value |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|type  |date      |id |item    |value |relates_to_travel |date_YEAR_MONTH |
+|OTHER |2024-01-21|1  |books   |1000  |0                 |Y2024-M01       |
+|FOOD  |2024-02-22|2  |snacks  |200   |0                 |Y2024-M02       |
+|TRAVEL|2024-03-23|3  |cab fare|300   |1                 |Y2024-M03       |
+|OTHER |2024-01-24|4  |rent    |20000 |0                 |Y2024-M01       |
+<<+1 row>>
+|OTHER |2024-03-21|6  |books   |1000  |0                 |Y2024-M03       |
+|FOOD  |2024-01-22|7  |snacks  |200   |0                 |Y2024-M01       |
+|TRAVEL|2024-02-23|8  |cab fare|300   |1                 |Y2024-M02       |
+|OTHER |2024-03-24|9  |rent    |20000 |0                 |Y2024-M03       |
+|OTHER |2024-01-25|10 |movies  |1500  |0                 |Y2024-M01       |
+Total rows: 11
+
+  @LILbro: Specify new column order: ..., date, type
+
+|id |item    |value |relates_to_travel |date_YEAR_MONTH |date      |type  |
+---------------------------------------------------------------------------
+|id |item    |value |relates_to_travel |date_YEAR_MONTH |date      |type  |
+|1  |books   |1000  |0                 |Y2024-M01       |2024-01-21|OTHER |
+|2  |snacks  |200   |0                 |Y2024-M02       |2024-02-22|FOOD  |
+|3  |cab fare|300   |1                 |Y2024-M03       |2024-03-23|TRAVEL|
+|4  |rent    |20000 |0                 |Y2024-M01       |2024-01-24|OTHER |
+<<+1 row>>
+|6  |books   |1000  |0                 |Y2024-M03       |2024-03-21|OTHER |
+|7  |snacks  |200   |0                 |Y2024-M01       |2024-01-22|FOOD  |
+|8  |cab fare|300   |1                 |Y2024-M02       |2024-02-23|TRAVEL|
+|9  |rent    |20000 |0                 |Y2024-M03       |2024-03-24|OTHER |
+|10 |movies  |1500  |0                 |Y2024-M01       |2024-01-25|OTHER |
+Total rows: 11
+
+  @LILbro: Specify new column order: date, type, ..., id
+
+|date      |type  |item    |value |relates_to_travel |date_YEAR_MONTH |id |
+---------------------------------------------------------------------------
+|date      |type  |item    |value |relates_to_travel |date_YEAR_MONTH |id |
+|2024-01-21|OTHER |books   |1000  |0                 |Y2024-M01       |1  |
+|2024-02-22|FOOD  |snacks  |200   |0                 |Y2024-M02       |2  |
+|2024-03-23|TRAVEL|cab fare|300   |1                 |Y2024-M03       |3  |
+|2024-01-24|OTHER |rent    |20000 |0                 |Y2024-M01       |4  |
+<<+1 row>>
+|2024-03-21|OTHER |books   |1000  |0                 |Y2024-M03       |6  |
+|2024-01-22|FOOD  |snacks  |200   |0                 |Y2024-M01       |7  |
+|2024-02-23|TRAVEL|cab fare|300   |1                 |Y2024-M02       |8  |
+|2024-03-24|OTHER |rent    |20000 |0                 |Y2024-M03       |9  |
+|2024-01-25|OTHER |movies  |1500  |0                 |Y2024-M01       |10 |
+Total rows: 11
+"#,
+                    );
+                    continue;
+                }
+
+                let new_columns_order_input =
+                    get_user_input_level_2("Specify new column order: ").to_lowercase();
+                if new_columns_order_input.to_lowercase() == "@cancel" {
+                    continue;
+                }
+
+                let new_columns_order: Vec<&str> = new_columns_order_input
+                    .split(',')
+                    .map(|s| s.trim()) // Trim whitespace around the column names
+                    .collect();
+
+                // To be updated
+                csv_builder.order_columns(new_columns_order).print_table();
+
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+            }
+
+            Some(14) => {
+                if choice.to_lowercase() == "14d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Sets the values of the specified column sequentially from 1 onwards, ensuring each entry is uniquely numbered in ascending order until the last row.
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+<<+12 rows>>
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+|11 |concert |2000  |OTHER |2024-03-27|0                 |Y2024-M03       |
+|12 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
+Total rows: 22
+
+  @LILbro: Name of id column to be resequenced: id
+
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|3  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|4  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|5  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+<<+12 rows>>
+|18 |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|19 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+|20 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+|21 |concert |2000  |OTHER |2024-03-27|0                 |Y2024-M03       |
+|22 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
+Total rows: 22
+"#,
+                    );
+                    continue;
+                }
+
+                let id_column_name =
+                    get_user_input_level_2("Name of id column to be resequenced: ").to_lowercase();
+                if id_column_name.to_lowercase() == "@cancel" {
+                    continue;
+                }
+
+                csv_builder
+                    .resequence_id_column(&id_column_name)
+                    .print_table();
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+            }
+            Some(15) => {
                 csv_builder.print_table();
 
                 break;
             }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 13.");
+                println!("Invalid option. Please enter a number from 1 to 15.");
                 continue;
             }
         }

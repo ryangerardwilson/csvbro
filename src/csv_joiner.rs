@@ -47,8 +47,13 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
                     }
                 }
 
-                let choice = get_user_input_level_2("Punch in the serial number or a slice of the file name to LOAD, or hit 'back' to bail.\nWhat's it gonna be?: ")
+                let choice = get_user_input_level_2(
+                    "Punch in the serial number or a slice of the file name to LOAD: ",
+                )
                 .to_lowercase();
+                if choice.to_lowercase() == "@cancel" {
+                    return None;
+                }
 
                 // First, try to parse the choice as a number to select by index
                 if let Ok(index) = choice.parse::<usize>() {
@@ -83,10 +88,26 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
         }
         None
     }
+    fn sort_csv_by_id_if_needed(csv_builder: &mut CsvBuilder) {
+        let mut perform_sort = false;
+
+        if let Some(headers) = csv_builder.get_headers() {
+            for header in headers.iter() {
+                if header == "id" {
+                    perform_sort = true;
+                    break; // No need to continue once we've found an "id" header
+                }
+            }
+        }
+
+        if perform_sort {
+            let _ = csv_builder.cascade_sort(vec![("id".to_string(), "ASC".to_string())]);
+        }
+    }
 
     let menu_options = vec![
-        "SET UNION (ALL) WITH",
-        "SET UNION (ALL WITHOUT DUPLICATES) WITH {1,2,3,4,5}",
+        "SET BAG UNION WITH",
+        "SET UNION WITH",
         "SET UNION (LEFT JOIN) WITH",
         "SET UNION (RIGHT JOIN) WITH",
         "SET INTERSECTION WITH {3}",
@@ -106,12 +127,13 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
 
         match selected_option {
             Some(1) => {
-
                 if choice.to_lowercase() == "1d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
-Computes A U B. For the Universe U = {1,2,3,4,5,6,7}, A = {1,2,3} and B = {3,4,5}, it returns {1,2,3,3,4,5}
+Computes A U B, whilst retaining duplicates. This operation is known as the "multiset union" or "bag union" in mathematics and computer science. Unlike the traditional set union, which produces a set that contains all of the elements from both sets without duplicates, a multiset union retains duplicates, reflecting the combined multiplicity of each element from both multisets. For A = {1,2,3} and B = {3,4,5}, it returns {1,2,3,3,4,5}
+
+NOTE: This method will automatically sort the end result in ascending order of the id column.
 
 TABLE A
 +++++++
@@ -132,57 +154,118 @@ Total rows: 12
 
 TABLE B
 +++++++
-|id |item         |value |type |date      |relates_to_travel |date_YEAR_MONTH |
--------------------------------------------------------------------------------
-|1  |piano        |10000 |OTHER|2024-03-21|0                 |Y2024-M03       |
-|2  |dance classes|2000  |OTHER|2024-03-22|0                 |Y2024-M03       |
-|3  |computer     |3000  |OTHER|2024-03-23|0                 |Y2024-M03       |
-Total rows: 3
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+<<+2 rows>>
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+|11 |concert |2000  |OTHER |2024-03-27|0                 |Y2024-M03       |
+|12 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
+Total rows: 12
 
   @LILbro: Punch in the serial number or a slice of the file name to LOAD, or hit 'back' to bail.
-What's it gonna be?: test3
-
-|id |item         |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
---------------------------------------------------------------------------------
-|1  |books        |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
-|2  |snacks       |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
-|3  |cab fare     |300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
-|4  |rent         |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
-|5  |movies       |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
-<<+5 rows>>
-|11 |concert      |2000  |OTHER |2024-03-27|0                 |Y2024-M03       |
-|12 |alcohol      |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
-|1  |piano        |10000 |OTHER |2024-03-21|0                 |Y2024-M03       |
-|2  |dance classes|2000  |OTHER |2024-03-22|0                 |Y2024-M03       |
-|3  |computer     |3000  |OTHER |2024-03-23|0                 |Y2024-M03       |
-Total rows: 15
+What's it gonna be?: test2
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+<<+12 rows>>
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+|11 |concert |2000  |OTHER |2024-03-27|0                 |Y2024-M03       |
+|12 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
+Total rows: 22
 "#,
                     );
                     continue;
                 }
 
-
-
                 let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
                 if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                    csv_builder
-                        .set_union_with(&chosen_file_path_for_join, "UNION_TYPE:ALL")
-                        .print_table();
-                } else {
-                    println!("No file was selected.");
+                    let _ =
+                        csv_builder.set_union_with(&chosen_file_path_for_join, "UNION_TYPE:ALL");
+
+                    sort_csv_by_id_if_needed(csv_builder);
+
+                    csv_builder.print_table();
                 }
             }
             Some(2) => {
+                if choice.to_lowercase() == "2d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Computes A U B, under traditional set theory. For A = {1,2,3} and B = {3,4,5}, it returns {1,2,3,4,5}
+
+NOTE: This method will automatically sort the end result in ascending order of the id column.
+
+TABLE A
++++++++
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+<<+2 rows>>
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+|11 |concert |2000  |OTHER |2024-03-27|0                 |Y2024-M03       |
+|12 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
+Total rows: 12
+
+TABLE B
++++++++
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |bags    |500   |TRAVEL|2024-03-28|1                 |Y2024-M03       |
+Total rows: 4
+
+  @LILbro: Punch in the serial number or a slice of the file name to LOAD: test
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|4  |bags    |500   |TRAVEL|2024-03-28|1                 |Y2024-M03       |
+<<+1 row>>
+|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
+|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+Total rows: 11
+"#,
+                    );
+                    continue;
+                }
+
                 let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
                 if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                    csv_builder
-                        .set_union_with(
-                            &chosen_file_path_for_join,
-                            "UNION_TYPE:ALL_WITHOUT_DUPLICATES",
-                        )
-                        .print_table();
-                } else {
-                    println!("No file was selected.");
+                    let _ = csv_builder.set_union_with(
+                        &chosen_file_path_for_join,
+                        "UNION_TYPE:ALL_WITHOUT_DUPLICATES",
+                    );
+
+                    sort_csv_by_id_if_needed(csv_builder);
+
+                    csv_builder.print_table();
                 }
             }
             Some(3) => {
@@ -197,8 +280,6 @@ Total rows: 15
                     csv_builder
                         .set_union_with(&chosen_file_path_for_join, &union_type)
                         .print_table();
-                } else {
-                    println!("No file was selected.");
                 }
             }
             Some(4) => {
@@ -213,8 +294,6 @@ Total rows: 15
                     csv_builder
                         .set_union_with(&chosen_file_path_for_join, &union_type)
                         .print_table();
-                } else {
-                    println!("No file was selected.");
                 }
             }
             Some(5) => {
@@ -223,8 +302,6 @@ Total rows: 15
                     csv_builder
                         .set_intersection_with(&chosen_file_path_for_join)
                         .print_table();
-                } else {
-                    println!("No file was selected.");
                 }
             }
             Some(6) => {
@@ -233,8 +310,6 @@ Total rows: 15
                     csv_builder
                         .set_difference_with(&chosen_file_path_for_join)
                         .print_table();
-                } else {
-                    println!("No file was selected.");
                 }
             }
             Some(7) => {
@@ -243,18 +318,8 @@ Total rows: 15
                     csv_builder
                         .set_symmetric_difference_with(&chosen_file_path_for_join)
                         .print_table();
-                } else {
-                    println!("No file was selected.");
                 }
             }
-            /*
-                        Some(8) => {
-                            if csv_builder.has_data() {
-                                csv_builder.print_table_all_rows();
-                                println!();
-                            }
-                        }
-            */
             Some(8) => {
                 csv_builder.print_table();
                 break; // Exit the inspect handler

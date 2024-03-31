@@ -69,7 +69,6 @@ pub async fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn s
 
         match selected_option {
             Some(1) => {
-
                 if choice.to_lowercase() == "1d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
@@ -101,7 +100,6 @@ Total rows: 2
                     );
                     continue;
                 }
-
 
                 let query = get_user_input_level_2("Enter search term: ");
                 if query.to_lowercase() == "@cancel" {
@@ -141,7 +139,6 @@ Total rows: 2
                 }
             }
             Some(2) => {
-
                 if choice.to_lowercase() == "2d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
@@ -179,7 +176,6 @@ Total rows: 8
                     );
                     continue;
                 }
-
 
                 let query = get_user_input_level_2("Enter search term: ");
                 if query.to_lowercase() == "@cancel" {
@@ -220,7 +216,6 @@ Total rows: 8
             }
 
             Some(3) => {
-
                 if choice.to_lowercase() == "3d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
@@ -292,7 +287,6 @@ Total rows: 2
                 }
             }
             Some(4) => {
-
                 if choice.to_lowercase() == "4d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
@@ -330,8 +324,6 @@ Total rows: 8
                     );
                     continue;
                 }
-
-
 
                 let query = get_user_input_level_2("Enter search term: ");
                 // Check for @cancel to allow user to return to the main menu
@@ -372,8 +364,6 @@ Total rows: 8
                 }
             }
             Some(5) => {
-
-
                 if choice.to_lowercase() == "5d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
