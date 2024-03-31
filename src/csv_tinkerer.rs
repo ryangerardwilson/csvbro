@@ -380,7 +380,7 @@ Note the implications of the limit_type value:
         "DROP COLUMNS",
         "RETAIN COLUMNS",
         "REORDER COLUMNS",
-        "RESEQUENCE ID COLUMN",
+        "SET ID COLUMN",
         "BACK",
     ];
 
@@ -2005,7 +2005,7 @@ Total rows: 11
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
-Sets the values of the specified column sequentially from 1 onwards, ensuring each entry is uniquely numbered in ascending order until the last row.
+Sets the values of the specified column sequentially from 1 onwards, ensuring each entry is uniquely numbered in ascending order until the last row. If the column does not exist, it creates a new column.
 |id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
 ---------------------------------------------------------------------------
 |1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
@@ -2021,7 +2021,10 @@ Sets the values of the specified column sequentially from 1 onwards, ensuring ea
 |12 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
 Total rows: 22
 
-  @LILbro: Name of id column to be resequenced: id
+Example 1
++++++++++
+
+  @LILbro: Name of id column: id
 
 |id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
 ---------------------------------------------------------------------------
@@ -2037,20 +2040,71 @@ Total rows: 22
 |21 |concert |2000  |OTHER |2024-03-27|0                 |Y2024-M03       |
 |22 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
 Total rows: 22
+
+Example 2
++++++++++
+
+@LILbro: Name of id column: account_id
+
+|account_id |id |item    |value |  <<+1 col>>   |date      |relates_to_travel |date_YEAR_MONTH |
+------------------------------------------------------------------------------------------------
+|1          |1  |books   |1000  |...            |2024-01-21|0                 |Y2024-M01       |
+|2          |2  |snacks  |200   |...            |2024-02-22|0                 |Y2024-M02       |
+|3          |3  |cab fare|300   |...            |2024-03-23|1                 |Y2024-M03       |
+|4          |4  |rent    |20000 |...            |2024-01-24|0                 |Y2024-M01       |
+|5          |5  |movies  |1500  |...            |2024-02-25|0                 |Y2024-M02       |
+|6          |6  |books   |1000  |...            |2024-03-21|0                 |Y2024-M03       |
+|7          |7  |snacks  |200   |...            |2024-01-22|0                 |Y2024-M01       |
+|8          |8  |cab fare|300   |...            |2024-02-23|1                 |Y2024-M02       |
+|9          |9  |rent    |20000 |...            |2024-03-24|0                 |Y2024-M03       |
+|10         |10 |movies  |1500  |...            |2024-01-25|0                 |Y2024-M01       |
+
+Omitted columns: type
+Total rows: 10
 "#,
                     );
                     continue;
                 }
 
-                let id_column_name =
-                    get_user_input_level_2("Name of id column to be resequenced: ").to_lowercase();
+                let id_column_name = get_user_input_level_2("Name of id column: ").to_lowercase();
                 if id_column_name.to_lowercase() == "@cancel" {
                     continue;
                 }
 
+                let mut add_new_column_header = false;
+
+                if let Some(headers) = csv_builder.get_headers() {
+                    for header in headers.iter() {
+                        if header != id_column_name.as_str() {
+                            add_new_column_header = true;
+                            break; // No need to continue once we've found an "id" header
+                        }
+                    }
+                }
+
+                if add_new_column_header {
+                    let _ = csv_builder.add_column_header(&id_column_name);
+                }
+
+                //dbg!(&csv_builder);
+
+                let _ = csv_builder.resequence_id_column(&id_column_name);
+
+                //dbg!(&csv_builder);
+                if add_new_column_header {
+                    let _ =
+                        csv_builder.cascade_sort(vec![(id_column_name.clone(), "ASC".to_string())]);
+                }
+
+                //dbg!(&csv_builder);
+
                 csv_builder
-                    .resequence_id_column(&id_column_name)
+                    .order_columns(vec![&id_column_name, "..."])
                     .print_table();
+
+                //dbg!(&csv_builder);
+
+                //    csv_builder.print_table();
                 match apply_filter_changes_menu(
                     csv_builder,
                     &prev_iteration_builder,
