@@ -380,7 +380,7 @@ Note the implications of the limit_type value:
         "DROP COLUMNS",
         "RETAIN COLUMNS",
         "REORDER COLUMNS",
-        "SET ID COLUMN",
+        "SET INDEX COLUMN",
         "BACK",
     ];
 
