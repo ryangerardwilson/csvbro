@@ -108,7 +108,7 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
     let menu_options = vec![
         "SET BAG UNION WITH",
         "SET UNION WITH",
-        "SET UNION (LEFT JOIN) WITH",
+        "LEFT JOIN WITH",
         "SET UNION (RIGHT JOIN) WITH",
         "SET INTERSECTION WITH {3}",
         "SET DIFFERENCE WITH {1,2}",
@@ -269,6 +269,64 @@ Total rows: 11
                 }
             }
             Some(3) => {
+                if choice.to_lowercase() == "3d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+A LEFT JOIN on tables A and B includes every row from A along with any matching rows from B based on a join condition (i.e. a shared column). If there is no match in B for a row in A, the result still includes that row from A, with empty string values for the columns from B.
+
+
+TABLE A
++++++++
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
+|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+Total rows: 10
+
+TABLE B
++++++++
+  @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A LEFT_JOIN B
+  @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
+
+|type  |implication    |
+------------------------
+|FOOD  |Daily Necessity|
+|TRAVEL|Leisure        |
+|OTHER |Misc.          |
+Total rows: 3
+
+  @LILbro: Enter column name from your above selected csv to LEFT JOIN at: type
+
+|id |item    |value |type  |  <<+1 col>>   |relates_to_travel |date_YEAR_MONTH |implication    |
+------------------------------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |...            |0                 |Y2024-M01       |Misc.          |
+|2  |snacks  |200   |FOOD  |...            |0                 |Y2024-M02       |Daily Necessity|
+|3  |cab fare|300   |TRAVEL|...            |1                 |Y2024-M03       |Leisure        |
+|4  |rent    |20000 |OTHER |...            |0                 |Y2024-M01       |Misc.          |
+|5  |movies  |1500  |OTHER |...            |0                 |Y2024-M02       |Misc.          |
+|6  |books   |1000  |OTHER |...            |0                 |Y2024-M03       |Misc.          |
+|7  |snacks  |200   |FOOD  |...            |0                 |Y2024-M01       |Daily Necessity|
+|8  |cab fare|300   |TRAVEL|...            |1                 |Y2024-M02       |Leisure        |
+|9  |rent    |20000 |OTHER |...            |0                 |Y2024-M03       |Misc.          |
+|10 |movies  |1500  |OTHER |...            |0                 |Y2024-M01       |Misc.          |
+
+Omitted columns: date
+Total rows: 10
+"#,
+                    );
+                    continue;
+                }
+
+                print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A LEFT_JOIN B");
                 let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
                 if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
                     CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
@@ -276,7 +334,9 @@ Total rows: 11
                         "Enter column name from your above selected csv to LEFT JOIN at: ",
                     )
                     .to_lowercase();
-                    let union_type = format!("UNION_TYPE:LEFT_JOIN_AT{{{}}}", left_join_at_choice);
+                    let union_type = format!("UNION_TYPE:LEFT_JOIN_AT_{}", left_join_at_choice);
+
+                    //dbg!(&union_type);
                     csv_builder
                         .set_union_with(&chosen_file_path_for_join, &union_type)
                         .print_table();
@@ -290,7 +350,7 @@ Total rows: 11
                         "Enter column name from your above selected csv to RIGHT JOIN at: ",
                     )
                     .to_lowercase();
-                    let union_type = format!("UNION_TYPE:RIGHT_JOIN_AT{{{}}}", left_join_at_choice);
+                    let union_type = format!("UNION_TYPE:RIGHT_JOIN_AT_{}", left_join_at_choice);
                     csv_builder
                         .set_union_with(&chosen_file_path_for_join, &union_type)
                         .print_table();
