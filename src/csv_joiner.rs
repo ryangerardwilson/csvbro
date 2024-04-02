@@ -109,7 +109,7 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
         "SET BAG UNION WITH",
         "SET UNION WITH",
         "LEFT JOIN WITH",
-        "SET UNION (RIGHT JOIN) WITH",
+        "RIGHT JOIN WITH",
         "SET INTERSECTION WITH {3}",
         "SET DIFFERENCE WITH {1,2}",
         "SET SYMMETRIC DIFFERENCE WITH {1,2,4,5}",
@@ -343,6 +343,66 @@ Total rows: 10
                 }
             }
             Some(4) => {
+
+                if choice.to_lowercase() == "4d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+A RIGHT JOIN between tables A and B is essentially the same as a LEFT JOIN between tables B and A, just approached from the opposite direction. Both join types aim to include all rows from one of the two tables being joined, regardless of whether there is a matching row in the other table. The difference lies in which table is guaranteed to have all its rows included:
+- In a LEFT JOIN of A and B, every row from table A is included. If there's no matching row in B, the result will still include the row from A, with the columns from B filled with NULLs or placeholders.
+- In a RIGHT JOIN of A and B, every row from table B is included. If there's no matching row in A, the result will still include the row from B, with the columns from A filled with NULLs or placeholders.
+
+TABLE A
++++++++
+|type  |implication    |
+------------------------
+|FOOD  |Daily Necessity|
+|TRAVEL|Leisure        |
+|OTHER |Misc.          |
+Total rows: 3
+
+TABLE B
++++++++
+  @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A LEFT_JOIN B
+  @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
+
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
+|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+Total rows: 10
+
+  @LILbro: Enter column name from your above selected csv to RIGHT JOIN at: type
+
+|id |item    |value |type  |  <<+1 col>>   |relates_to_travel |date_YEAR_MONTH |implication    |
+------------------------------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |...            |0                 |Y2024-M01       |Misc.          |
+|2  |snacks  |200   |FOOD  |...            |0                 |Y2024-M02       |Daily Necessity|
+|3  |cab fare|300   |TRAVEL|...            |1                 |Y2024-M03       |Leisure        |
+|4  |rent    |20000 |OTHER |...            |0                 |Y2024-M01       |Misc.          |
+|5  |movies  |1500  |OTHER |...            |0                 |Y2024-M02       |Misc.          |
+|6  |books   |1000  |OTHER |...            |0                 |Y2024-M03       |Misc.          |
+|7  |snacks  |200   |FOOD  |...            |0                 |Y2024-M01       |Daily Necessity|
+|8  |cab fare|300   |TRAVEL|...            |1                 |Y2024-M02       |Leisure        |
+|9  |rent    |20000 |OTHER |...            |0                 |Y2024-M03       |Misc.          |
+|10 |movies  |1500  |OTHER |...            |0                 |Y2024-M01       |Misc.          |
+
+Omitted columns: date
+Total rows: 10
+"#,
+                    );
+                    continue;
+                }
+
+                print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A RIGHT_JOIN B");
                 let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
                 if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
                     CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
