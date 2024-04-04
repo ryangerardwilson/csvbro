@@ -154,8 +154,8 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
         "LEFT JOIN WITH",
         "RIGHT JOIN WITH",
         "SET INTERSECTION WITH",
-        "SET DIFFERENCE WITH {1,2}",
-        "SET SYMMETRIC DIFFERENCE WITH {1,2,4,5}",
+        "SET DIFFERENCE WITH",
+        "SET SYMMETRIC DIFFERENCE WITH",
         "BACK",
     ];
 
@@ -539,7 +539,6 @@ Total rows: 10
 
 A 'SET INTERSECTION WITH' analysis is useful to find common elements of data sets with similar column names but serving different purposes. For instance, if, instead of using a category column 'sales_type', a business decides to have two different csv files to record online_sales and instore_sales, a 'SET INTERSECTION WITH' analysis can help us find out which customers (identified uniquely in both files via an id column) shop online as well as at the store.
 
-
 ### Example 1
 
 Background: A retail company operates both an online store and several physical locations. They have launched two separate marketing campaigns over the past month: one targeting online shoppers through digital ads (Campaign A) and another targeting in-store shoppers through traditional advertising methods (Campaign B). Each campaign aims to increase sales in its respective channel, but there is interest in understanding the overlap to refine future marketing strategies.
@@ -698,22 +697,354 @@ Total rows: 3
 
                 }
             }
+
             Some(6) => {
+                if choice.to_lowercase() == "6d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+A 'SET DIFFERENCE WITH' analysis is an insightful tool for identifying unique elements in one dataset compared to another, especially when managing data sets with similar column names that serve distinct purposes. This type of analysis becomes particularly valuable in scenarios where we need to highlight differences rather than similarities, such as identifying exclusive customer segments, unique sales transactions, or distinct items sold.
+
+Unlike 'SET INTERSECTION WITH' (which ascertains commonalities between data sets A and B), 'SET DIFFERENCE WITH' helps ascertain the diffierences i.e. elements in A that are not in B.
+
+### Example 1
+
+Background: A retail company operates both an online store and several physical locations. To better understand their customer base, they want to identify customers who shop exclusively online or in-store, as opposed to those who shop in both channels. This information can be crucial for tailoring marketing strategies, such as exclusive offers to entice in-store customers to try online shopping and vice versa.
+
+TABLE A
++++++++
+@BIGBro: Opening z_online_sales.csv
+
+|id |sales |date      |
+-----------------------
+|1  |120   |2024-03-01|
+|2  |60    |2024-03-02|
+|3  |200   |2024-03-03|
+|4  |500   |2024-03-04|
+|5  |300   |2024-03-05|
+Total rows: 5
+
+TABLE B
++++++++
+  @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_DIFFERENCE_WITH B
+  @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
+
+|id |sales |date      |
+-----------------------
+|6  |190   |2024-03-07|
+|2  |40    |2024-03-08|
+|3  |700   |2024-03-09|
+|9  |100   |2024-03-10|
+|5  |200   |2024-02-05|
+Total rows: 5
+
+  @LILbro: Enter column names (comma separated, if multiple) to SET_DIFFERENCE_WITH at: id
+
+|id |sales |date      |
+-----------------------
+|6  |190   |2024-03-07|
+|9  |100   |2024-03-10|
+Total rows: 2
+
+### Example 2
+
+Background: A supermarket chain is assessing the performance of different product lines across their stores. Specifically, they wish to identify products that are sold exclusively in certain stores, which might indicate regional preferences or the impact of local promotions. This can help in optimizing stock levels and tailoring marketing efforts to match local consumer behavior.
+
+1. The operation SET_DIFFERENCE_WITH at 'category, item, purchase_day': This command calculates the difference between TABLE A and TABLE B based on the uniqueness of row values accross all three columns: category, item, and purchase_day. The operation identifies records present in TABLE A but not in TABLE B, highlighting specific products of a specific category, sold on specific days in one store that aren't in the other.
+2. The operation SET_DIFFERENCE_WITH at 'category, item': By focusing on just the category and item columns and excluding purchase_day, this comparison identifies specific products of a specific category that are sold exclusively in one store (TABLE A), regardless of the day. This helps to understand core inventory differences and exclusive product offerings between stores.
+3. The operation SET_DIFFERENCE_WITH at 'item, purchase_day': This analysis looks at differences based solely on item and purchase_day, omitting category. It serves to pinpoint specific items sold on certain days in one store (TABLE A) but not in the other (TABLE B), regardless of the category, offering insights into day-specific sales patterns and possibly the timing of promotions.
+
+TABLE A
++++++++
+|category |item  |purchase_day |
+--------------------------------
+|Beverages|Tea   |Monday       |
+|Bakery   |Bread |Tuesday      |
+|Dairy    |Cheese|Wednesday    |
+|Beverages|Coffee|Thursday     |
+|Snacks   |Chips |Friday       |
+|Beverages|Coffee|Monday       |
+Total rows: 6
+
+TABLE B
++++++++
+  @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_DIFFERENCE_WITH B
+  @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
+|category |item  |purchase_day |
+--------------------------------
+|Beverages|Tea   |Monday       |
+|Bakery   |Bread |Tuesday      |
+|Dairy    |Butter|Wednesday    |
+|Beverages|Coffee|Thursday     |
+|Snacks   |Nuts  |Friday       |
+|Beverages|Tea   |Friday       |
+Total rows: 6
+
+  @LILbro: Enter column names (comma separated, if multiple) to SET_DIFFERENCE_WITH at: category, item, pur
+chase_day
+
+|category |item  |purchase_day |
+--------------------------------
+|Dairy    |Cheese|Wednesday    |
+|Snacks   |Chips |Friday       |
+|Beverages|Coffee|Monday       |
+Total rows: 3
+
+  @LILbro: Enter column names (comma separated, if multiple) to SET_DIFFERENCE_WITH at: cate
+gory, item
+
+|category |item  |purchase_day |
+--------------------------------
+|Dairy    |Cheese|Wednesday    |
+|Snacks   |Chips |Friday       |
+Total rows: 2
+
+  @LILbro: Enter column names (comma separated, if multiple) to SET_DIFFERENCE_WITH at: item
+, purchase_day
+
+|category |item  |purchase_day |
+--------------------------------
+|Dairy    |Cheese|Wednesday    |
+|Snacks   |Chips |Friday       |
+|Beverages|Coffee|Monday       |
+Total rows: 3
+"#,
+                    );
+                    continue;
+                }
+
+                print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_DIFFERENCE_WITH B");
+
                 let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
+
+                if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
+                    let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                    println!();
+                }
+
                 if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                    csv_builder
-                        .set_difference_with(&chosen_file_path_for_join)
-                        .print_table();
+                    // Capture user input for key columns
+                    let set_intersection_at_choice = get_user_input_level_2(
+        "Enter column names (comma separated, if multiple) to SET_DIFFERENCE_WITH at: ",
+    );
+
+                    if set_intersection_at_choice.to_lowercase() == "@cancel" {
+                        //return None;
+                        return Ok(());
+                    }
+
+                    // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
+                    let key_columns: Vec<&str> = set_intersection_at_choice
+                        .split(',')
+                        .map(|s| s.trim())
+                        .filter(|s| !s.is_empty())
+                        .collect();
+
+                    // Ensure that there is at least one key column specified
+                    if key_columns.is_empty() {
+                        println!("Error: No key columns specified. Please specify at least one key column.");
+                    } else {
+                        // Perform set intersection with the specified key columns
+                        csv_builder
+                            .set_difference_with(&chosen_file_path_for_join, key_columns)
+                            .print_table();
+                    }
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+
+
                 }
             }
+
             Some(7) => {
+                if choice.to_lowercase() == "7d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+A 'SET SYMMETRIC DIFFERENCE WITH' analysis is a powerful technique for identifying elements that are unique to each of two datasets, essentially highlighting the differences between them without overlap. This method is invaluable when the objective is to uncover exclusive elements in both sets, thereby providing a comprehensive view of unique attributes, transactions, or records that do not have a common counterpart in the compared datasets.
+
+Unlike 'SET DIFFERENCE WITH' (which identifies elements present in one dataset but not in the other) or 'SET INTERSECTION WITH' (which finds common elements between datasets), 'SET SYMMETRIC DIFFERENCE WITH' reveals elements that are unique to each dataset, offering insights into distinctive characteristics that define each set independently.
+
+### Example 1
+
+Background: A retail company operates both an online store and several physical locations. To better understand their customer base, they want to identify unique customer segments who either shop exclusively online or in-store, using customer IDs to track shopping behavior. 
+
+TABLE A
++++++++
+@BIGBro: Opening z_online_sales.csv
+
+|id |sales |date      |
+-----------------------
+|1  |120   |2024-03-01|
+|2  |60    |2024-03-02|
+|3  |200   |2024-03-03|
+|4  |500   |2024-03-04|
+|5  |300   |2024-03-05|
+Total rows: 5
+
+TABLE B
++++++++
+  @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_SYMMETRIC_DIFFERENCE_WITH B
+  @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
+
+|id |sales |date      |
+-----------------------
+|6  |190   |2024-03-07|
+|2  |40    |2024-03-08|
+|3  |700   |2024-03-09|
+|9  |100   |2024-03-10|
+|5  |200   |2024-02-05|
+Total rows: 5
+
+  @LILbro: Enter column names (comma separated, if multiple) to SET_SYMMETRIC_DIFFERENCE_WITH at: id
+
+|id |sales |date      |
+-----------------------
+|6  |190   |2024-03-07|
+|9  |100   |2024-03-10|
+|1  |120   |2024-03-01|
+|4  |500   |2024-03-04|
+Total rows: 4
+
+### Example 2
+
+Background: A supermarket chain is assessing the performance of different product lines across their stores. Specifically, they wish to identify products that are only sold via Store A (which as a particular decor/ set up), and also, products that are only sold via Store B (which has a particular decor/ set up) - excluding those products that are purchases across both channels.
+
+1. The operation SET_SYMMETRIC_DIFFERENCE_WITH at 'category, item, purchase_day': Assesses the exclusivity of products based on their category, item, and purchase_day across both stores. It identifies unique products sold in Store A not found in Store B and vice versa, based on the specificity of category, item, and the day of purchase. This operation helps pinpoint exclusive product sales trends and preferences unique to each store setup on specific days.
+
+2. The operation SET_SYMMETRIC_DIFFERENCE_WITH at 'category, item': Focusing on category and item alone, this operation reveals the core differences in product lineups between Store A and Store B, disregarding the purchase day. It identifies unique categories and items that are exclusively sold in either store, underscoring the distinctive inventory and product offerings that cater to the particular tastes and preferences of their respective customer bases.
+
+3. The operation SET_SYMMETRIC_DIFFERENCE_WITH at 'item, purchase_day': By analyzing only the item and purchase_day, this comparison sheds light on unique items sold on specific days in either store, omitting the category context. It serves to highlight day-specific sales trends and potentially exclusive promotional activities for certain items, offering insights into the timing and exclusivity of product offerings between the two store types.
+
+TABLE A
++++++++
+|category |item  |purchase_day |
+--------------------------------
+|Beverages|Tea   |Monday       |
+|Bakery   |Bread |Tuesday      |
+|Dairy    |Cheese|Wednesday    |
+|Beverages|Coffee|Thursday     |
+|Snacks   |Chips |Friday       |
+|Beverages|Coffee|Monday       |
+Total rows: 6
+
+TABLE B
++++++++
+  @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_SYMMETRIC_DIFFERENCE_WITH B
+  @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
+|category |item  |purchase_day |
+--------------------------------
+|Beverages|Tea   |Monday       |
+|Bakery   |Bread |Tuesday      |
+|Dairy    |Butter|Wednesday    |
+|Beverages|Coffee|Thursday     |
+|Snacks   |Nuts  |Friday       |
+|Beverages|Tea   |Friday       |
+Total rows: 6
+
+  @LILbro: Enter column names (comma separated, if multiple) to SET_SYMMETRIC_DIFFERENCE_WITH at: category, item, purchase_day
+
+|category |item  |purchase_day |
+--------------------------------
+|Dairy    |Cheese|Wednesday    |
+|Snacks   |Chips |Friday       |
+|Beverages|Coffee|Monday       |
+|Dairy    |Butter|Wednesday    |
+|Snacks   |Nuts  |Friday       |
+|Beverages|Tea   |Friday       |
+Total rows: 6
+
+  @LILbro: Enter column names (comma separated, if multiple) to SET_SYMMETRIC_DIFFERENCE_WITH at: category, 
+item
+
+|category |item  |purchase_day |
+--------------------------------
+|Dairy    |Cheese|Wednesday    |
+|Snacks   |Chips |Friday       |
+|Dairy    |Butter|Wednesday    |
+|Snacks   |Nuts  |Friday       |
+Total rows: 4
+
+  @LILbro: Enter column names (comma separated, if multiple) to SET_SYMMETRIC_DIFFERENCE_WITH at: item, purc
+hase_day
+
+|category |item  |purchase_day |
+--------------------------------
+|Dairy    |Cheese|Wednesday    |
+|Snacks   |Chips |Friday       |
+|Beverages|Coffee|Monday       |
+|Dairy    |Butter|Wednesday    |
+|Snacks   |Nuts  |Friday       |
+|Beverages|Tea   |Friday       |
+Total rows: 6
+"#,
+                    );
+                    continue;
+                }
+
+                print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_SYMMETRIC_DIFFERENCE_WITH B");
+
                 let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
+
+                if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
+                    let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                    println!();
+                }
+
                 if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                    csv_builder
-                        .set_symmetric_difference_with(&chosen_file_path_for_join)
-                        .print_table();
+                    // Capture user input for key columns
+                    let set_intersection_at_choice = get_user_input_level_2(
+        "Enter column names (comma separated, if multiple) to SET_SYMMETRIC_DIFFERENCE_WITH at: ",
+    );
+
+                    if set_intersection_at_choice.to_lowercase() == "@cancel" {
+                        //return None;
+                        return Ok(());
+                    }
+
+                    // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
+                    let key_columns: Vec<&str> = set_intersection_at_choice
+                        .split(',')
+                        .map(|s| s.trim())
+                        .filter(|s| !s.is_empty())
+                        .collect();
+
+                    // Ensure that there is at least one key column specified
+                    if key_columns.is_empty() {
+                        println!("Error: No key columns specified. Please specify at least one key column.");
+                    } else {
+                        // Perform set intersection with the specified key columns
+                        csv_builder
+                            .set_symmetric_difference_with(&chosen_file_path_for_join, key_columns)
+                            .print_table();
+                    }
+
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+
+
                 }
             }
+
+
             Some(8) => {
                 csv_builder.print_table();
                 break; // Exit the inspect handler
