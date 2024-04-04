@@ -11,13 +11,12 @@ use std::path::Path;
 use std::path::PathBuf;
 
 pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
-
     fn apply_filter_changes_menu(
         csv_builder: &mut CsvBuilder,
         prev_iteration_builder: &CsvBuilder,
         original_csv_builder: &CsvBuilder,
     ) -> Result<(), String> {
-        let menu_options = vec![ 
+        let menu_options = vec![
             "Continue with filtered data",
             "Discard this result, and load previous search result",
             "Load original, to search from scratch",
@@ -49,10 +48,10 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
                     .override_with(original_csv_builder)
                     .print_table();
                 Ok(())
-            }   
+            }
             _ => Err("Invalid option. Please enter a number from 1 to 3.".to_string()),
-        }   
-    } 
+        }
+    }
 
     fn get_csv_db_path() -> String {
         let home_dir = env::var("HOME").expect("Unable to determine user home directory");
@@ -247,19 +246,17 @@ Total rows: 22
 
                     csv_builder.print_table();
 
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
                     }
-                }
-
-
                 }
             }
             Some(2) => {
@@ -329,19 +326,17 @@ Total rows: 11
 
                     csv_builder.print_table();
 
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
                     }
-                }
-
-
                 }
             }
             Some(3) => {
@@ -423,22 +418,18 @@ Total rows: 10
                         .set_union_with(&chosen_file_path_for_join, &union_type)
                         .print_table();
 
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
                     }
                 }
-
-
-                }
-
-
             }
             Some(4) => {
                 if choice.to_lowercase() == "4d" {
@@ -517,19 +508,17 @@ Total rows: 10
                     csv_builder
                         .set_union_with(&chosen_file_path_for_join, &union_type)
                         .print_table();
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
                     }
-                }
-
-
                 }
             }
             Some(5) => {
@@ -682,19 +671,17 @@ Total rows: 3
                             .set_intersection_with(&chosen_file_path_for_join, key_columns)
                             .print_table();
                     }
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
                     }
-                }
-
-
                 }
             }
 
@@ -849,19 +836,17 @@ Total rows: 3
                             .set_difference_with(&chosen_file_path_for_join, key_columns)
                             .print_table();
                     }
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
                     }
-                }
-
-
                 }
             }
 
@@ -1028,22 +1013,19 @@ Total rows: 6
                             .print_table();
                     }
 
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
                     }
                 }
-
-
-                }
             }
-
 
             Some(8) => {
                 csv_builder.print_table();
