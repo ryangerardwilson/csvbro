@@ -604,7 +604,7 @@ Total rows: 10
                 }
             }
 
-    Some(5) => {
+            Some(5) => {
                 if choice.to_lowercase() == "5d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
@@ -650,7 +650,7 @@ Total rows: 10
                             .set_union_with(
                                 &chosen_file_path_for_join,
                                 "UNION_TYPE:OUTER_FULL_JOIN",
-                                key_columns
+                                key_columns,
                             )
                             .print_table();
                     }
@@ -667,9 +667,6 @@ Total rows: 10
                     }
                 }
             }
-
-
-
 
             Some(6) => {
                 if choice.to_lowercase() == "6d" {
@@ -985,7 +982,6 @@ Total rows: 3
                     }
                 }
             }
-
 
             Some(8) => {
                 if choice.to_lowercase() == "8d" {

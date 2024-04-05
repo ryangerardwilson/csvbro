@@ -972,6 +972,7 @@ Total rows: 3
                 }
 
                 let existing_data = csv_builder.get_data();
+                dbg!(&existing_data);
 
                 let existing_headers: Vec<String> = csv_builder
                     .get_headers()
@@ -982,22 +983,35 @@ Total rows: 3
 
                 let mut json_array_str = "[".to_string();
 
-                for (row_index, row) in existing_data.iter().enumerate() {
+                if existing_data.is_empty() {
+                    // Handle case when there is no data
                     json_array_str.push_str("\n  {");
-
-                    for (col_index, value) in row.iter().enumerate() {
-                        json_array_str.push_str(&format!(
-                            "\n    \"{}\": \"{}\"",
-                            existing_headers[col_index], value
-                        ));
+                    for (col_index, header) in existing_headers.iter().enumerate() {
+                        json_array_str.push_str(&format!("\n    \"{}\": \"\"", header));
                         if col_index < existing_headers.len() - 1 {
                             json_array_str.push(',');
                         }
                     }
-
                     json_array_str.push_str("\n  }");
-                    if row_index < existing_data.len() - 1 {
-                        json_array_str.push(',');
+                } else {
+                    // Original logic for when data exists
+                    for (row_index, row) in existing_data.iter().enumerate() {
+                        json_array_str.push_str("\n  {");
+
+                        for (col_index, value) in row.iter().enumerate() {
+                            json_array_str.push_str(&format!(
+                                "\n    \"{}\": \"{}\"",
+                                existing_headers[col_index], value
+                            ));
+                            if col_index < existing_headers.len() - 1 {
+                                json_array_str.push(',');
+                            }
+                        }
+
+                        json_array_str.push_str("\n  }");
+                        if row_index < existing_data.len() - 1 {
+                            json_array_str.push(',');
+                        }
                     }
                 }
                 json_array_str.push_str("\n]");
@@ -1159,27 +1173,39 @@ Total rows: 3
                     .collect();
                 let mut json_array_str = "[".to_string();
 
-                for row in existing_data.iter().rev() {
-                    // Iterate in reverse
+                if existing_data.is_empty() {
+                    // Handle case when there is no data: add one JSON object with all headers and empty strings
                     json_array_str.push_str("\n  {");
-
-                    for (col_index, value) in row.iter().enumerate() {
-                        json_array_str.push_str(&format!(
-                            "\n    \"{}\": \"{}\"",
-                            existing_headers[col_index], value
-                        ));
-                        if col_index < row.len() - 1 {
+                    for (col_index, header) in existing_headers.iter().enumerate() {
+                        json_array_str.push_str(&format!("\n    \"{}\": \"\"", header));
+                        if col_index < existing_headers.len() - 1 {
                             json_array_str.push(',');
                         }
                     }
-
                     json_array_str.push_str("\n  }");
-                    if json_array_str.ends_with("}") && !json_array_str.ends_with("]") {
-                        json_array_str.push(',');
+                } else {
+                    // If there is data, iterate in reverse and construct JSON string
+                    for row in existing_data.iter().rev() {
+                        json_array_str.push_str("\n  {");
+
+                        for (col_index, value) in row.iter().enumerate() {
+                            json_array_str.push_str(&format!(
+                                "\n    \"{}\": \"{}\"",
+                                existing_headers[col_index], value
+                            ));
+                            if col_index < row.len() - 1 {
+                                json_array_str.push(',');
+                            }
+                        }
+
+                        json_array_str.push_str("\n  }");
+                        if json_array_str.ends_with("}") && !json_array_str.ends_with("]") {
+                            json_array_str.push(',');
+                        }
                     }
-                }
-                if json_array_str.ends_with(",") {
-                    json_array_str.pop(); // Remove trailing comma
+                    if json_array_str.ends_with(",") {
+                        json_array_str.pop(); // Remove the last comma if it exists
+                    }
                 }
                 json_array_str.push_str("\n]");
 
