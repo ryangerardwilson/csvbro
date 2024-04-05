@@ -148,13 +148,15 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
     }
 
     let menu_options = vec![
-        "SET BAG UNION WITH",
-        "SET UNION WITH",
-        "LEFT JOIN WITH",
-        "RIGHT JOIN WITH",
-        "SET INTERSECTION WITH",
-        "SET DIFFERENCE WITH",
-        "SET SYMMETRIC DIFFERENCE WITH",
+        "UNION",
+        "UNION (BAG)",
+        "UNION (LEFT JOIN)",
+        "UNION (RIGHT JOIN)",
+        "INTERSECTION",
+        "INTERSECTION (INNER JOIN)",
+        "INTERSECTION (OUTER JOIN)",
+        "DIFFERENCE",
+        "DIFFERENCE (SYMMETRIC)",
         "BACK",
     ];
 
@@ -174,6 +176,149 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
         match selected_option {
             Some(1) => {
                 if choice.to_lowercase() == "1d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Computes A U B, under traditional set theory. For A = {1,2,3} and B = {3,4,5}, it returns {1,2,3,4,5}
+
+NOTE: 
+1. This method will automatically sort the end result in ascending order of the id column.
+2. While eliminating duplicates - the preference for inclusion is based first on the dataset (with the earlier dataset being preferred) and then on the row order within that dataset.
+
+### Example 1
+
+TABLE A
++++++++
+@BIGBro: Opening z_instore_sales.csv
+
+|id |sales |date      |
+-----------------------
+|6  |190   |2024-03-07|
+|2  |40    |2024-03-08|
+|3  |700   |2024-03-09|
+|9  |100   |2024-03-10|
+|5  |200   |2024-02-05|
+Total rows: 5
+
+TABLE B
++++++++
+  @LILbro: Punch in the serial number or a slice of the file name to LOAD: 52
+
+|id |sales |date      |
+-----------------------
+|1  |120   |2024-03-01|
+|2  |60    |2024-03-02|
+|3  |200   |2024-03-03|
+|4  |500   |2024-03-04|
+|5  |300   |2024-03-05|
+Total rows: 5
+
+  @LILbro: Enter comma separated column name/names from your above selected csvs to determine uniqueness by (use * for a traditional union that determines uniqueness based on all columns)): *
+
+|id |sales |date      |
+-----------------------
+|1  |120   |2024-03-01|
+|2  |40    |2024-03-08|
+|2  |60    |2024-03-02|
+|3  |700   |2024-03-09|
+|3  |200   |2024-03-03|
+|4  |500   |2024-03-04|
+|5  |200   |2024-02-05|
+|5  |300   |2024-03-05|
+|6  |190   |2024-03-07|
+|9  |100   |2024-03-10|
+Total rows: 10
+
+### Example 2
+
+Should you decide to determine uniqueness by a specific column, or a specific combination of columns - the preference for inclusion is based first on the dataset (with the earlier dataset being preferred) and then on the row order within that dataset. In the below example, for id 5, the row with id 5 in the first data set is retained.
+
+TABLE A
++++++++
+@BIGBro: Opening z_instore_sales.csv
+
+|id |sales |date      |
+-----------------------
+|6  |190   |2024-03-07|
+|2  |40    |2024-03-08|
+|3  |700   |2024-03-09|
+|9  |100   |2024-03-10|
+|5  |200   |2024-02-05|
+Total rows: 5
+
+TABLE B
++++++++
+  @LILbro: Punch in the serial number or a slice of the file name to LOAD: 52
+
+|id |sales |date      |
+-----------------------
+|1  |120   |2024-03-01|
+|2  |60    |2024-03-02|
+|3  |200   |2024-03-03|
+|4  |500   |2024-03-04|
+|5  |300   |2024-03-05|
+Total rows: 5
+
+  @LILbro: Enter comma separated column name/names from your above selected csvs to determine uniqueness by (use * for a traditional union that determines uniqueness based on all columns)): id
+
+|id |sales |date      |
+-----------------------
+|1  |120   |2024-03-01|
+|2  |40    |2024-03-08|
+|3  |700   |2024-03-09|
+|4  |500   |2024-03-04|
+|5  |200   |2024-02-05|
+|6  |190   |2024-03-07|
+|9  |100   |2024-03-10|
+Total rows: 7
+"#,
+                    );
+                    continue;
+                }
+
+                let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
+                if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
+                    CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+
+                    let join_at_choice = get_user_input_level_2(
+                        "Enter comma separated column name/names from your above selected csvs to determine uniqueness by (use * for a traditional union that determines uniqueness based on all columns)): ",
+                    )
+                    .to_lowercase();
+
+                    if join_at_choice.to_lowercase() == "@cancel" {
+                        //return None;
+                        return Ok(());
+                    }
+
+                    let column_names: Vec<&str> =
+                        join_at_choice.split(',').map(|s| s.trim()).collect();
+
+                    let _ = csv_builder.set_union_with(
+                        &chosen_file_path_for_join,
+                        "UNION_TYPE:NORMAL",
+                        column_names,
+                    );
+
+                    sort_csv_by_id_if_needed(csv_builder);
+
+                    csv_builder.print_table();
+
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                }
+            }
+
+            Some(2) => {
+                if choice.to_lowercase() == "2d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -239,88 +384,10 @@ Total rows: 22
                 let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
 
                 if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                    let _ =
-                        csv_builder.set_union_with(&chosen_file_path_for_join, "UNION_TYPE:ALL");
-
-                    sort_csv_by_id_if_needed(csv_builder);
-
-                    csv_builder.print_table();
-
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                }
-            }
-            Some(2) => {
-                if choice.to_lowercase() == "2d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
-
-Computes A U B, under traditional set theory. For A = {1,2,3} and B = {3,4,5}, it returns {1,2,3,4,5}
-
-NOTE: This method will automatically sort the end result in ascending order of the id column.
-
-TABLE A
-+++++++
-|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
----------------------------------------------------------------------------
-|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
-|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
-|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
-|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
-|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
-<<+2 rows>>
-|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
-|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
-|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
-|11 |concert |2000  |OTHER |2024-03-27|0                 |Y2024-M03       |
-|12 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
-Total rows: 12
-
-TABLE B
-+++++++
-|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
----------------------------------------------------------------------------
-|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
-|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
-|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
-|4  |bags    |500   |TRAVEL|2024-03-28|1                 |Y2024-M03       |
-Total rows: 4
-
-  @LILbro: Punch in the serial number or a slice of the file name to LOAD: test
-|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
----------------------------------------------------------------------------
-|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
-|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
-|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
-|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
-|4  |bags    |500   |TRAVEL|2024-03-28|1                 |Y2024-M03       |
-<<+1 row>>
-|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
-|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
-|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
-|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
-|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
-Total rows: 11
-"#,
-                    );
-                    continue;
-                }
-
-                let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
-                if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                    let _ = csv_builder.set_union_with(
-                        &chosen_file_path_for_join,
-                        "UNION_TYPE:ALL_WITHOUT_DUPLICATES",
-                    );
+                    CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                    println!();
+                    print_insight_level_2("Now, computing the bag union with the above ...");
+                    let _ = csv_builder.set_bag_union_with(&chosen_file_path_for_join);
 
                     sort_csv_by_id_if_needed(csv_builder);
 
@@ -402,7 +469,7 @@ Total rows: 10
                 if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
                     CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
                     let left_join_at_choice = get_user_input_level_2(
-                        "Enter column name from your above selected csv to LEFT JOIN at: ",
+                        "Enter comma-separated column name/names from your above selected csv to LEFT JOIN at: ",
                     )
                     .to_lowercase();
 
@@ -411,11 +478,18 @@ Total rows: 10
                         return Ok(());
                     }
 
-                    let union_type = format!("UNION_TYPE:LEFT_JOIN_AT_{}", left_join_at_choice);
+                    //let union_type = format!("UNION_TYPE:LEFT_JOIN_AT_{}", left_join_at_choice);
+
+                    let column_names: Vec<&str> =
+                        left_join_at_choice.split(',').map(|s| s.trim()).collect();
 
                     //dbg!(&union_type);
                     csv_builder
-                        .set_union_with(&chosen_file_path_for_join, &union_type)
+                        .set_union_with(
+                            &chosen_file_path_for_join,
+                            "UNION_TYPE:LEFT_JOIN",
+                            column_names,
+                        )
                         .print_table();
 
                     match apply_filter_changes_menu(
@@ -495,7 +569,7 @@ Total rows: 10
                 if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
                     CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
                     let right_join_at_choice = get_user_input_level_2(
-                        "Enter column name from your above selected csv to RIGHT JOIN at: ",
+                        "Enter comma separated column name/ names from your above selected csv to RIGHT JOIN at: ",
                     )
                     .to_lowercase();
 
@@ -504,9 +578,16 @@ Total rows: 10
                         return Ok(());
                     }
 
-                    let union_type = format!("UNION_TYPE:RIGHT_JOIN_AT_{}", right_join_at_choice);
+                    //let union_type = format!("UNION_TYPE:RIGHT_JOIN_AT_{}", right_join_at_choice);
+                    let column_names: Vec<&str> =
+                        right_join_at_choice.split(',').map(|s| s.trim()).collect();
+
                     csv_builder
-                        .set_union_with(&chosen_file_path_for_join, &union_type)
+                        .set_union_with(
+                            &chosen_file_path_for_join,
+                            "UNION_TYPE:RIGHT_JOIN",
+                            column_names,
+                        )
                         .print_table();
                     match apply_filter_changes_menu(
                         csv_builder,
@@ -668,7 +749,11 @@ Total rows: 3
                     } else {
                         // Perform set intersection with the specified key columns
                         csv_builder
-                            .set_intersection_with(&chosen_file_path_for_join, key_columns)
+                            .set_intersection_with(
+                                &chosen_file_path_for_join,
+                                key_columns,
+                                "INTERSECTION_TYPE:NORMAL",
+                            )
                             .print_table();
                     }
                     match apply_filter_changes_menu(
@@ -687,6 +772,321 @@ Total rows: 3
 
             Some(6) => {
                 if choice.to_lowercase() == "6d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+A 'INTERSECTION (INNER JOIN)' is used to combine data from two distinct sets based on a common attribute or condition, effectively finding the intersection between these sets. This method is particularly useful when you're dealing with data that is related but stored in separate sources. For example, if a business maintains separate datasets for online sales and in-store sales, each identified by a unique customer ID, an INNER JOIN can merge these datasets to focus exclusively on customers who appear in both. This enables a comprehensive analysis of cross-channel shopping behaviors by filtering out customers who have only shopped through one channel. The result of an INNER JOIN provides a concentrated view of shared data points, making it ideal for identifying patterns or relationships that only exist across intersecting subsets of data.
+
+### Example 1
+
+Background: A retail company wants to analyze customer shopping behavior across different sales channels: online and in-store. They have separate datasets for transactions made online and those made at physical store locations. The goal is to create a 'profile' table for customers who shop both online and in-store to target them with integrated marketing campaigns.
+
+TABLE A
++++++++
+@BIGBro: Opening zzzz_online_sales.csv
+
+|customer_id |online_sales |online_date |
+-----------------------------------------
+|1           |120          |2024-03-01  |
+|2           |60           |2024-03-02  |
+|3           |200          |2024-03-03  |
+|4           |500          |2024-03-04  |
+|5           |300          |2024-03-05  |
+Total rows: 5
+
+TABLE B
++++++++
+  @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_INNER_JOIN_INTERSECTION_WITH B
+  @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
+
+|customer_id |online_sales |instore_date |
+------------------------------------------
+|6           |190          |2024-03-07   |
+|2           |40           |2024-03-08   |
+|3           |700          |2024-03-09   |
+|9           |100          |2024-03-10   |
+|5           |200          |2024-03-05   |
+Total rows: 5
+
+  @LILbro: Enter column names (comma separated, if multiple) to SET_INTERSECTION_WITH at: customer_id
+
+|customer_id |online_sales |online_date |online_sales |instore_date |
+---------------------------------------------------------------------
+|2           |60           |2024-03-02  |40           |2024-03-08   |
+|3           |200          |2024-03-03  |700          |2024-03-09   |
+|5           |300          |2024-03-05  |200          |2024-03-05   |
+Total rows: 3
+
+### Example 2
+
+Background: A publishing company is looking to understand the overlap between its digital and print subscription bases. It maintains separate records for customers' digital and print subscriptions, including start dates, to assess cross-media preferences. The aim is to integrate these datasets to identify customers with both digital and print subscriptions, facilitating targeted content and bundle offers.
+
+The operation targets the customer_id and subscription_type columns, ensuring that only customers with the same type of subscription (e.g., Monthly/Yearly) in both digital and print formats are selected.
+
+TABLE A
++++++++
+@BIGBro: Opening zzzzz_digital_subs.csv
+
+|customer_id |digital_sub_start |type   |
+-----------------------------------------
+|1           |2024-01-01        |Monthly|
+|2           |2024-02-01        |Yearly |
+|3           |2024-01-15        |Monthly|
+|4           |2024-03-01        |Yearly |
+|5           |2024-02-20        |Monthly|
+Total rows: 5
+
+TABLE B
++++++++
+  @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_INNER_JOIN_INTERSECTION_WITH B
+  @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
+
+|customer_id |print_sub_start |type   |
+---------------------------------------
+|6           |2024-03-07      |Monthly|
+|2           |2024-02-01      |Yearly |
+|3           |2024-01-15      |Monthly|
+|9           |2024-04-01      |Yearly |
+|5           |2024-02-20      |Monthly|
+Total rows: 5
+
+  @LILbro: Enter column names (comma separated, if multiple) to SET_INNER_JOIN_INTERSECTION_WITH at: customer_id, type
+
+|customer_id |type   |digital_sub_start |print_sub_start |
+----------------------------------------------------------
+|2           |Yearly |2024-02-01        |2024-02-01      |
+|3           |Monthly|2024-01-15        |2024-01-15      |
+|5           |Monthly|2024-02-20        |2024-02-20      |
+Total rows: 3
+"#,
+                    );
+                    continue;
+                }
+
+                print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_INNER_JOIN_INTERSECTION_WITH B");
+
+                let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
+
+                if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
+                    let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                    println!();
+                }
+
+                if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
+                    // Capture user input for key columns
+                    let set_intersection_at_choice = get_user_input_level_2(
+        "Enter column names (comma separated, if multiple) to SET_INNER_JOIN_INTERSECTION_WITH at: ",
+    );
+
+                    if set_intersection_at_choice.to_lowercase() == "@cancel" {
+                        //return None;
+                        return Ok(());
+                    }
+
+                    // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
+                    let key_columns: Vec<&str> = set_intersection_at_choice
+                        .split(',')
+                        .map(|s| s.trim())
+                        .filter(|s| !s.is_empty())
+                        .collect();
+
+                    // Ensure that there is at least one key column specified
+                    if key_columns.is_empty() {
+                        println!("Error: No key columns specified. Please specify at least one key column.");
+                    } else {
+                        // Perform set intersection with the specified key columns
+                        csv_builder
+                            .set_intersection_with(
+                                &chosen_file_path_for_join,
+                                key_columns,
+                                "INTERSECTION_TYPE:INNER_JOIN",
+                            )
+                            .print_table();
+                    }
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                }
+            }
+
+            Some(7) => {
+                if choice.to_lowercase() == "7d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+A 'SET INTERSECTION WITH' analysis is useful to find common elements of data sets with similar column names but serving different purposes. For instance, if, instead of using a category column 'sales_type', a business decides to have two different csv files to record online_sales and instore_sales, a 'SET INTERSECTION WITH' analysis can help us find out which customers (identified uniquely in both files via an id column) shop online as well as at the store.
+
+### Example 1
+
+Background: A retail company operates both an online store and several physical locations. They have launched two separate marketing campaigns over the past month: one targeting online shoppers through digital ads (Campaign A) and another targeting in-store shoppers through traditional advertising methods (Campaign B). Each campaign aims to increase sales in its respective channel, but there is interest in understanding the overlap to refine future marketing strategies.
+
+TABLE A
++++++++
+@BIGBro: Opening z_online_sales.csv
+
+|id |sales |date      |
+-----------------------
+|1  |120   |2024-03-01|
+|2  |60    |2024-03-02|
+|3  |200   |2024-03-03|
+|4  |500   |2024-03-04|
+|5  |300   |2024-03-05|
+Total rows: 5
+
+TABLE B
++++++++
+  @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_INTERSECTION_WITH B
+  @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
+|id |sales |date      |
+-----------------------
+|6  |190   |2024-03-07|
+|2  |40    |2024-03-08|
+|3  |700   |2024-03-09|
+|9  |100   |2024-03-10|
+|5  |200   |2024-02-05|
+Total rows: 5
+
+  @LILbro: Enter column names (comma separated, if multiple) to SET_INTERSECTION_WITH at: id
+
+|id |sales |date      |
+-----------------------
+|2  |40    |2024-03-08|
+|3  |700   |2024-03-09|
+|5  |200   |2024-02-05|
+Total rows: 3
+
+### Example 2
+
+Background: Consider a scenario where a retail chain wants to perform a market basket analysis to understand shopping patterns across different store locations. The goal is to identify combinations of products that are frequently bought together by customers across multiple stores. In this case, there's no single customer_id or transaction_id that tracks purchases across stores, but a combination of category, item, and purchase_day can provide a unique enough signature to identify shopping patterns.
+
+The analysis aims to uncover products frequently bought together by customers across multiple stores of a retail chain. This insight is valuable for inventory management, marketing strategies, and enhancing customer satisfaction. TABLE A and TABLE B represent purchase records from two different stores. Each table lists products bought, categorized by `category` and `item`, along with the `purchase_day` of the week:
+1. The operation SET_INTERSECTION_WITH at 'category, item, purchase_day': This command intersects TABLE A and TABLE B based on all three columns: `category`, `item`, and `purchase_day`. The intersection finds records where the exact combination of these three attributes matches across both tables, indicating the same item was purchased in the same category on the same day of the week in both stores.
+2. The operation SET_INTERSECTION_WITH at 'category, item': This time, the intersection is performed on two columns: `category` and `item`, excluding `purchase_day`. This broader comparison reveals items that are commonly bought across stores regardless of the day they were purchased.
+3. The operation SET_INTERSECTION_WITH at 'item, purchase_day': This command focuses on the intersection based on `item` and `purchase_day`, ignoring the `category`. This operation seeks to identify specific items bought on the same days across stores, potentially revealing day-specific purchasing trends for particular items.
+
+TABLE A
++++++++
+|category |item  |purchase_day |
+--------------------------------
+|Beverages|Tea   |Monday       |
+|Bakery   |Bread |Tuesday      |
+|Dairy    |Cheese|Wednesday    |
+|Beverages|Coffee|Thursday     |
+|Snacks   |Chips |Friday       |
+|Beverages|Coffee|Monday       |
+Total rows: 6
+
+TABLE B
++++++++
+  @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_INTERSECTION_WITH B
+  @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
+|category |item  |purchase_day |
+--------------------------------
+|Beverages|Tea   |Monday       |
+|Bakery   |Bread |Tuesday      |
+|Dairy    |Butter|Wednesday    |
+|Beverages|Coffee|Thursday     |
+|Snacks   |Nuts  |Friday       |
+|Beverages|Tea   |Friday       |
+Total rows: 6
+
+  @LILbro: Enter column names (comma separated, if multiple) to SET_INTERSECTION_WITH at: category, item, pur
+chase_day
+
+|category |item  |purchase_day |
+--------------------------------
+|Beverages|Tea   |Monday       |
+|Bakery   |Bread |Tuesday      |
+|Beverages|Coffee|Thursday     |
+Total rows: 3
+
+  @LILbro: Enter column names (comma separated, if multiple) to SET_INTERSECTION_WITH at: category, item
+
+|category |item  |purchase_day |
+--------------------------------
+|Beverages|Tea   |Monday       |
+|Bakery   |Bread |Tuesday      |
+|Beverages|Coffee|Thursday     |
+|Beverages|Tea   |Friday       |
+Total rows: 4
+
+  @LILbro: Enter column names (comma separated, if multiple) to SET_INTERSECTION_WITH at: item, purchase_day
+
+|category |item  |purchase_day |
+--------------------------------
+|Beverages|Tea   |Monday       |
+|Bakery   |Bread |Tuesday      |
+|Beverages|Coffee|Thursday     |
+Total rows: 3
+"#,
+                    );
+                    continue;
+                }
+
+                print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_OUTER_JOIN_INTERSECTION_WITH B");
+
+                let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
+
+                if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
+                    let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                    println!();
+                }
+
+                if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
+                    // Capture user input for key columns
+                    let set_intersection_at_choice = get_user_input_level_2(
+        "Enter column names (comma separated, if multiple) to SET_OUTER_JOIN_INTERSECTION_WITH at: ",
+    );
+
+                    if set_intersection_at_choice.to_lowercase() == "@cancel" {
+                        //return None;
+                        return Ok(());
+                    }
+
+                    // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
+                    let key_columns: Vec<&str> = set_intersection_at_choice
+                        .split(',')
+                        .map(|s| s.trim())
+                        .filter(|s| !s.is_empty())
+                        .collect();
+
+                    // Ensure that there is at least one key column specified
+                    if key_columns.is_empty() {
+                        println!("Error: No key columns specified. Please specify at least one key column.");
+                    } else {
+                        // Perform set intersection with the specified key columns
+                        csv_builder
+                            .set_intersection_with(
+                                &chosen_file_path_for_join,
+                                key_columns,
+                                "INTERSECTION_TYPE:OUTER_JOIN",
+                            )
+                            .print_table();
+                    }
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                }
+            }
+
+            Some(8) => {
+                if choice.to_lowercase() == "8d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -833,7 +1233,11 @@ Total rows: 3
                     } else {
                         // Perform set intersection with the specified key columns
                         csv_builder
-                            .set_difference_with(&chosen_file_path_for_join, key_columns)
+                            .set_difference_with(
+                                &chosen_file_path_for_join,
+                                "DIFFERENCE_TYPE:NORMAL",
+                                key_columns,
+                            )
                             .print_table();
                     }
                     match apply_filter_changes_menu(
@@ -850,8 +1254,8 @@ Total rows: 3
                 }
             }
 
-            Some(7) => {
-                if choice.to_lowercase() == "7d" {
+            Some(9) => {
+                if choice.to_lowercase() == "9d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1009,7 +1413,11 @@ Total rows: 6
                     } else {
                         // Perform set intersection with the specified key columns
                         csv_builder
-                            .set_symmetric_difference_with(&chosen_file_path_for_join, key_columns)
+                            .set_difference_with(
+                                &chosen_file_path_for_join,
+                                "DIFFERENCE_TYPE:SYMMETRIC",
+                                key_columns,
+                            )
                             .print_table();
                     }
 
@@ -1027,12 +1435,12 @@ Total rows: 6
                 }
             }
 
-            Some(8) => {
+            Some(10) => {
                 csv_builder.print_table();
                 break; // Exit the inspect handler
             }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 8.");
+                println!("Invalid option. Please enter a number from 1 to 10.");
                 continue; // Ask for the choice again
             }
         }
