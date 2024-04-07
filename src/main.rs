@@ -69,7 +69,7 @@ async fn main() {
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 0.5.1");
+        print_insight("csvbro 0.5.2");
         std::process::exit(0);
     }
 
@@ -170,7 +170,8 @@ async fn main() {
                 }
                 Some(ref action) if action == "IMPORT" => {
                     match import(&desktop_path_buf, &downloads_path_buf) {
-                        Some(csv_builder) => break csv_builder,
+                        Some(csv_builder) => chain_builder(csv_builder, None).await,
+                        //Some(csv_builder) => break csv_builder,
                         None => continue,
                     }
                 }

@@ -358,6 +358,9 @@ pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBui
         if serial > 0 && serial <= files.len() {
             let (file_path, _) = &files[serial - 1];
             return if file_path.extension().and_then(|s| s.to_str()) == Some("csv") {
+                //dbg!(&file_path);
+                //let b = CsvBuilder::from_csv(&file_path.to_str().unwrap());
+                //dbg!(&b);
                 Some(CsvBuilder::from_csv(file_path.to_str().unwrap()))
             } else {
                 // Additional logic for XLS files
