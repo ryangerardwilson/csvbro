@@ -8,7 +8,6 @@ use crate::settings::{manage_db_config_file, DbPreset};
 use crate::user_interaction::{
     determine_action_as_text,
     //determine_action_as_text_or_number
-    get_edited_user_json_input,
     get_edited_user_sql_input,
     get_user_input,
     get_user_input_level_2,
@@ -21,7 +20,7 @@ use crate::user_interaction::{
 use calamine::{open_workbook, Reader, Xls};
 use chrono::{DateTime, Local};
 use fuzzywuzzy::fuzz;
-use rgwml::csv_utils::{CalibConfig, CsvBuilder};
+use rgwml::csv_utils::CsvBuilder;
 use std::env;
 use std::error::Error;
 use std::fs::{self};
@@ -701,16 +700,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         print_insight("Choose an action:");
 
         let menu_options = vec![
-            "CALIBRATE",
-            "TINKER",
-            "SEARCH",
-            "INSPECT",
-            "PIVOT",
-            "JOIN",
-            "SORT",
-            "SAVE",
-            "SAVE AS",
-            "BACK",
+            "TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN", "SORT", "SAVE", "SAVE AS", "BACK",
         ];
 
         print_list(&menu_options);
@@ -718,79 +708,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         let selected_option = determine_action_as_text(&menu_options, &choice);
 
         match selected_option {
-            Some(ref action) if action == "CALIBRATE" => {
-                println!();
-
-                // Define the JSON syntax for calibration settings
-                let calib_syntax = r#"{
-    "header_is_at_row": "",
-    "rows_range_from": ["", ""]
-}
-
-SYNTAX
-======
-
-### Example 1
-
-{
-    "header_is_at_row": "3",
-    "rows_range_from": ["5", "*"]
-}
-
-### Example 2
-
-{
-    "header_is_at_row": "5",
-    "rows_range_from": ["7", "50"]
-}
-
-
-        "#;
-
-                // Get user input
-                let calib_json = get_edited_user_json_input(calib_syntax.to_string());
-                //dbg!(&calib_json);
-
-                // Parse the user input
-                let calib_config = {
-                    let parsed_calib_config =
-                        match serde_json::from_str::<serde_json::Value>(&calib_json) {
-                            Ok(config) => config,
-                            Err(e) => {
-                                eprintln!("Error parsing JSON: {}", e);
-                                return; // Exit the function early
-                            }
-                        };
-
-                    // Extract calibration settings directly as Strings
-                    let header_row = parsed_calib_config["header_is_at_row"]
-                        .as_str()
-                        .unwrap_or_default()
-                        .to_string();
-                    let start_range = parsed_calib_config["rows_range_from"][0]
-                        .as_str()
-                        .unwrap_or_default()
-                        .to_string();
-                    let end_range = parsed_calib_config["rows_range_from"][1]
-                        .as_str()
-                        .unwrap_or_default()
-                        .to_string();
-
-                    CalibConfig {
-                        header_is_at_row: header_row,
-                        rows_range_from: (start_range, end_range),
-                    }
-                };
-
-                // Apply the calibration
-                builder.calibrate(calib_config);
-
-                if builder.has_data() {
-                    builder.print_table();
-                    println!();
-                }
-            }
-
             Some(ref action) if action == "TINKER" => {
                 if let Err(e) = handle_tinker(&mut builder).await {
                     println!("Error during tinker: {}", e);
@@ -825,161 +742,6 @@ SYNTAX
                     continue;
                 }
             }
-            Some(ref action) if action == "DELETE ROWS" => {
-                println!();
-
-                if !builder.has_data() {
-                    eprintln!("No data available for deletion.");
-                    return;
-                }
-
-                // Display existing data
-                builder.print_table();
-                println!();
-
-                let use_id_for_deletion = builder
-                    .get_headers()
-                    .map_or(false, |headers| headers.contains(&"id".to_string()));
-
-                let row_identifiers_str = get_user_input_level_2("Enter the identifiers (ID or indices) of the rows to delete (comma-separated), or type 'back' to return: ");
-
-                let back_keywords = ["back", "b", "ba", "bck"];
-
-                if back_keywords
-                    .iter()
-                    .any(|&kw| row_identifiers_str.trim().eq_ignore_ascii_case(kw))
-                {
-                    continue;
-                }
-
-                let mut deleted_count = 0;
-
-                if use_id_for_deletion {
-                    // Parse as IDs
-                    let ids: Vec<&str> = row_identifiers_str.split(',').map(|s| s.trim()).collect();
-
-                    for id in ids {
-                        if builder.delete_row_by_id(id) {
-                            deleted_count += 1;
-                        } else {
-                            eprintln!("No row found with ID '{}'.", id);
-                        }
-                    }
-                } else {
-                    // Parse as row indices
-                    let row_indices: Vec<usize> = row_identifiers_str
-                        .split(',')
-                        .filter_map(|s| s.trim().parse::<usize>().ok())
-                        .collect();
-
-                    if row_indices.is_empty() {
-                        eprintln!("No valid indices provided.");
-                        return;
-                    }
-
-                    // Sort indices in descending order to avoid index shift during deletion
-                    let mut sorted_indices = row_indices;
-                    sorted_indices.sort_by(|a, b| b.cmp(a));
-
-                    for index in sorted_indices {
-                        if builder.delete_row_by_row_number(index) {
-                            deleted_count += 1;
-                        } else {
-                            eprintln!("Row index {} out of range.", index);
-                        }
-                    }
-                }
-
-                if deleted_count > 0 {
-                    println!("{} row(s) deleted successfully.", deleted_count);
-                }
-
-                // Print updated table
-                builder.print_table();
-                println!();
-            }
-
-            Some(ref action) if action == "DROP COLUMNS" => {
-                let columns_input =
-                    get_user_input_level_2("Please type a comma-separated list of columns: ");
-
-                let columns: Vec<&str> =
-                    columns_input.trim().split(',').map(|s| s.trim()).collect();
-
-                builder.drop_columns(columns).print_table();
-            }
-
-            Some(ref action) if action == "RETAIN COLUMNS" => {
-                let columns_input =
-                    get_user_input_level_2("Please type a comma-separated list of columns: ");
-
-                let columns: Vec<&str> =
-                    columns_input.trim().split(',').map(|s| s.trim()).collect();
-
-                builder.retain_columns(columns).print_table();
-            }
-
-            Some(ref action) if action == "SORT" => {
-                println!();
-
-                // Define the JSON syntax for sort settings
-                let sort_syntax = r#"{
-    "sort_orders": [
-        {"column": "", "order": ""}
-    ]
-}
-
-SYNTAX
-======
-
-### Example
-
-{
-    "sort_orders": [
-        {"column": "Name", "order": "ASC"},
-        {"column": "Age", "order": "DESC"}
-    ]
-}
-
-"#;
-
-                // Get user input
-                let sort_json = get_edited_user_json_input(sort_syntax.to_string());
-                //dbg!(&sort_json);
-
-                // Parse the user input
-                let sort_orders = {
-                    let parsed_sort_orders =
-                        match serde_json::from_str::<serde_json::Value>(&sort_json) {
-                            Ok(config) => config,
-                            Err(e) => {
-                                eprintln!("Error parsing JSON: {}", e);
-                                return; // Exit the function early if there's an error
-                            }
-                        };
-
-                    // Extract sort orders
-                    parsed_sort_orders["sort_orders"]
-                        .as_array()
-                        .unwrap_or(&vec![])
-                        .iter()
-                        .filter_map(|order| {
-                            let column = order["column"].as_str()?.to_string(); // Convert directly to String
-                            let order = order["order"].as_str()?.to_string(); // Convert directly to String
-                            Some((column, order))
-                        })
-                        .collect::<Vec<(String, String)>>()
-                };
-
-                // Apply the cascade sort
-                builder.cascade_sort(sort_orders);
-
-                if builder.has_data() {
-                    builder.print_table();
-                    println!();
-                }
-            }
-
             Some(ref action) if action == "SAVE" => {
                 if has_data {
                     if let Some(ref path) = current_file_path {

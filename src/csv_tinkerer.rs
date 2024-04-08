@@ -381,6 +381,7 @@ Note the implications of the limit_type value:
         "RETAIN COLUMNS",
         "REORDER COLUMNS",
         "SET INDEX COLUMN",
+        "CASCADE SORT",
         "BACK",
     ];
 
@@ -972,7 +973,7 @@ Total rows: 3
                 }
 
                 let existing_data = csv_builder.get_data();
-                dbg!(&existing_data);
+                //dbg!(&existing_data);
 
                 let existing_headers: Vec<String> = csv_builder
                     .get_headers()
@@ -2143,13 +2144,177 @@ Total rows: 10
                     }
                 }
             }
+
             Some(15) => {
+                if choice.to_lowercase() == "15d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Allows you to sort by columns, in a cascaded manner.
+
+TABLE
++++++
+
+|id |value |date      |interest |
+---------------------------------
+|1  |500   |2024-04-08|7        |
+|2  |500   |2024-04-07|8        |
+|3  |500   |2024-04-06|9        |
+|4  |400   |2024-04-05|7        |
+|5  |400   |2024-04-05|7.2      |
+|6  |400   |2024-04-03|8.2      |
+|7  |300   |2024-04-02|9.2      |
+|8  |300   |2024-04-01|7.4      |
+|9  |300   |2024-04-08|8.4      |
+|10 |300   |2024-04-08|9.4      |
+Total rows: 10
+
+  @LILbro: Executing this JSON query:
+{
+    "sort_orders": [
+        {"column": "value", "order": "ASC"},
+	    {"column": "date", "order": "DESC"},
+	    {"column": "interest", "order": "ASC"},
+	    {"column": "id", "order": "DESC"}
+    ]
+}
+
+|id |value |date      |interest |
+---------------------------------
+|9  |300   |2024-04-08|8.4      |
+|10 |300   |2024-04-08|9.4      |
+|7  |300   |2024-04-02|9.2      |
+|8  |300   |2024-04-01|7.4      |
+|4  |400   |2024-04-05|7        |
+|5  |400   |2024-04-05|7.2      |
+|6  |400   |2024-04-03|8.2      |
+|1  |500   |2024-04-08|7        |
+|2  |500   |2024-04-07|8        |
+|3  |500   |2024-04-06|9        |
+Total rows: 10
+"#,
+                    );
+                    continue;
+                }
+
+                /*
+
+                let id_column_name = get_user_input_level_2("Name of id column: ").to_lowercase();
+                if id_column_name.to_lowercase() == "@cancel" {
+                    continue;
+                }
+
+                let mut add_new_column_header = false;
+
+                if let Some(headers) = csv_builder.get_headers() {
+                    for header in headers.iter() {
+                        if header != id_column_name.as_str() {
+                            add_new_column_header = true;
+                            break; // No need to continue once we've found an "id" header
+                        }
+                    }
+                }
+
+                if add_new_column_header {
+                    let _ = csv_builder.add_column_header(&id_column_name);
+                }
+
+                //dbg!(&csv_builder);
+
+                let _ = csv_builder.resequence_id_column(&id_column_name);
+
+                //dbg!(&csv_builder);
+                if add_new_column_header {
+                    let _ =
+                        csv_builder.cascade_sort(vec![(id_column_name.clone(), "ASC".to_string())]);
+                }
+
+                //dbg!(&csv_builder);
+
+                csv_builder
+                    .order_columns(vec![&id_column_name, "..."])
+                    .print_table();
+
+                //dbg!(&csv_builder);
+                */
+
+                let sort_syntax = r#"{
+    "sort_orders": [
+        {"column": "", "order": ""}
+    ]
+}
+
+SYNTAX
+======
+
+### Example
+
+{
+    "sort_orders": [
+        {"column": "Name", "order": "ASC"},
+        {"column": "Age", "order": "DESC"}
+    ]
+}
+
+"#;
+
+                // Get user input
+                let sort_json = get_edited_user_json_input(sort_syntax.to_string());
+                //dbg!(&sort_json);
+
+                // Parse the user input
+                let sort_orders = {
+                    let parsed_sort_orders =
+                        match serde_json::from_str::<serde_json::Value>(&sort_json) {
+                            Ok(config) => config,
+                            Err(e) => {
+                                eprintln!("Error parsing JSON: {}", e);
+                                continue; // Exit the function early if there's an error
+                            }
+                        };
+
+                    // Extract sort orders
+                    parsed_sort_orders["sort_orders"]
+                        .as_array()
+                        .unwrap_or(&vec![])
+                        .iter()
+                        .filter_map(|order| {
+                            let column = order["column"].as_str()?.to_string(); // Convert directly to String
+                            let order = order["order"].as_str()?.to_string(); // Convert directly to String
+                            Some((column, order))
+                        })
+                        .collect::<Vec<(String, String)>>()
+                };
+
+                // Apply the cascade sort
+                csv_builder.cascade_sort(sort_orders);
+
+                if csv_builder.has_data() {
+                    csv_builder.print_table();
+                    println!();
+                }
+
+                //    csv_builder.print_table();
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+            }
+
+            Some(16) => {
                 csv_builder.print_table();
 
                 break;
             }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 15.");
+                println!("Invalid option. Please enter a number from 1 to 16.");
                 continue;
             }
         }
