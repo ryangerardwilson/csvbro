@@ -5,6 +5,9 @@ use crate::csv_pivoter::handle_pivot;
 use crate::csv_searcher::handle_search;
 use crate::csv_tinkerer::handle_tinker;
 use crate::settings::{manage_db_config_file, DbPreset};
+use crate::user_experience::{
+    handle_back_flag, handle_query_special_flag, handle_quit_flag, handle_special_flag,
+};
 use crate::user_interaction::{
     determine_action_as_text,
     //determine_action_as_text_or_number
@@ -16,7 +19,6 @@ use crate::user_interaction::{
     print_insight_level_2,
     print_list,
 };
-
 use calamine::{open_workbook, Reader, Xls};
 use chrono::{DateTime, Local};
 use fuzzywuzzy::fuzz;
@@ -549,6 +551,18 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
 
                     print_list(&menu_options);
                     let choice = get_user_input("Enter your choice: ").to_lowercase();
+
+                    if handle_query_special_flag(&choice, &mut csv_builder) {
+                        //continue;
+                        break Ok(CsvBuilder::new());
+                    }
+
+                    if handle_back_flag(&choice) {
+                        //break;
+                        break Ok(CsvBuilder::new());
+                    }
+                    let _ = handle_quit_flag(&choice);
+
                     let selected_option = determine_action_as_text(&menu_options, &choice);
                     confirmation = selected_option.clone().expect("REASON");
 
@@ -650,6 +664,18 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
 
         print_list(&menu_options);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
+
+        if handle_query_special_flag(&choice, &mut csv_builder) {
+            //continue;
+            break Ok(CsvBuilder::new());
+        }
+
+        if handle_back_flag(&choice) {
+            //break;
+            break Ok(CsvBuilder::new());
+        }
+        let _ = handle_quit_flag(&choice);
+
         let selected_option = determine_action_as_text(&menu_options, &choice);
         confirmation = selected_option.clone().expect("REASON");
 
@@ -684,103 +710,71 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
 }
 
 pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
-    let current_file_path: Option<PathBuf> = file_path_option.map(PathBuf::from);
+    //let current_file_path: Option<PathBuf> = file_path_option.map(PathBuf::from);
 
     if builder.has_data() {
         let _ = builder.print_table();
         println!();
     }
 
-    let home_dir = env::var("HOME").expect("Unable to determine user home directory");
-    let desktop_path = Path::new(&home_dir).join("Desktop");
-    let csv_db_path = desktop_path.join("csv_db");
+    //let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+    //let desktop_path = Path::new(&home_dir).join("Desktop");
+    //let csv_db_path = desktop_path.join("csv_db");
 
     loop {
-        let has_data = builder.has_data();
+        //let has_data = builder.has_data();
         print_insight("Choose an action:");
 
-        let menu_options = vec![
-            "TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN", "SORT", "SAVE", "SAVE AS", "BACK",
-        ];
+        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN"];
 
         print_list(&menu_options);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
+
+        if handle_special_flag(&choice, &mut builder, file_path_option) {
+            continue;
+        }
+
+        if handle_back_flag(&choice) {
+            break;
+        }
+        let _ = handle_quit_flag(&choice);
+
         let selected_option = determine_action_as_text(&menu_options, &choice);
 
         match selected_option {
             Some(ref action) if action == "TINKER" => {
-                if let Err(e) = handle_tinker(&mut builder).await {
+                if let Err(e) = handle_tinker(&mut builder, file_path_option).await {
                     println!("Error during tinker: {}", e);
                     continue;
                 }
             }
 
             Some(ref action) if action == "SEARCH" => {
-                if let Err(e) = handle_search(&mut builder).await {
+                if let Err(e) = handle_search(&mut builder, file_path_option).await {
                     println!("Error during search: {}", e);
                     continue;
                 }
             }
 
             Some(ref action) if action == "INSPECT" => {
-                if let Err(e) = handle_inspect(&mut builder) {
+                if let Err(e) = handle_inspect(&mut builder, file_path_option) {
                     println!("Error during inspection: {}", e);
                     continue;
                 }
             }
 
             Some(ref action) if action == "PIVOT" => {
-                if let Err(e) = handle_pivot(&mut builder).await {
+                if let Err(e) = handle_pivot(&mut builder, file_path_option).await {
                     println!("Error during pivot operation: {}", e);
                     continue;
                 }
             }
 
             Some(ref action) if action == "JOIN" => {
-                if let Err(e) = handle_join(&mut builder) {
+                if let Err(e) = handle_join(&mut builder, file_path_option) {
                     println!("Error during join operation: {}", e);
                     continue;
                 }
-            }
-            Some(ref action) if action == "SAVE" => {
-                if has_data {
-                    if let Some(ref path) = current_file_path {
-                        // Save to the existing file path
-                        let _ = builder.save_as(path.to_str().unwrap());
-                        print_insight(&format!("CSV file saved at {}", path.display()));
-                    } else {
-                        let file_name =
-                            get_user_input_level_2("Enter file name to save (without extension): ");
-                        let full_file_name = if file_name.ends_with(".csv") {
-                            file_name
-                        } else {
-                            format!("{}.csv", file_name)
-                        };
-                        let file_path = csv_db_path.join(full_file_name);
-                        let _ = builder.save_as(file_path.to_str().unwrap());
-                        print_insight(&format!("CSV file saved at {}", file_path.display()));
-                    }
-                }
-            }
-
-            Some(ref action) if action == "SAVE AS" => {
-                if has_data {
-                    let file_name =
-                        get_user_input_level_2("Enter file name to save (without extension): ");
-                    let full_file_name = if file_name.ends_with(".csv") {
-                        file_name
-                    } else {
-                        format!("{}.csv", file_name)
-                    };
-                    let file_path = csv_db_path.join(full_file_name);
-                    let _ = builder.save_as(file_path.to_str().unwrap());
-                    print_insight(&format!("CSV file saved at {}", file_path.display()));
-                    //break; // Exit the loop after saving
-                }
-            }
-
-            Some(ref action) if action == "BACK" => {
-                break;
             }
             //"done" => break,
             Some(_) => print_insight("Unrecognized action, please try again."),

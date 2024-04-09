@@ -1,5 +1,6 @@
 // csv_pivoter.rs
 use crate::settings::manage_open_ai_config_file;
+use crate::user_experience::{handle_back_flag, handle_quit_flag, handle_special_flag};
 use crate::user_interaction::{
     determine_action_as_number, get_edited_user_json_input, get_user_input_level_2,
     print_insight_level_2, print_list_level_2,
@@ -54,7 +55,10 @@ impl ExpStore {
     }
 }
 
-pub async fn handle_pivot(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn handle_pivot(
+    csv_builder: &mut CsvBuilder,
+    file_path_option: Option<&str>,
+) -> Result<(), Box<dyn std::error::Error>> {
     fn apply_filter_changes_menu(
         csv_builder: &mut CsvBuilder,
         prev_iteration_builder: &CsvBuilder,
@@ -1094,7 +1098,6 @@ Note the implication of params in the Json Query:
         "APPEND OPENAI ANALYSIS COLUMNS",
         "APPEND LINEAR REGRESSION COLUMN",
         "PIVOT",
-        "GO BACK",
     ];
 
     let original_csv_builder = CsvBuilder::from_copy(csv_builder);
@@ -1104,6 +1107,15 @@ Note the implication of params in the Json Query:
         print_list_level_2(&menu_options);
 
         let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
+        if handle_special_flag(&choice, csv_builder, file_path_option) {
+            continue;
+        }
+
+        if handle_back_flag(&choice) {
+            break;
+        }
+        let _ = handle_quit_flag(&choice);
+
         let selected_option = determine_action_as_number(&menu_options, &choice);
         let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
 
@@ -2138,12 +2150,8 @@ Note the implication of params in the Json Query:
                 }
             }
 
-            Some(10) => {
-                csv_builder.print_table();
-                break; // Exit the inspect handler
-            }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 10.");
+                println!("Invalid option. Please enter a number from 1 to 9.");
                 continue; // Ask for the choice again
             }
         }

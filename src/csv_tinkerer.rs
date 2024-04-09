@@ -1,4 +1,5 @@
 // csv_tinkerer.rs
+use crate::user_experience::{handle_back_flag, handle_quit_flag, handle_special_flag};
 use crate::user_interaction::{
     determine_action_as_number, get_edited_user_json_input, get_edited_user_sql_input,
     get_user_input_level_2, print_insight_level_2, print_list_level_2,
@@ -49,7 +50,10 @@ impl ExpStore {
     }
 }
 
-pub async fn handle_tinker(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn handle_tinker(
+    csv_builder: &mut CsvBuilder,
+    file_path_option: Option<&str>,
+) -> Result<(), Box<dyn std::error::Error>> {
     fn get_filter_expressions(
         data_store: &mut ExpStore,
     ) -> Result<(Vec<(String, usize)>, String), Box<dyn std::error::Error>> {
@@ -382,7 +386,6 @@ Note the implications of the limit_type value:
         "REORDER COLUMNS",
         "SET INDEX COLUMN",
         "CASCADE SORT",
-        "BACK",
     ];
 
     let original_csv_builder = CsvBuilder::from_copy(csv_builder);
@@ -392,6 +395,16 @@ Note the implications of the limit_type value:
         print_list_level_2(&menu_options);
 
         let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
+
+        if handle_special_flag(&choice, csv_builder, file_path_option) {
+            continue;
+        }
+
+        if handle_back_flag(&choice) {
+            break;
+        }
+        let _ = handle_quit_flag(&choice);
+
         let selected_option = determine_action_as_number(&menu_options, &choice);
 
         let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
@@ -2197,47 +2210,6 @@ Total rows: 10
                     continue;
                 }
 
-                /*
-
-                let id_column_name = get_user_input_level_2("Name of id column: ").to_lowercase();
-                if id_column_name.to_lowercase() == "@cancel" {
-                    continue;
-                }
-
-                let mut add_new_column_header = false;
-
-                if let Some(headers) = csv_builder.get_headers() {
-                    for header in headers.iter() {
-                        if header != id_column_name.as_str() {
-                            add_new_column_header = true;
-                            break; // No need to continue once we've found an "id" header
-                        }
-                    }
-                }
-
-                if add_new_column_header {
-                    let _ = csv_builder.add_column_header(&id_column_name);
-                }
-
-                //dbg!(&csv_builder);
-
-                let _ = csv_builder.resequence_id_column(&id_column_name);
-
-                //dbg!(&csv_builder);
-                if add_new_column_header {
-                    let _ =
-                        csv_builder.cascade_sort(vec![(id_column_name.clone(), "ASC".to_string())]);
-                }
-
-                //dbg!(&csv_builder);
-
-                csv_builder
-                    .order_columns(vec![&id_column_name, "..."])
-                    .print_table();
-
-                //dbg!(&csv_builder);
-                */
-
                 let sort_syntax = r#"{
     "sort_orders": [
         {"column": "", "order": ""}
@@ -2308,13 +2280,8 @@ SYNTAX
                 }
             }
 
-            Some(16) => {
-                csv_builder.print_table();
-
-                break;
-            }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 16.");
+                println!("Invalid option. Please enter a number from 1 to 15.");
                 continue;
             }
         }

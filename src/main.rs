@@ -5,11 +5,13 @@ mod csv_pivoter;
 mod csv_searcher;
 mod csv_tinkerer;
 mod settings;
+mod user_experience;
 mod user_interaction;
 mod utils;
 
 use crate::csv_manager::{chain_builder, delete_csv_file, import, open_csv_file, query};
 use crate::settings::open_settings;
+use crate::user_experience::handle_quit_flag;
 use crate::user_interaction::{
     determine_action_as_text, get_user_input, print_insight, print_list,
 };
@@ -69,7 +71,7 @@ async fn main() {
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 0.5.3");
+        print_insight("csvbro 0.5.4");
         std::process::exit(0);
     }
 
@@ -123,14 +125,14 @@ async fn main() {
 "#
     );
 
-    let menu_options = vec![
-        "NEW", "OPEN", "IMPORT", "QUERY", "DELETE", "SETTINGS", "EXIT",
-    ];
+    let menu_options = vec!["NEW", "OPEN", "IMPORT", "QUERY", "DELETE", "SETTINGS"];
 
     loop {
         let _builder = loop {
             print_list(&menu_options);
             let choice = get_user_input("Your move, bro: ");
+            let _ = handle_quit_flag(&choice);
+
             let selected_option = determine_action_as_text(&menu_options, &choice);
 
             match selected_option {
@@ -191,10 +193,6 @@ async fn main() {
                 Some(ref action) if action == "SETTINGS" => {
                     let _ = open_settings(); // No return value expected
                     continue; // Continue the loop after settings are adjusted
-                }
-                Some(ref action) if action == "EXIT" => {
-                    std::process::exit(0);
-                    //return; // Exit the program
                 }
                 _ => {
                     print_insight("Dude, that action's a no-go. Give it another whirl, alright?");

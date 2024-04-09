@@ -1,4 +1,5 @@
 // csv_joiner.rs
+use crate::user_experience::{handle_back_flag, handle_quit_flag, handle_special_flag};
 use crate::user_interaction::{
     determine_action_as_number, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
@@ -10,7 +11,10 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
-pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
+pub fn handle_join(
+    csv_builder: &mut CsvBuilder,
+    file_path_option: Option<&str>,
+) -> Result<(), Box<dyn std::error::Error>> {
     fn apply_filter_changes_menu(
         csv_builder: &mut CsvBuilder,
         prev_iteration_builder: &CsvBuilder,
@@ -157,7 +161,6 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
         "INTERSECTION (INNER JOIN)",
         "DIFFERENCE",
         "DIFFERENCE (SYMMETRIC)",
-        "BACK",
     ];
 
     let original_csv_builder = CsvBuilder::from_copy(csv_builder);
@@ -166,6 +169,15 @@ pub fn handle_join(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::erro
         print_insight_level_2("Select an option to inspect CSV data:");
         print_list_level_2(&menu_options);
         let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
+        if handle_special_flag(&choice, csv_builder, file_path_option) {
+            continue;
+        }
+
+        if handle_back_flag(&choice) {
+            break;
+        }
+        let _ = handle_quit_flag(&choice);
+
         let selected_option = determine_action_as_number(&menu_options, &choice);
 
         let csv_db_path = get_csv_db_path();
@@ -1333,12 +1345,8 @@ Total rows: 6
                 }
             }
 
-            Some(10) => {
-                csv_builder.print_table();
-                break; // Exit the inspect handler
-            }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 10.");
+                println!("Invalid option. Please enter a number from 1 to 9.");
                 continue; // Ask for the choice again
             }
         }

@@ -1,4 +1,5 @@
 // csv_inspector.rs
+use crate::user_experience::{handle_back_flag, handle_quit_flag, handle_special_flag};
 use crate::user_interaction::{
     determine_action_as_number, get_edited_user_json_input, get_user_input_level_2,
     print_insight_level_2, print_list_level_2,
@@ -49,7 +50,10 @@ impl ExpStore {
     }
 }
 
-pub fn handle_inspect(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
+pub fn handle_inspect(
+    csv_builder: &mut CsvBuilder,
+    file_path_option: Option<&str>,
+) -> Result<(), Box<dyn std::error::Error>> {
     //pub async fn handle_inspect(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
     fn get_filter_expressions(
         data_store: &mut ExpStore,
@@ -243,7 +247,8 @@ SYNTAX
         "PRINT FREQ OF MULTIPLE COLUMN VALUES",
         "PRINT UNIQUE COLUMN VALUES",
         "PRINT COUNT WHERE",
-        "BACK",
+        "PRINT DOT CHART",
+        "PRINT SMOOTH LINE CHART",
     ];
 
     loop {
@@ -251,6 +256,15 @@ SYNTAX
         print_list_level_2(&menu_options);
 
         let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
+        if handle_special_flag(&choice, csv_builder, file_path_option) {
+            continue;
+        }
+
+        if handle_back_flag(&choice) {
+            break;
+        }
+        let _ = handle_quit_flag(&choice);
+
         let selected_option = determine_action_as_number(&menu_options, &choice);
 
         match selected_option {
@@ -763,13 +777,162 @@ Count: 7
                     }
                 }
             }
-
             Some(10) => {
-                csv_builder.print_table();
-                break; // Exit the inspect handler
+                if choice.to_lowercase() == "10d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Prints frequencies of unique values in the specified columns.
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+<<+2 rows>>
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+|11 |concert |2000  |OTHER |2024-03-27|0                 |Y2024-M03       |
+|12 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
+Total rows: 12
+
+@LILbro: Enter column names separated by commas: item, value, type
+
+Frequency for column 'item':
+alcohol: 1
+books: 2
+cab fare: 2
+concert: 1
+movies: 2
+rent: 2
+snacks: 2
+
+Frequency for column 'value':
+1000: 2
+1100: 1
+1500: 2
+200: 2
+2000: 1
+20000: 2
+300: 2
+
+Frequency for column 'type':
+FOOD: 2
+OTHER: 8
+TRAVEL: 2
+"#,
+                    );
+                    continue;
+                }
+
+                let column_names = get_user_input_level_2(
+                    "Enter the x-axis and y-axis column names separated by a comma: ",
+                );
+
+                if column_names.to_lowercase() == "@cancel" {
+                    continue;
+                }
+
+                let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+
+                // Ensuring exactly two columns were provided.
+                if columns.len() != 2 {
+                    // Handle the error: inform the user they need to enter exactly two column names.
+                    print_insight_level_2(
+                        "Please enter exactly two column names, separated by a comma.",
+                    );
+                    continue;
+                } else {
+                    // Extracting the column names.
+                    let x_axis_column = columns[0];
+                    let y_axis_column = columns[1];
+                    println!();
+                    // Using the columns in your function.
+                    csv_builder.print_dot_chart(x_axis_column, y_axis_column);
+                }
             }
+
+            Some(11) => {
+                if choice.to_lowercase() == "11d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Prints frequencies of unique values in the specified columns.
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+<<+2 rows>>
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+|11 |concert |2000  |OTHER |2024-03-27|0                 |Y2024-M03       |
+|12 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
+Total rows: 12
+
+@LILbro: Enter column names separated by commas: item, value, type
+
+Frequency for column 'item':
+alcohol: 1
+books: 2
+cab fare: 2
+concert: 1
+movies: 2
+rent: 2
+snacks: 2
+
+Frequency for column 'value':
+1000: 2
+1100: 1
+1500: 2
+200: 2
+2000: 1
+20000: 2
+300: 2
+
+Frequency for column 'type':
+FOOD: 2
+OTHER: 8
+TRAVEL: 2
+"#,
+                    );
+                    continue;
+                }
+
+                let column_names = get_user_input_level_2(
+                    "Enter the x-axis and y-axis column names separated by a comma: ",
+                );
+
+                if column_names.to_lowercase() == "@cancel" {
+                    continue;
+                }
+
+                let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+
+                // Ensuring exactly two columns were provided.
+                if columns.len() != 2 {
+                    // Handle the error: inform the user they need to enter exactly two column names.
+                    print_insight_level_2(
+                        "Please enter exactly two column names, separated by a comma.",
+                    );
+                    continue;
+                } else {
+                    // Extracting the column names.
+                    let x_axis_column = columns[0];
+                    let y_axis_column = columns[1];
+                    println!();
+                    // Using the columns in your function.
+                    csv_builder.print_smooth_line_chart(x_axis_column, y_axis_column);
+                }
+            }
+
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 10.");
+                println!("Invalid option. Please enter a number from 1 to 11.");
                 continue; // Ask for the choice again
             }
         }

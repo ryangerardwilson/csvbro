@@ -1,10 +1,14 @@
 // csv_searcher.rs
+use crate::user_experience::{handle_back_flag, handle_quit_flag, handle_special_flag};
 use crate::user_interaction::{
     determine_action_as_number, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
 use rgwml::csv_utils::CsvBuilder;
 
-pub async fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn handle_search(
+    csv_builder: &mut CsvBuilder,
+    file_path_option: Option<&str>,
+) -> Result<(), Box<dyn std::error::Error>> {
     fn apply_filter_changes_menu(
         csv_builder: &mut CsvBuilder,
         prev_iteration_builder: &CsvBuilder,
@@ -19,6 +23,7 @@ pub async fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn s
         print_list_level_2(&menu_options);
 
         let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
+
         let selected_option = determine_action_as_number(&menu_options, &choice);
 
         match selected_option {
@@ -53,7 +58,6 @@ pub async fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn s
         "STARTS WITH (NOT) search",
         "LEVENSHTEIN RAW search",
         "LEVENSHTEIN VECTORIZED search",
-        "BACK",
     ];
 
     let original_csv_builder = CsvBuilder::from_copy(csv_builder);
@@ -63,6 +67,16 @@ pub async fn handle_search(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn s
         print_list_level_2(&menu_options);
 
         let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
+
+        if handle_special_flag(&choice, csv_builder, file_path_option) {
+            continue;
+        }
+
+        if handle_back_flag(&choice) {
+            break;
+        }
+        let _ = handle_quit_flag(&choice);
+
         let selected_option = determine_action_as_number(&menu_options, &choice);
 
         let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
@@ -592,13 +606,8 @@ Frequencies:
                 }
             }
 
-            Some(7) => {
-                csv_builder.print_table();
-
-                break;
-            }
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 7.");
+                println!("Invalid option. Please enter a number from 1 to 6.");
                 continue;
             }
         }
