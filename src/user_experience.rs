@@ -99,6 +99,13 @@ pub fn handle_query_special_flag(flag: &str, builder: &mut CsvBuilder) -> bool {
     }
 }
 
+pub fn handle_query_retry_flag(flag: &str) -> bool {
+    match flag {
+        "@r" => true,
+        _ => false,
+    }
+}
+
 pub fn handle_back_flag(flag: &str) -> bool {
     match flag {
         "@b" => true,
