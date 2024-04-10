@@ -247,8 +247,10 @@ SYNTAX
         "PRINT FREQ OF MULTIPLE COLUMN VALUES",
         "PRINT UNIQUE COLUMN VALUES",
         "PRINT COUNT WHERE",
-        "PRINT DOT CHART",
-        "PRINT SMOOTH LINE CHART",
+        "PRINT DOT CHART (NORMAL)",
+        "PRINT DOT CHART (CUMULATIVE)",
+        "PRINT SMOOTH LINE CHART (NORMAL)",
+        "PRINT SMOOTH LINE CHART (CUMULATIVE)",
     ];
 
     loop {
@@ -863,9 +865,90 @@ Total rows: 10
                     csv_builder.print_dot_chart(x_axis_column, y_axis_column);
                 }
             }
-
             Some(11) => {
                 if choice.to_lowercase() == "11d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Plots two columns of a table in a dot-chart. In the event there are more than 80 values, the set of plots that best represent the curvature trend are chosen. 
+
+TABLE
++++++
+
+|id |value |date      |interest |
+---------------------------------
+|1  |500   |2024-04-08|7        |
+|2  |450   |2024-04-07|8        |
+|3  |420   |2024-04-06|9        |
+|4  |400   |2024-04-05|7        |
+|5  |380   |2024-04-05|7.2      |
+|6  |360   |2024-04-03|8.2      |
+|7  |340   |2024-04-02|9.2      |
+|8  |320   |2024-04-01|7.4      |
+|9  |300   |2024-04-08|8.4      |
+|10 |280   |2024-04-08|9.4      |
+Total rows: 10
+
+  @LILbro: Enter the x-axis and y-axis column names separated by a comma: id, value
+
+  |                                                                              *
+  |
+  |                                                                     *
+  |                                                            *
+  |
+  |                                                    *
+  |                                           *
+  |
+  |                                  *
+  |
+  |                          *
+  |
+  |                 *
+  |
+  |        *
+  |
+  |*
+  |
+  |
+  +-------------------------------------------------------------------------------
+
+  X-Axis Range: [1, 10]
+  Lowest Non-Zero Cumulative Y-Axis Value: 500
+  Cumulative Y-Axis Max: 3750
+"#,
+                    );
+                    continue;
+                }
+
+                let column_names = get_user_input_level_2(
+                    "Enter the x-axis and y-axis column names separated by a comma: ",
+                );
+
+                if column_names.to_lowercase() == "@cancel" {
+                    continue;
+                }
+
+                let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+
+                // Ensuring exactly two columns were provided.
+                if columns.len() != 2 {
+                    // Handle the error: inform the user they need to enter exactly two column names.
+                    print_insight_level_2(
+                        "Please enter exactly two column names, separated by a comma.",
+                    );
+                    continue;
+                } else {
+                    // Extracting the column names.
+                    let x_axis_column = columns[0];
+                    let y_axis_column = columns[1];
+                    println!();
+                    // Using the columns in your function.
+                    csv_builder.print_cumulative_dot_chart(x_axis_column, y_axis_column);
+                }
+            }
+
+            Some(12) => {
+                if choice.to_lowercase() == "12d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -951,8 +1034,90 @@ Total rows: 10
                 }
             }
 
+            Some(13) => {
+                if choice.to_lowercase() == "13d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Plots two columns of a table in a smooth line-chart, upon analyzing plot points, that best represent the curvature trajectory. 
+
+TABLE
++++++
+
+|id |value |date      |interest |
+---------------------------------
+|1  |500   |2024-04-08|7        |
+|2  |450   |2024-04-07|8        |
+|3  |420   |2024-04-06|9        |
+|4  |400   |2024-04-05|7        |
+|5  |380   |2024-04-05|7.2      |
+|6  |360   |2024-04-03|8.2      |
+|7  |340   |2024-04-02|9.2      |
+|8  |320   |2024-04-01|7.4      |
+|9  |300   |2024-04-08|8.4      |
+|10 |280   |2024-04-08|9.4      |
+Total rows: 10
+
+  @LILbro: Enter the x-axis and y-axis column names separated by a comma: id, value
+
+  |                                                                           ****
+  |                                                                     ******    
+  |                                                               ******          
+  |                                                         ******                
+  |                                                    *****                      
+  |                                              ******                           
+  |                                         *****                                 
+  |                                    *****                                      
+  |                               *****                                           
+  |                           ****                                                
+  |                      *****                                                    
+  |                  ****                                                         
+  |             *****                                                             
+  |         ****                                                                  
+  |     ****                                                                      
+  | ****                                                                          
+  |*                                                                              
+  |                                                                               
+  |                                                                               
+  +-------------------------------------------------------------------------------
+
+  X-Axis Range: [1, 10]
+  Lowest Non-Zero Cumulative Y-Axis Value: 500
+  Cumulative Y-Axis Max: 3750
+"#,
+                    );
+                    continue;
+                }
+
+                let column_names = get_user_input_level_2(
+                    "Enter the x-axis and y-axis column names separated by a comma: ",
+                );
+
+                if column_names.to_lowercase() == "@cancel" {
+                    continue;
+                }
+
+                let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+
+                // Ensuring exactly two columns were provided.
+                if columns.len() != 2 {
+                    // Handle the error: inform the user they need to enter exactly two column names.
+                    print_insight_level_2(
+                        "Please enter exactly two column names, separated by a comma.",
+                    );
+                    continue;
+                } else {
+                    // Extracting the column names.
+                    let x_axis_column = columns[0];
+                    let y_axis_column = columns[1];
+                    println!();
+                    // Using the columns in your function.
+                    csv_builder.print_cumulative_smooth_line_chart(x_axis_column, y_axis_column);
+                }
+            }
+
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 11.");
+                println!("Invalid option. Please enter a number from 1 to 13.");
                 continue; // Ask for the choice again
             }
         }
