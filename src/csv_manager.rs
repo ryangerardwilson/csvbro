@@ -515,102 +515,84 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                 }
 
                 //dbg!(&confirmation, &last_sql_query);
-                let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
-                    // Use vim_edit only if confirmation is "retry"
-                    let new_query = get_edited_user_sql_input(last_sql_query.clone());
-                    last_sql_query = new_query.clone();
-                    new_query
-                } else if confirmation == "TINKER"
+                /*
+                                let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
+                                    // Use vim_edit only if confirmation is "retry"
+                                    let new_query = get_edited_user_sql_input(last_sql_query.clone());
+                                    last_sql_query = new_query.clone();
+                                    new_query
+                                } else if confirmation == "TINKER"
+                                    || confirmation == "SEARCH"
+                                    || confirmation == "INSPECT"
+                                    || confirmation == "PIVOT"
+                                    || confirmation == "JOIN"
+                                {
+                                    last_sql_query.clone()
+                                } else {
+                                    // Get new query from user, except when confirmation is "inspect"
+                                    let new_query = get_user_sql_input();
+                                    last_sql_query = new_query.clone();
+                                    new_query
+                                };
+                */
+
+                if confirmation == "TINKER"
                     || confirmation == "SEARCH"
                     || confirmation == "INSPECT"
                     || confirmation == "PIVOT"
                     || confirmation == "JOIN"
                 {
-                    last_sql_query.clone()
+                    csv_builder.print_table();
+                    confirmation = String::new();
                 } else {
-                    // Get new query from user, except when confirmation is "inspect"
-                    let new_query = get_user_sql_input();
-                    last_sql_query = new_query.clone();
-                    new_query
-                };
+                    let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
+                        // Use vim_edit only if confirmation is "retry"
+                        let new_query = get_edited_user_sql_input(last_sql_query.clone());
+                        last_sql_query = new_query.clone();
+                        new_query
+                    } else {
+                        // Get new query from user, except when confirmation is "inspect"
+                        let new_query = get_user_sql_input();
+                        last_sql_query = new_query.clone();
+                        new_query
+                    };
 
-                let start_time = Instant::now();
-                let query_execution_result = CsvBuilder::from_mssql_query(
-                    &username, &password, &host, &database, &sql_query,
-                )
-                .await;
-                let elapsed_time = start_time.elapsed();
+                    let start_time = Instant::now();
+                    let query_execution_result = CsvBuilder::from_mssql_query(
+                        &username, &password, &host, &database, &sql_query,
+                    )
+                    .await;
+                    let elapsed_time = start_time.elapsed();
 
-                /*
-                if let Err(e) = query_execution_result {
-                    println!("Failed to execute query: {}", e);
+                    if let Err(e) = query_execution_result {
+                        println!("Failed to execute query: {}", e);
 
-                    let menu_options = vec!["retry", "back"];
+                        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN"];
 
-                    print_list(&menu_options);
-                    let choice = get_user_input("Enter your choice: ").to_lowercase();
+                        print_list(&menu_options);
+                        let choice = get_user_input("Enter your choice: ").to_lowercase();
+                        confirmation = choice.clone();
 
-                    if handle_query_special_flag(&choice, &mut csv_builder) {
-                        //continue;
-                        break Ok(CsvBuilder::new());
-                    }
-
-                    if handle_back_flag(&choice) {
-                        //break;
-                        break Ok(CsvBuilder::new());
-                    }
-                    let _ = handle_quit_flag(&choice);
-
-                    let selected_option = determine_action_as_text(&menu_options, &choice);
-                    confirmation = selected_option.clone().expect("REASON");
-
-                    match selected_option {
-                        Some(ref action) if action == "retry" => {
-                            continue;
-                        }
-                        Some(ref action) if action == "back" => {
+                        if handle_query_special_flag(&choice, &mut csv_builder) {
+                            //continue;
                             break Ok(CsvBuilder::new());
                         }
-                        Some(_) => print_insight("Unrecognized action, please try again."),
-                        None => print_insight("No action determined"),
+
+                        if handle_back_flag(&choice) {
+                            //break;
+                            break Ok(CsvBuilder::new());
+                        }
+                        let _ = handle_quit_flag(&choice);
+
+                        if handle_query_retry_flag(&choice) {
+                            continue;
+                        }
+                    } else {
+                        csv_builder = query_execution_result.unwrap();
+                        csv_builder.print_table(); // Print the table on success
+                        println!("Executiom Time: {:?}", elapsed_time);
+                        confirmation = String::new(); // Reset confirmation for the next loop iteration
                     }
-                } else {
-                    csv_builder = query_execution_result.unwrap();
-                    csv_builder.print_table(); // Print the table on success
-                    println!("Executiom Time: {:?}", elapsed_time);
-
-                    confirmation = String::new(); // Reset confirmation for the next loop iteration
-                }
-                */
-
-                if let Err(e) = query_execution_result {
-                    println!("Failed to execute query: {}", e);
-
-                    let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN"];
-
-                    print_list(&menu_options);
-                    let choice = get_user_input("Enter your choice: ").to_lowercase();
-                    confirmation = choice.clone();
-
-                    if handle_query_special_flag(&choice, &mut csv_builder) {
-                        //continue;
-                        break Ok(CsvBuilder::new());
-                    }
-
-                    if handle_back_flag(&choice) {
-                        //break;
-                        break Ok(CsvBuilder::new());
-                    }
-                    let _ = handle_quit_flag(&choice);
-
-                    if handle_query_retry_flag(&choice) {
-                        continue;
-                    }
-                } else {
-                    csv_builder = query_execution_result.unwrap();
-                    csv_builder.print_table(); // Print the table on success
-                    println!("Executiom Time: {:?}", elapsed_time);
-                    confirmation = String::new(); // Reset confirmation for the next loop iteration
                 }
             }
 
@@ -628,63 +610,86 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     database = get_user_input_level_2("Enter MYSQL database name: ");
                 }
 
-                //dbg!(&confirmation, &last_sql_query);
-                let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
-                    // Use vim_edit only if confirmation is "retry"
-                    let new_query = get_edited_user_sql_input(last_sql_query.clone());
-                    last_sql_query = new_query.clone();
-                    new_query
-                } else if confirmation == "TINKER"
+                /*
+                                //dbg!(&confirmation, &last_sql_query);
+                                let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
+                                    // Use vim_edit only if confirmation is "retry"
+                                    let new_query = get_edited_user_sql_input(last_sql_query.clone());
+                                    last_sql_query = new_query.clone();
+                                    new_query
+                                } else if confirmation == "TINKER"
+                                    || confirmation == "SEARCH"
+                                    || confirmation == "INSPECT"
+                                    || confirmation == "PIVOT"
+                                    || confirmation == "JOIN"
+                                {
+                                   // println!("HUHUHAHAHA");
+
+                                    last_sql_query.clone()
+                                } else {
+                                    // Get new query from user, except when confirmation is "inspect"
+                                    let new_query = get_user_sql_input();
+                                    last_sql_query = new_query.clone();
+                                    new_query
+                                };
+                */
+                if confirmation == "TINKER"
                     || confirmation == "SEARCH"
                     || confirmation == "INSPECT"
                     || confirmation == "PIVOT"
                     || confirmation == "JOIN"
                 {
-                    println!("HUHUHAHAHA");
-
-                    last_sql_query.clone()
+                    csv_builder.print_table();
+                    confirmation = String::new();
                 } else {
-                    // Get new query from user, except when confirmation is "inspect"
-                    let new_query = get_user_sql_input();
-                    last_sql_query = new_query.clone();
-                    new_query
-                };
+                    let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
+                        // Use vim_edit only if confirmation is "retry"
+                        let new_query = get_edited_user_sql_input(last_sql_query.clone());
+                        last_sql_query = new_query.clone();
+                        new_query
+                    } else {
+                        // Get new query from user, except when confirmation is "inspect"
+                        let new_query = get_user_sql_input();
+                        last_sql_query = new_query.clone();
+                        new_query
+                    };
 
-                let start_time = Instant::now();
-                let query_execution_result = CsvBuilder::from_mysql_query(
-                    &username, &password, &host, &database, &sql_query,
-                )
-                .await;
-                let elapsed_time = start_time.elapsed();
+                    let start_time = Instant::now();
+                    let query_execution_result = CsvBuilder::from_mysql_query(
+                        &username, &password, &host, &database, &sql_query,
+                    )
+                    .await;
+                    let elapsed_time = start_time.elapsed();
 
-                if let Err(e) = query_execution_result {
-                    println!("Failed to execute query: {}", e);
+                    if let Err(e) = query_execution_result {
+                        println!("Failed to execute query: {}", e);
 
-                    let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN"];
+                        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN"];
 
-                    print_list(&menu_options);
-                    let choice = get_user_input("Enter your choice: ").to_lowercase();
-                    confirmation = choice.clone();
+                        print_list(&menu_options);
+                        let choice = get_user_input("Enter your choice: ").to_lowercase();
+                        confirmation = choice.clone();
 
-                    if handle_query_special_flag(&choice, &mut csv_builder) {
-                        //continue;
-                        break Ok(CsvBuilder::new());
+                        if handle_query_special_flag(&choice, &mut csv_builder) {
+                            //continue;
+                            break Ok(CsvBuilder::new());
+                        }
+
+                        if handle_back_flag(&choice) {
+                            //break;
+                            break Ok(CsvBuilder::new());
+                        }
+                        let _ = handle_quit_flag(&choice);
+
+                        if handle_query_retry_flag(&choice) {
+                            continue;
+                        }
+                    } else {
+                        csv_builder = query_execution_result.unwrap();
+                        csv_builder.print_table(); // Print the table on success
+                        println!("Executiom Time: {:?}", elapsed_time);
+                        confirmation = String::new(); // Reset confirmation for the next loop iteration
                     }
-
-                    if handle_back_flag(&choice) {
-                        //break;
-                        break Ok(CsvBuilder::new());
-                    }
-                    let _ = handle_quit_flag(&choice);
-
-                    if handle_query_retry_flag(&choice) {
-                        continue;
-                    }
-                } else {
-                    csv_builder = query_execution_result.unwrap();
-                    csv_builder.print_table(); // Print the table on success
-                    println!("Executiom Time: {:?}", elapsed_time);
-                    confirmation = String::new(); // Reset confirmation for the next loop iteration
                 }
             }
         };
@@ -695,23 +700,6 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
 
         print_list(&menu_options);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
-
-        /*
-        if handle_query_special_flag(&choice, &mut csv_builder) {
-            //continue;
-            break Ok(CsvBuilder::new());
-        }
-
-        if handle_back_flag(&choice) {
-            //break;
-            break Ok(CsvBuilder::new());
-        }
-        let _ = handle_quit_flag(&choice);
-
-        if handle_query_retry_flag(&choice) {
-            continue;
-        }
-        */
 
         if handle_query_special_flag(&choice, &mut csv_builder) {
             //continue;
@@ -733,14 +721,6 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
         confirmation = selected_option.clone().expect("REASON");
 
         match selected_option {
-            /*
-            Some(ref action) if action == "INSPECT" => {
-                if let Err(e) = handle_inspect(&mut csv_builder, None) {
-                    println!("Error during inspection: {}", e);
-                    continue;
-                }
-            },
-            */
             Some(ref action) if action == "TINKER" => {
                 if let Err(e) = handle_tinker(&mut csv_builder, None).await {
                     println!("Error during tinker: {}", e);
@@ -779,39 +759,6 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
             None => todo!(),
             Some(_) => todo!(),
         }
-
-        /*
-                let selected_option = determine_action_as_text(&menu_options, &choice);
-                confirmation = selected_option.clone().expect("REASON");
-
-                match selected_option {
-                    Some(ref action) if action == "retry" => {
-                        continue;
-                    }
-                    Some(ref action) if action == "save as" => {
-                        let home_dir = env::var("HOME").expect("Unable to determine user home directory");
-                        let desktop_path = Path::new(&home_dir).join("Desktop");
-                        let csv_db_path = desktop_path.join("csv_db");
-
-                        let file_name =
-                            get_user_input_level_2("Enter file name to save (without extension): ");
-                        let full_file_name = if file_name.ends_with(".csv") {
-                            file_name
-                        } else {
-                            format!("{}.csv", file_name)
-                        };
-                        let file_path = csv_db_path.join(full_file_name);
-                        let _ = csv_builder.save_as(file_path.to_str().unwrap());
-                        print_insight_level_2(&format!("CSV file saved at {}", file_path.display()));
-                        break Ok(CsvBuilder::new());
-                    }
-                    Some(ref action) if action == "back" => {
-                        break Ok(CsvBuilder::new());
-                    }
-                    Some(_) => print_insight("Unrecognized action, please try again."),
-                    None => print_insight("No action determined"),
-                }
-        */
     }
 }
 
