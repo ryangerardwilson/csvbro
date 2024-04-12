@@ -6,6 +6,7 @@ use std::error::Error;
 use std::fs;
 use std::path::Path;
 
+use crate::user_experience::{handle_back_flag, handle_quit_flag};
 use crate::user_interaction::{
     determine_action_as_text, get_edited_user_sql_input, get_user_input, get_user_input_level_2,
     print_insight, print_list,
@@ -40,9 +41,16 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
     // Additional settings options here
     loop {
         print_insight("Decision time! What are you vibing with?");
-        let menu_options = vec!["db presets", "open ai presets", "BACK"];
+        let menu_options = vec!["db presets", "open ai presets"];
         print_list(&menu_options);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
+
+        if handle_back_flag(&choice) {
+            break;
+            //break Ok(CsvBuilder::new());
+        }
+        let _ = handle_quit_flag(&choice);
+
         let selected_option = determine_action_as_text(&menu_options, &choice);
 
         match selected_option {
@@ -53,10 +61,16 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                     "update db preset",
                     "delete db preset",
                     "view db presets",
-                    "BACK",
+                    //"BACK",
                 ];
                 print_list(&menu_options);
                 let choice = get_user_input("Enter your choice: ").to_lowercase();
+
+                if handle_back_flag(&choice) {
+                    break;
+                }
+                let _ = handle_quit_flag(&choice);
+
                 let selected_option = determine_action_as_text(&menu_options, &choice);
 
                 match selected_option {
@@ -76,9 +90,11 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                         view_db_presets()?;
                         continue;
                     }
+                    /*
                     Some(ref action) if action == "BACK" => {
                         break;
                     }
+                    */
                     //"done" => break,
                     Some(_) => print_insight("Unrecognized action, please try again."),
                     None => print_insight("No action determined"),
@@ -91,10 +107,17 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                     "update open ai preset",
                     "delete open ai preset",
                     "view open ai preset",
-                    "BACK",
+                    //"BACK",
                 ];
                 print_list(&menu_options);
                 let choice = get_user_input("Enter your choice: ").to_lowercase();
+
+                if handle_back_flag(&choice) {
+                    break;
+                    //break Ok(CsvBuilder::new());
+                }
+                let _ = handle_quit_flag(&choice);
+
                 let selected_option = determine_action_as_text(&menu_options, &choice);
 
                 match selected_option {
@@ -114,18 +137,22 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                         view_open_ai_preset()?;
                         continue;
                     }
+                    /*
                     Some(ref action) if action == "BACK" => {
                         break;
                     }
+                    */
                     //"done" => break,
                     Some(_) => print_insight("Unrecognized action, please try again."),
                     None => print_insight("No action determined"),
                 }
             },
 
+            /*
             Some(ref action) if action == "BACK" => {
                 break;
             }
+            */
             //"done" => break,
             Some(_) => print_insight("Unrecognized action, please try again."),
             None => print_insight("No action determined"),

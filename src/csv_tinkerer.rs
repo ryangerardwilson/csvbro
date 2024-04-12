@@ -1,5 +1,7 @@
 // csv_tinkerer.rs
-use crate::user_experience::{handle_back_flag, handle_quit_flag, handle_special_flag};
+use crate::user_experience::{
+    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
+};
 use crate::user_interaction::{
     determine_action_as_number, get_edited_user_json_input, get_edited_user_sql_input,
     get_user_input_level_2, print_insight_level_2, print_list_level_2,
@@ -2015,7 +2017,12 @@ Total rows: 11
 
                 let new_columns_order_input =
                     get_user_input_level_2("Specify new column order: ").to_lowercase();
+                /*
                 if new_columns_order_input.to_lowercase() == "@cancel" {
+                    continue;
+                }
+                */
+                if handle_cancel_flag(&new_columns_order_input) {
                     continue;
                 }
 
@@ -2107,7 +2114,12 @@ Total rows: 10
                 }
 
                 let id_column_name = get_user_input_level_2("Name of id column: ").to_lowercase();
+                /*
                 if id_column_name.to_lowercase() == "@cancel" {
+                    continue;
+                }
+                */
+                if handle_cancel_flag(&id_column_name) {
                     continue;
                 }
 

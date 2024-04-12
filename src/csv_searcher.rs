@@ -1,5 +1,7 @@
 // csv_searcher.rs
-use crate::user_experience::{handle_back_flag, handle_quit_flag, handle_special_flag};
+use crate::user_experience::{
+    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
+};
 use crate::user_interaction::{
     determine_action_as_number, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
@@ -116,15 +118,26 @@ Total rows: 2
                 }
 
                 let query = get_user_input_level_2("Enter search term: ");
+                /*
                 if query.to_lowercase() == "@cancel" {
                     continue; // Skip the current iteration and return to the main menu
+                }
+                */
+
+                if handle_cancel_flag(&query) {
+                    continue;
                 }
 
                 // Step 2: Ask the user if they want to search all columns or specific ones
                 let search_scope = get_user_input_level_2("Type '*' to search all columns or list specific column names separated by commas (e.g., 'column1, column2'): ");
 
+                /*
                 if search_scope.to_lowercase() == "@cancel" {
                     continue; // Skip the current iteration and return to the main menu
+                }
+                */
+                if handle_cancel_flag(&search_scope) {
+                    continue;
                 }
 
                 let columns: Vec<&str>;
@@ -192,15 +205,25 @@ Total rows: 8
                 }
 
                 let query = get_user_input_level_2("Enter search term: ");
+                /*
                 if query.to_lowercase() == "@cancel" {
                     continue; // Skip the current iteration and return to the main menu
+                }
+                */
+                if handle_cancel_flag(&query) {
+                    continue;
                 }
 
                 // Prompt user for columns to search within or use all columns
                 let search_scope = get_user_input_level_2("Type '*' to search all columns or list specific column names separated by commas (e.g., 'column1, column2'): ");
                 // Check for @cancel to allow user to return to the main menu
+                /*
                 if search_scope.to_lowercase() == "@cancel" {
                     continue; // Skip the current iteration and return to the main menu
+                }
+                */
+                if handle_cancel_flag(&search_scope) {
+                    continue;
                 }
 
                 let columns: Vec<&str>;
@@ -264,15 +287,25 @@ Total rows: 2
 
                 let query = get_user_input_level_2("Enter search term: ");
                 // Check for @cancel to allow user to return to the main menu
+                /*
                 if query.to_lowercase() == "@cancel" {
                     continue; // Skip the current iteration and return to the main menu
+                }
+                */
+                if handle_cancel_flag(&query) {
+                    continue;
                 }
 
                 // Prompt user for columns to search within or use all columns
                 let search_scope = get_user_input_level_2("Type '*' to search all columns or list specific column names separated by commas (e.g., 'column1, column2'): ");
                 // Check for @cancel to allow user to return to the main menu
+                /*
                 if search_scope.to_lowercase() == "@cancel" {
                     continue; // Skip the current iteration and return to the main menu
+                }
+                */
+                if handle_cancel_flag(&search_scope) {
+                    continue;
                 }
 
                 let columns: Vec<&str>;
@@ -341,15 +374,25 @@ Total rows: 8
 
                 let query = get_user_input_level_2("Enter search term: ");
                 // Check for @cancel to allow user to return to the main menu
+                /*
                 if query.to_lowercase() == "@cancel" {
                     continue; // Skip the current iteration and return to the main menu
+                }
+                */
+                if handle_cancel_flag(&query) {
+                    continue;
                 }
 
                 // Prompt user for columns to search within or use all columns
                 let search_scope = get_user_input_level_2("Type '*' to search all columns or list specific column names separated by commas (e.g., 'column1, column2'): ");
                 // Check for @cancel to allow user to return to the main menu
+                /*
                 if search_scope.to_lowercase() == "@cancel" {
                     continue; // Skip the current iteration and return to the main menu
+                }
+                */
+                if handle_cancel_flag(&search_scope) {
+                    continue;
                 }
 
                 let columns: Vec<&str>;
@@ -430,17 +473,28 @@ Frequencies:
                 }
 
                 let query = get_user_input_level_2("Enter search query: ");
+                /*
                 if query.to_lowercase() == "@cancel" {
                     continue; // Skip the current iteration and return to the main menu
+                }
+                */
+                if handle_cancel_flag(&query) {
+                    continue;
                 }
 
                 // Prompt user for the Levenshtein distance
                 let lev_distance_input =
                     get_user_input_level_2("Enter Levenshtein distance (a non-negative integer): ");
                 // Check for @cancel to allow user to return to the main menu
+                /*
                 if lev_distance_input.to_lowercase() == "@cancel" {
                     continue; // Skip the current iteration and return to the main menu
                 }
+                */
+                if handle_cancel_flag(&lev_distance_input) {
+                    continue;
+                }
+
                 let lev_distance = match lev_distance_input.trim().parse::<i32>() {
                     Ok(distance) if distance >= 0 => distance as usize, // Ensure the distance is non-negative
                     _ => {
@@ -452,8 +506,13 @@ Frequencies:
                 // Prompt user for columns to search within or use all columns
                 let search_scope = get_user_input_level_2("Type '*' to search all columns or list specific column names separated by commas (e.g., 'column1,column2'): ");
                 // Check for @cancel to allow user to return to the main menu
+                /*
                 if search_scope.to_lowercase() == "@cancel" {
                     continue; // Skip the current iteration and return to the main menu
+                }
+                */
+                if handle_cancel_flag(&search_scope) {
+                    continue;
                 }
 
                 let columns: Vec<&str>;
@@ -544,9 +603,15 @@ Frequencies:
                     "Enter queries separated by commas (e.g., 'needle1, needle2'): ",
                 );
                 // Check for @cancel to allow user to return to the main menu
+                /*
                 if queries_input.to_lowercase() == "@cancel" {
                     continue; // Skip the current iteration and return to the main menu
                 }
+                */
+                if handle_cancel_flag(&queries_input) {
+                    continue;
+                }
+
                 let queries: Vec<&str> = queries_input
                     .split(',')
                     .map(|query| query.trim().trim_matches('"'))
@@ -556,9 +621,15 @@ Frequencies:
                 let lev_distance_input =
                     get_user_input_level_2("Enter Levenshtein distance (a non-negative integer): ");
                 // Check for @cancel to allow user to return to the main menu
+                /*
                 if lev_distance_input.to_lowercase() == "@cancel" {
                     continue; // Skip the current iteration and return to the main menu
                 }
+                */
+                if handle_cancel_flag(&lev_distance_input) {
+                    continue;
+                }
+
                 let lev_distance = match lev_distance_input.trim().parse::<i32>() {
                     Ok(distance) if distance >= 0 => distance as usize, // Ensure the distance is non-negative
                     _ => {
@@ -570,8 +641,13 @@ Frequencies:
                 // Prompt user for columns to search within or use all columns
                 let search_scope = get_user_input_level_2("Type '*' to search all columns or list specific column names separated by commas (e.g., 'column1,column2'): ");
                 // Check for @cancel to allow user to return to the main menu
+                /*
                 if search_scope.to_lowercase() == "@cancel" {
                     continue; // Skip the current iteration and return to the main menu
+                }
+                */
+                if handle_cancel_flag(&search_scope) {
+                    continue;
                 }
 
                 let columns: Vec<&str> = if search_scope.trim() == "*" {

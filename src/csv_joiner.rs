@@ -1,5 +1,7 @@
 // csv_joiner.rs
-use crate::user_experience::{handle_back_flag, handle_quit_flag, handle_special_flag};
+use crate::user_experience::{
+    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
+};
 use crate::user_interaction::{
     determine_action_as_number, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
@@ -97,7 +99,12 @@ pub fn handle_join(
                     "Punch in the serial number or a slice of the file name to LOAD: ",
                 )
                 .to_lowercase();
+                /*
                 if choice.to_lowercase() == "@cancel" {
+                    return None;
+                }
+                */
+                if handle_cancel_flag(&choice) {
                     return None;
                 }
 
@@ -297,8 +304,14 @@ Total rows: 7
                     )
                     .to_lowercase();
 
+                    /*
                     if join_at_choice.to_lowercase() == "@cancel" {
                         //return None;
+                        return Ok(());
+                    }
+                    */
+
+                    if handle_cancel_flag(&join_at_choice) {
                         return Ok(());
                     }
 
@@ -485,8 +498,14 @@ Total rows: 10
                     )
                     .to_lowercase();
 
+                    /*
                     if left_join_at_choice.to_lowercase() == "@cancel" {
                         //return None;
+                        return Ok(());
+                    }
+                    */
+
+                    if handle_cancel_flag(&left_join_at_choice) {
                         return Ok(());
                     }
 
@@ -586,8 +605,14 @@ Total rows: 10
                     )
                     .to_lowercase();
 
+                    /*
                     if right_join_at_choice.to_lowercase() == "@cancel" {
                         //return None;
+                        return Ok(());
+                    }
+                    */
+
+                    if handle_cancel_flag(&right_join_at_choice) {
                         return Ok(());
                     }
 
@@ -641,8 +666,14 @@ Total rows: 10
         "Enter column names (comma separated, if multiple) to SET_OUTER_FULL_JOIN_UNION_WITH at: ",
     );
 
+                    /*
                     if set_intersection_at_choice.to_lowercase() == "@cancel" {
                         //return None;
+                        return Ok(());
+                    }
+                    */
+
+                    if handle_cancel_flag(&set_intersection_at_choice) {
                         return Ok(());
                     }
 
@@ -809,8 +840,14 @@ Total rows: 3
         "Enter column names (comma separated, if multiple) to SET_INTERSECTION_WITH at: ",
     );
 
+                    /*
                     if set_intersection_at_choice.to_lowercase() == "@cancel" {
                         //return None;
+                        return Ok(());
+                    }
+                    */
+
+                    if handle_cancel_flag(&set_intersection_at_choice) {
                         return Ok(());
                     }
 
@@ -956,8 +993,13 @@ Total rows: 3
         "Enter column names (comma separated, if multiple) to SET_INNER_JOIN_INTERSECTION_WITH at: ",
     );
 
+                    /*
                     if set_intersection_at_choice.to_lowercase() == "@cancel" {
                         //return None;
+                        return Ok(());
+                    }
+                    */
+                    if handle_cancel_flag(&set_intersection_at_choice) {
                         return Ok(());
                     }
 
@@ -1125,8 +1167,14 @@ Total rows: 3
         "Enter column names (comma separated, if multiple) to SET_DIFFERENCE_WITH at: ",
     );
 
+                    /*
                     if set_intersection_at_choice.to_lowercase() == "@cancel" {
                         //return None;
+                        return Ok(());
+                    }
+                    */
+
+                    if handle_cancel_flag(&set_intersection_at_choice) {
                         return Ok(());
                     }
 
@@ -1305,8 +1353,13 @@ Total rows: 6
         "Enter column names (comma separated, if multiple) to SET_SYMMETRIC_DIFFERENCE_WITH at: ",
     );
 
+                    /*
                     if set_intersection_at_choice.to_lowercase() == "@cancel" {
                         //return None;
+                        return Ok(());
+                    }
+                    */
+                    if handle_cancel_flag(&set_intersection_at_choice) {
                         return Ok(());
                     }
 

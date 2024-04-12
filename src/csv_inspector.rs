@@ -1,5 +1,7 @@
 // csv_inspector.rs
-use crate::user_experience::{handle_back_flag, handle_quit_flag, handle_special_flag};
+use crate::user_experience::{
+    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
+};
 use crate::user_interaction::{
     determine_action_as_number, get_edited_user_json_input, get_user_input_level_2,
     print_insight_level_2, print_list_level_2,
@@ -843,7 +845,13 @@ Total rows: 10
                     "Enter the x-axis and y-axis column names separated by a comma: ",
                 );
 
+                /*
                 if column_names.to_lowercase() == "@cancel" {
+                    continue;
+                }
+                */
+
+                if handle_cancel_flag(&column_names) {
                     continue;
                 }
 
@@ -924,7 +932,13 @@ Total rows: 10
                     "Enter the x-axis and y-axis column names separated by a comma: ",
                 );
 
+                /*
                 if column_names.to_lowercase() == "@cancel" {
+                    continue;
+                }
+                */
+
+                if handle_cancel_flag(&column_names) {
                     continue;
                 }
 
@@ -1011,7 +1025,13 @@ Total rows: 10
                     "Enter the x-axis and y-axis column names separated by a comma: ",
                 );
 
+                /*
                 if column_names.to_lowercase() == "@cancel" {
+                    continue;
+                }
+                */
+
+                if handle_cancel_flag(&column_names) {
                     continue;
                 }
 
@@ -1093,7 +1113,13 @@ Total rows: 10
                     "Enter the x-axis and y-axis column names separated by a comma: ",
                 );
 
+                /*
                 if column_names.to_lowercase() == "@cancel" {
+                    continue;
+                }
+                */
+
+                if handle_cancel_flag(&column_names) {
                     continue;
                 }
 

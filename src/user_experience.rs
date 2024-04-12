@@ -118,3 +118,10 @@ pub fn handle_quit_flag(flag: &str) {
         std::process::exit(0);
     }
 }
+
+pub fn handle_cancel_flag(flag: &str) -> bool {
+    match flag {
+        "@c" => true,
+        _ => false,
+    }
+}
