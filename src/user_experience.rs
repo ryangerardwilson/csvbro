@@ -119,9 +119,17 @@ pub fn handle_quit_flag(flag: &str) {
     }
 }
 
+
 pub fn handle_cancel_flag(flag: &str) -> bool {
-    match flag {
-        "@c" => true,
+    let trimmed = flag.trim();
+    match trimmed {
+        f if f == "@c" => true,
+        f if f.starts_with("@c") => true,
         _ => false,
     }
 }
+
+
+
+
+

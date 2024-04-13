@@ -56,6 +56,9 @@ pub async fn handle_tinker(
     csv_builder: &mut CsvBuilder,
     file_path_option: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+
+
+
     fn get_filter_expressions(
         data_store: &mut ExpStore,
     ) -> Result<(Vec<(String, usize)>, String), Box<dyn std::error::Error>> {
@@ -177,6 +180,8 @@ SYNTAX
   "#;
 
         let exp_json = get_edited_user_json_input((&syntax).to_string());
+
+
         //dbg!(&exp_json);
 
         // Assume `last_exp_json` is a String containing your JSON data
@@ -443,7 +448,11 @@ Total rows: 0
                     }
                 };
 
-                let edited_json = get_edited_user_sql_input(headers_json_str);
+                let edited_json = get_edited_user_json_input(headers_json_str);
+
+                if handle_cancel_flag(&edited_json) {
+                    continue;
+                }
 
                 let edited_headers: serde_json::Value = match serde_json::from_str(&edited_json) {
                     Ok(headers) => headers,
@@ -545,7 +554,12 @@ Total rows: 5
                     }
                 };
 
-                let edited_json = get_edited_user_sql_input(headers_json_str);
+                let edited_json = get_edited_user_json_input(headers_json_str);
+                //dbg!(&edited_json);
+                if handle_cancel_flag(&edited_json) {
+                    continue;
+                }
+
 
                 let edited_headers: serde_json::Value = match serde_json::from_str(&edited_json) {
                     Ok(headers) => headers,
@@ -673,6 +687,11 @@ SYNTAX
 
                     // Get user input
                     let rows_json_str = get_edited_user_json_input(full_syntax);
+                    //dbg!(&rows_json_str);
+                if handle_cancel_flag(&rows_json_str) {
+                    continue;
+                }
+
 
                     // Parse the user input
                     let rows_json: Vec<serde_json::Value> =
@@ -874,6 +893,11 @@ Total rows: 6
 
                         let edited_json = get_edited_user_sql_input(row_json_str);
 
+                if handle_cancel_flag(&edited_json) {
+                    continue;
+                }
+
+
                         let edited_row: serde_json::Value = match serde_json::from_str(&edited_json)
                         {
                             Ok(row) => row,
@@ -1057,6 +1081,11 @@ SYNTAX
                 let full_syntax = json_array_str + syntax_explanation;
 
                 let rows_json_str = get_edited_user_json_input(full_syntax);
+
+                if handle_cancel_flag(&rows_json_str) {
+                    continue;
+                }
+
 
                 // Parse the Edited JSON String
                 let rows_json: Vec<Value> = serde_json::from_str(&rows_json_str)?;
@@ -1251,6 +1280,12 @@ SYNTAX
 
                 let rows_json_str = get_edited_user_json_input(full_syntax);
 
+                if handle_cancel_flag(&rows_json_str) {
+                    continue;
+                }
+
+
+
                 // Parse the Edited JSON String
                 let mut rows_json: Vec<Value> = serde_json::from_str(&rows_json_str)?;
                 rows_json.reverse();
@@ -1365,16 +1400,12 @@ Total rows: 3
                     .get_headers()
                     .map_or(false, |headers| headers.contains(&"id".to_string()));
 
-                let row_identifiers_str = get_user_input_level_2("Enter the identifiers (ID or indices) of the rows to delete (comma-separated), or type 'back' to return: ");
-                println!();
-                let back_keywords = ["back", "b", "ba", "bck"];
-
-                if back_keywords
-                    .iter()
-                    .any(|&kw| row_identifiers_str.trim().eq_ignore_ascii_case(kw))
-                {
+                let row_identifiers_str = get_user_input_level_2("Enter the identifiers (ID or indices) of the rows to delete (comma-separated): ");
+                
+                if handle_cancel_flag(&row_identifiers_str) {
                     continue;
                 }
+
 
                 let mut deleted_count = 0;
 
