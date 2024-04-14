@@ -319,7 +319,7 @@ Total rows: 7
                     let column_names: Vec<&str> =
                         join_at_choice.split(',').map(|s| s.trim()).collect();
 
-                    let _ = csv_builder.set_union_with(
+                    let _ = csv_builder.set_union_with_csv_file(
                         &chosen_file_path_for_join,
                         "UNION_TYPE:NORMAL",
                         column_names,
@@ -413,7 +413,7 @@ Total rows: 22
                     CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
                     println!();
                     print_insight_level_2("Now, computing the bag union with the above ...");
-                    let _ = csv_builder.set_bag_union_with(&chosen_file_path_for_join);
+                    let _ = csv_builder.set_bag_union_with_csv_file(&chosen_file_path_for_join);
 
                     sort_csv_by_id_if_needed(csv_builder);
 
@@ -518,7 +518,7 @@ Total rows: 10
 
                     //dbg!(&union_type);
                     csv_builder
-                        .set_union_with(
+                        .set_union_with_csv_file(
                             &chosen_file_path_for_join,
                             "UNION_TYPE:LEFT_JOIN",
                             column_names,
@@ -624,7 +624,7 @@ Total rows: 10
                         right_join_at_choice.split(',').map(|s| s.trim()).collect();
 
                     csv_builder
-                        .set_union_with(
+                        .set_union_with_csv_file(
                             &chosen_file_path_for_join,
                             "UNION_TYPE:RIGHT_JOIN",
                             column_names,
@@ -694,7 +694,7 @@ Total rows: 10
                     } else {
                         // Perform set intersection with the specified key columns
                         csv_builder
-                            .set_union_with(
+                            .set_union_with_csv_file(
                                 &chosen_file_path_for_join,
                                 "UNION_TYPE:OUTER_FULL_JOIN",
                                 key_columns,
@@ -869,7 +869,7 @@ Total rows: 3
                     } else {
                         // Perform set intersection with the specified key columns
                         csv_builder
-                            .set_intersection_with(
+                            .set_intersection_with_csv_file(
                                 &chosen_file_path_for_join,
                                 key_columns,
                                 "INTERSECTION_TYPE:NORMAL",
@@ -1022,7 +1022,7 @@ Total rows: 3
                     } else {
                         // Perform set intersection with the specified key columns
                         csv_builder
-                            .set_intersection_with(
+                            .set_intersection_with_csv_file(
                                 &chosen_file_path_for_join,
                                 key_columns,
                                 "INTERSECTION_TYPE:INNER_JOIN",
@@ -1198,7 +1198,7 @@ Total rows: 3
                     } else {
                         // Perform set intersection with the specified key columns
                         csv_builder
-                            .set_difference_with(
+                            .set_difference_with_csv_file(
                                 &chosen_file_path_for_join,
                                 "DIFFERENCE_TYPE:NORMAL",
                                 key_columns,
@@ -1384,7 +1384,7 @@ Total rows: 6
                     } else {
                         // Perform set intersection with the specified key columns
                         csv_builder
-                            .set_difference_with(
+                            .set_difference_with_csv_file(
                                 &chosen_file_path_for_join,
                                 "DIFFERENCE_TYPE:SYMMETRIC",
                                 key_columns,
