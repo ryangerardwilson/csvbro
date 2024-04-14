@@ -56,9 +56,6 @@ pub async fn handle_tinker(
     csv_builder: &mut CsvBuilder,
     file_path_option: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-
-
-
     fn get_filter_expressions(
         data_store: &mut ExpStore,
     ) -> Result<(Vec<(String, usize)>, String), Box<dyn std::error::Error>> {
@@ -181,6 +178,9 @@ SYNTAX
 
         let exp_json = get_edited_user_json_input((&syntax).to_string());
 
+        if handle_cancel_flag(&exp_json) {
+            return Err("Operation canceled".into());
+        }
 
         //dbg!(&exp_json);
 
@@ -319,6 +319,10 @@ Note the implications of the limit_type value:
 "#;
 
         let exp_json = get_edited_user_json_input((&syntax).to_string());
+
+        if handle_cancel_flag(&exp_json) {
+            return Err("Operation canceled".into());
+        }
 
         //dbg!(&exp_json);
 
@@ -560,7 +564,6 @@ Total rows: 5
                     continue;
                 }
 
-
                 let edited_headers: serde_json::Value = match serde_json::from_str(&edited_json) {
                     Ok(headers) => headers,
                     Err(e) => {
@@ -688,10 +691,9 @@ SYNTAX
                     // Get user input
                     let rows_json_str = get_edited_user_json_input(full_syntax);
                     //dbg!(&rows_json_str);
-                if handle_cancel_flag(&rows_json_str) {
-                    continue;
-                }
-
+                    if handle_cancel_flag(&rows_json_str) {
+                        continue;
+                    }
 
                     // Parse the user input
                     let rows_json: Vec<serde_json::Value> =
@@ -893,10 +895,9 @@ Total rows: 6
 
                         let edited_json = get_edited_user_sql_input(row_json_str);
 
-                if handle_cancel_flag(&edited_json) {
-                    continue;
-                }
-
+                        if handle_cancel_flag(&edited_json) {
+                            continue;
+                        }
 
                         let edited_row: serde_json::Value = match serde_json::from_str(&edited_json)
                         {
@@ -1085,7 +1086,6 @@ SYNTAX
                 if handle_cancel_flag(&rows_json_str) {
                     continue;
                 }
-
 
                 // Parse the Edited JSON String
                 let rows_json: Vec<Value> = serde_json::from_str(&rows_json_str)?;
@@ -1284,8 +1284,6 @@ SYNTAX
                     continue;
                 }
 
-
-
                 // Parse the Edited JSON String
                 let mut rows_json: Vec<Value> = serde_json::from_str(&rows_json_str)?;
                 rows_json.reverse();
@@ -1401,11 +1399,10 @@ Total rows: 3
                     .map_or(false, |headers| headers.contains(&"id".to_string()));
 
                 let row_identifiers_str = get_user_input_level_2("Enter the identifiers (ID or indices) of the rows to delete (comma-separated): ");
-                
+
                 if handle_cancel_flag(&row_identifiers_str) {
                     continue;
                 }
-
 
                 let mut deleted_count = 0;
 
@@ -1559,6 +1556,9 @@ Total rows: 4
                             }
                         }
                     }
+                    Err(e) if e.to_string() == "Operation canceled" => {
+                        continue;
+                    }
                     Err(e) => {
                         println!("Error getting filter expressions: {}", e);
                         continue; // Return to the menu to let the user try again or choose another option
@@ -1682,6 +1682,10 @@ Note the implications of the limit_type value:
                             }
                         }
                     }
+                    Err(e) if e.to_string() == "Operation canceled" => {
+                        // If the operation was canceled by the user, do not print an error and just continue
+                        continue;
+                    }
                     Err(e) => {
                         println!("Error getting limit expressions: {}", e);
                         continue; // Return to the menu to let the user try again or choose another option
@@ -1742,6 +1746,11 @@ Total rows: 3
                 }
 
                 let new_columns_input = get_user_input_level_2("Enter new column names: ");
+
+                if handle_cancel_flag(&new_columns_input) {
+                    continue;
+                }
+
                 println!();
                 //let new_columns: Vec<&str> = new_columns_input.trim().split(',').collect();
 
@@ -1812,6 +1821,10 @@ SYNTAX
                     let full_syntax = json_array_str + syntax_explanation;
 
                     let rows_json_str = get_edited_user_json_input(full_syntax);
+
+                    if handle_cancel_flag(&rows_json_str) {
+                        continue;
+                    }
 
                     let rows_json: Vec<serde_json::Value> =
                         match serde_json::from_str(&rows_json_str) {
@@ -1902,6 +1915,10 @@ Total rows: 3
                 let columns_input =
                     get_user_input_level_2("Please type a comma-separated list of columns: ");
 
+                if handle_cancel_flag(&columns_input) {
+                    continue;
+                }
+
                 let columns: Vec<&str> =
                     columns_input.trim().split(',').map(|s| s.trim()).collect();
 
@@ -1951,6 +1968,10 @@ Total rows: 5
 
                 let columns_input =
                     get_user_input_level_2("Please type a comma-separated list of columns: ");
+
+                if handle_cancel_flag(&columns_input) {
+                    continue;
+                }
 
                 let columns: Vec<&str> =
                     columns_input.trim().split(',').map(|s| s.trim()).collect();
@@ -2276,6 +2297,10 @@ SYNTAX
                 // Get user input
                 let sort_json = get_edited_user_json_input(sort_syntax.to_string());
                 //dbg!(&sort_json);
+
+                if handle_cancel_flag(&sort_json) {
+                    continue;
+                }
 
                 // Parse the user input
                 let sort_orders = {

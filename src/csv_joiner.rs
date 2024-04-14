@@ -312,7 +312,8 @@ Total rows: 7
                     */
 
                     if handle_cancel_flag(&join_at_choice) {
-                        return Ok(());
+                        continue;
+                        //return Ok(());
                     }
 
                     let column_names: Vec<&str> =
@@ -506,7 +507,8 @@ Total rows: 10
                     */
 
                     if handle_cancel_flag(&left_join_at_choice) {
-                        return Ok(());
+                        continue;
+                        //return Ok(());
                     }
 
                     //let union_type = format!("UNION_TYPE:LEFT_JOIN_AT_{}", left_join_at_choice);
@@ -613,7 +615,8 @@ Total rows: 10
                     */
 
                     if handle_cancel_flag(&right_join_at_choice) {
-                        return Ok(());
+                        continue;
+                        //return Ok(());
                     }
 
                     //let union_type = format!("UNION_TYPE:RIGHT_JOIN_AT_{}", right_join_at_choice);
@@ -674,7 +677,8 @@ Total rows: 10
                     */
 
                     if handle_cancel_flag(&set_intersection_at_choice) {
-                        return Ok(());
+                        continue;
+                        //return Ok(());
                     }
 
                     // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
@@ -848,7 +852,8 @@ Total rows: 3
                     */
 
                     if handle_cancel_flag(&set_intersection_at_choice) {
-                        return Ok(());
+                        continue;
+                        //return Ok(());
                     }
 
                     // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
@@ -1000,7 +1005,8 @@ Total rows: 3
                     }
                     */
                     if handle_cancel_flag(&set_intersection_at_choice) {
-                        return Ok(());
+                        continue;
+                        //return Ok(());
                     }
 
                     // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
@@ -1175,7 +1181,8 @@ Total rows: 3
                     */
 
                     if handle_cancel_flag(&set_intersection_at_choice) {
-                        return Ok(());
+                        continue;
+                        //return Ok(());
                     }
 
                     // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
@@ -1360,7 +1367,8 @@ Total rows: 6
                     }
                     */
                     if handle_cancel_flag(&set_intersection_at_choice) {
-                        return Ok(());
+                        continue;
+                        //return Ok(());
                     }
 
                     // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries

@@ -179,6 +179,10 @@ SYNTAX
         let exp_json = get_edited_user_json_input((&syntax).to_string());
         //dbg!(&exp_json);
 
+        if handle_cancel_flag(&exp_json) {
+            return Err("Operation canceled".into());
+        }
+
         // Assume `last_exp_json` is a String containing your JSON data
         let parsed_json: Value = serde_json::from_str(&exp_json)?;
 
@@ -404,13 +408,25 @@ Row 4:
                     continue;
                 }
 
-                let start = get_user_input_level_2("Enter the start row number: ")
+                let start_str = get_user_input_level_2("Enter the start row number: ");
+
+                if handle_cancel_flag(&start_str) {
+                    continue;
+                }
+
+                let start = start_str
                     .parse::<usize>()
                     .map_err(|_| "Invalid start row number")?;
 
-                let end = get_user_input_level_2("Enter the end row number: ")
+                let end_str = get_user_input_level_2("Enter the end row number: ");
+
+                if handle_cancel_flag(&end_str) {
+                    continue;
+                }
+
+                let end = end_str
                     .parse::<usize>()
-                    .map_err(|_| "Invalid end row number")?;
+                    .map_err(|_| "Invalid start row number")?;
 
                 csv_builder.print_rows_range(start, end);
             }
@@ -625,6 +641,10 @@ Total rows printed: 4
                         //dbg!(&expressions_refs, &result_expression);
                         csv_builder.print_rows_where(expressions_refs, &result_expression);
                     }
+                    Err(e) if e.to_string() == "Operation canceled" => {
+                        // If the operation was canceled by the user, do not print an error and just continue
+                        continue;
+                    }
                     Err(e) => {
                         println!("Error getting filter expressions: {}", e);
                         continue; // Return to the menu to let the user try again or choose another option
@@ -683,6 +703,11 @@ Frequency for column 'type':
 
                 let column_names =
                     get_user_input_level_2("Enter column names separated by commas: ");
+
+                if handle_cancel_flag(&column_names) {
+                    continue;
+                }
+
                 let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
                 csv_builder.print_freq(columns);
             }
@@ -715,6 +740,10 @@ Unique values in 'value': 200, 1000, 20000, 1500, 2000, 300, 1100
                 }
 
                 let column_name = get_user_input_level_2("Enter the column name: ");
+                if handle_cancel_flag(&column_name) {
+                    continue;
+                }
+
                 csv_builder.print_unique(&column_name.trim());
             }
 
@@ -775,6 +804,11 @@ Count: 7
                         println!();
                         csv_builder.print_count_where(expressions_refs, &result_expression);
                     }
+                    Err(e) if e.to_string() == "Operation canceled" => {
+                        // If the operation was canceled by the user, do not print an error and just continue
+                        continue;
+                    }
+
                     Err(e) => {
                         println!("Error getting filter expressions: {}", e);
                         continue; // Return to the menu to let the user try again or choose another option
@@ -842,7 +876,7 @@ Total rows: 10
                 }
 
                 let column_names = get_user_input_level_2(
-                    "Enter the x-axis and y-axis column names separated by a comma: ",
+                    "Enter the x-axis and y-axis column names (comma separated): ",
                 );
 
                 /*
@@ -929,7 +963,7 @@ Total rows: 10
                 }
 
                 let column_names = get_user_input_level_2(
-                    "Enter the x-axis and y-axis column names separated by a comma: ",
+                    "Enter the x-axis and y-axis column names (comma separated): ",
                 );
 
                 /*
@@ -1022,7 +1056,7 @@ Total rows: 10
                 }
 
                 let column_names = get_user_input_level_2(
-                    "Enter the x-axis and y-axis column names separated by a comma: ",
+                    "Enter the x-axis and y-axis column names (comma separated): ",
                 );
 
                 /*
@@ -1110,7 +1144,7 @@ Total rows: 10
                 }
 
                 let column_names = get_user_input_level_2(
-                    "Enter the x-axis and y-axis column names separated by a comma: ",
+                    "Enter the x-axis and y-axis column names (comma separated): ",
                 );
 
                 /*

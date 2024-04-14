@@ -119,7 +119,6 @@ pub fn handle_quit_flag(flag: &str) {
     }
 }
 
-
 pub fn handle_cancel_flag(flag: &str) -> bool {
     let trimmed = flag.trim();
     match trimmed {
@@ -128,8 +127,3 @@ pub fn handle_cancel_flag(flag: &str) -> bool {
         _ => false,
     }
 }
-
-
-
-
-

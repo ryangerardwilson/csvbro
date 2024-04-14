@@ -1,6 +1,8 @@
 // csv_pivoter.rs
 use crate::settings::manage_open_ai_config_file;
-use crate::user_experience::{handle_back_flag, handle_quit_flag, handle_special_flag};
+use crate::user_experience::{
+    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
+};
 use crate::user_interaction::{
     determine_action_as_number, get_edited_user_json_input, get_user_input_level_2,
     print_insight_level_2, print_list_level_2,
@@ -199,6 +201,10 @@ SYNTAX
         let exp_json = get_edited_user_json_input((&syntax).to_string());
         //dbg!(&exp_json);
 
+        if handle_cancel_flag(&exp_json) {
+            return Err("Operation canceled".into());
+        }
+
         // Assume `last_exp_json` is a String containing your JSON data
         let parsed_json: Value = serde_json::from_str(&exp_json)?;
 
@@ -291,6 +297,10 @@ SYNTAX
   "#;
 
         let exp_json = get_edited_user_json_input((&syntax).to_string());
+
+        if handle_cancel_flag(&exp_json) {
+            return Err("Operation canceled".into());
+        }
 
         //dbg!(&exp_json);
 
@@ -388,6 +398,10 @@ SYNTAX
   "#;
 
         let exp_json = get_edited_user_json_input((&syntax).to_string());
+
+        if handle_cancel_flag(&exp_json) {
+            return Err("Operation canceled".into());
+        }
 
         //dbg!(&exp_json);
 
@@ -594,6 +608,11 @@ SYNTAX
   "#;
 
         let exp_json = get_edited_user_json_input((&syntax).to_string());
+
+        if handle_cancel_flag(&exp_json) {
+            return Err("Operation canceled".into());
+        }
+
         let parsed_json: Value = serde_json::from_str(&exp_json)?;
 
         let new_column_name = parsed_json["new_column_name"]
@@ -714,6 +733,10 @@ SYNTAX
         // Simulating user editing JSON input and providing it back
         let user_edited_json = get_edited_user_json_input(json_syntax.to_string());
 
+        if handle_cancel_flag(&user_edited_json) {
+            return Err("Operation canceled".into());
+        }
+
         let parsed_json: Value = serde_json::from_str(&user_edited_json)?;
 
         let new_column_name = parsed_json["new_column_name"]
@@ -755,6 +778,11 @@ SYNTAX
 "#;
 
         let date_split_json = get_edited_user_json_input(syntax.to_string());
+
+        if handle_cancel_flag(&date_split_json) {
+            return Err("Operation canceled".into());
+        }
+
         let parsed_json: Value = serde_json::from_str(&date_split_json)?;
 
         let column_name = parsed_json["column_name"]
@@ -810,6 +838,11 @@ Note the implications of the params in the JSON query:
 
         // Assume get_edited_user_json_input allows user to edit the predefined syntax
         let fuzzai_json = get_edited_user_json_input(syntax.to_string());
+
+        if handle_cancel_flag(&fuzzai_json) {
+            return Err("Operation canceled".into());
+        }
+
         let parsed_json: Value = serde_json::from_str(&fuzzai_json)?;
 
         // Extract and construct each parameter
@@ -931,6 +964,11 @@ Note the implications of the params in the JSON query:
 
         // Assume get_edited_user_json_input allows user to edit the predefined syntax
         let fuzzai_json = get_edited_user_json_input(syntax.to_string());
+
+        if handle_cancel_flag(&fuzzai_json) {
+            return Err("Operation canceled".into());
+        }
+
         let parsed_json: Value = serde_json::from_str(&fuzzai_json)?;
 
         // Extract and construct each parameter
@@ -1040,6 +1078,11 @@ Note the implication of params in the Json Query:
 "#;
 
         let user_input = get_edited_user_json_input(pivot_syntax.to_string());
+
+        if handle_cancel_flag(&user_input) {
+            return Err("Operation canceled".into());
+        }
+
         let parsed_json: Value = serde_json::from_str(&user_input)?;
 
         let index_at = parsed_json["index_at"]
@@ -1198,6 +1241,9 @@ Total rows: 5
                             }
                         }
                     }
+                    Err(e) if e.to_string() == "Operation canceled" => {
+                        continue;
+                    }
                     Err(e) => {
                         println!("Error getting expressions: {}", e);
                         continue; // Return to the menu to let the user try again or choose another option
@@ -1348,6 +1394,10 @@ Total rows: 5
                             }
                         }
                     }
+                    Err(e) if e.to_string() == "Operation canceled" => {
+                        continue;
+                    }
+
                     Err(e) => {
                         println!("Error getting expressions: {}", e);
                         continue;
@@ -1419,6 +1469,10 @@ Total rows: 5
                             }
                         }
                     }
+                    Err(e) if e.to_string() == "Operation canceled" => {
+                        continue;
+                    }
+
                     Err(e) => {
                         println!("Error getting concatenation details: {}", e);
                         continue;
@@ -1499,6 +1553,10 @@ The following value formats can be processed by this feature:
                             }
                         }
                     }
+                    Err(e) if e.to_string() == "Operation canceled" => {
+                        continue;
+                    }
+
                     Err(e) => {
                         println!("Error getting date split details: {}", e);
                         continue;
@@ -1599,6 +1657,10 @@ Note the implications of the params in the JSON query:
                             }
                         }
                     }
+                    Err(e) if e.to_string() == "Operation canceled" => {
+                        continue;
+                    }
+
                     Err(e) => {
                         println!("Error getting fuzzai analysis details: {}", e);
                     }
@@ -1727,6 +1789,10 @@ Note the implications of the params in the JSON query:
                             }
                         }
                     }
+                    Err(e) if e.to_string() == "Operation canceled" => {
+                        continue;
+                    }
+
                     Err(e) => {
                         println!("Error getting fuzzai analysis details: {}", e);
                     }
@@ -1821,6 +1887,10 @@ Total rows: 5
                             }
                         }
                     }
+                    Err(e) if e.to_string() == "Operation canceled" => {
+                        continue;
+                    }
+
                     Err(e) => {
                         println!("Error getting expressions: {}", e);
                         continue; // Return to the menu to let the user try again or choose another option
@@ -1992,6 +2062,10 @@ Total rows: 5
                             }
                         }
                     }
+                    Err(e) if e.to_string() == "Operation canceled" => {
+                        continue;
+                    }
+
                     Err(e) => {
                         println!("Error getting expressions: {}", e);
                         continue; // Return to the menu to let the user try again or choose another option
@@ -2144,6 +2218,9 @@ Note the implication of params in the Json Query:
                                 println!("Temporary file deleted successfully.");
                             }
                         }
+                    }
+                    Err(e) if e.to_string() == "Operation canceled" => {
+                        continue;
                     }
 
                     Err(e) => println!("Error getting pivot details: {}", e),
