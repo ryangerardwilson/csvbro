@@ -1058,7 +1058,7 @@ SYNTAX
 {
     "index_at": "Date",
     "values_from": "Sales",
-    "operation": "MEDIAN", // Also "COUNT", "SUM", "MEAN", "BOOL_PERCENT" (assuming column values of 0 or 1 in 'values_from', calculates the % of 1 values for the segment)
+    "operation": "MEDIAN", // Also "COUNT", "COUNT_UNIQUE", "SUM", "MEAN", "BOOL_PERCENT" (assuming column values of 0 or 1 in 'values_from', calculates the % of 1 values for the segment)
     "seggregate_by": [  // Leave as empty [] if seggregation is not required
         {"column": "Category", "type": "AS_CATEGORY"},
         {"column": "IsPromotion", "type": "AS_BOOLEAN"}
@@ -1069,7 +1069,7 @@ SYNTAX
 Note the implication of params in the Json Query:
 1. "index_at": This parameter determines the primary key column of the pivot table, or the field by which the data will be grouped vertically (row labels). It's the main dimension of analysis. This can be either a text or a number, depending on the data you are grouping by. For example, if you are grouping sales data by region, index_at could be the name of the region (text). If you are grouping by year, it could be the year (number).
 2. "values_from": Specifies the column(s) from which to retrieve the values that will be summarized or aggregated in the pivot table. This would be a column with numerical data since you are usually performing operations like sums, averages, counts, etc.
-3. "operation": Defines the type of aggregation or summarization to perform on the values_from data across the grouped index_at categories. Operations include "COUNT", "SUM", "MEAN", "BOOL_PERCENT" (assuming column values of 0 or 1 in 'values_from', calculates the % of 1 values for the segment)
+3. "operation": Defines the type of aggregation or summarization to perform on the values_from data across the grouped index_at categories. Operations include "COUNT", "COUNT_UNIQUE", "SUM", "MEAN", "BOOL_PERCENT" (assuming column values of 0 or 1 in 'values_from', calculates the % of 1 values for the segment)
 4. "seggregate_by": This parameter allows for additional segmentation of data within the primary grouping defined by index_at. Each segment within seggregate_by can further divide the data based on the specified column and the type of segmentation (like categorical grouping or binning numerical data into ranges).
 - 4.1. Column: Can be both text or number, similar to index_at, depending on what additional dimension you want to segment the data by.
 - 4.2. Type: Is text, indicating how the segmentation should be applied. The column specified can have a type of "AS_CATEGORY", or "AS_BOOLEAN"
@@ -2156,7 +2156,7 @@ Temporary file deleted successfully.
 Note the implication of params in the Json Query:
 1. "index_at": This parameter determines the primary key column of the pivot table, or the field by which the data will be grouped vertically (row labels). It's the main dimension of analysis. This can be either a text or a number, depending on the data you are grouping by. For example, if you are grouping sales data by region, index_at could be the name of the region (text). If you are grouping by year, it could be the year (number).
 2. "values_from": Specifies the column(s) from which to retrieve the values that will be summarized or aggregated in the pivot table. This would be a column with numerical data since you are usually performing operations like sums, averages, counts, etc.
-3. "operation": Defines the type of aggregation or summarization to perform on the values_from data across the grouped index_at categories. Operations include "COUNT", "SUM", "MEAN", "BOOL_PERCENT" (assuming column values of 0 or 1 in 'values_from', calculates the % of 1 values for the segment)
+3. "operation": Defines the type of aggregation or summarization to perform on the values_from data across the grouped index_at categories. Operations include "COUNT", "COUNT_UNIQUE", "SUM", "MEAN", "BOOL_PERCENT" (assuming column values of 0 or 1 in 'values_from', calculates the % of 1 values for the segment)
 4. "seggregate_by": This parameter allows for additional segmentation of data within the primary grouping defined by index_at. Each segment within seggregate_by can further divide the data based on the specified column and the type of segmentation (like categorical grouping or binning numerical data into ranges).
 - 4.1. Column: Can be both text or number, similar to index_at, depending on what additional dimension you want to segment the data by.
 - 4.2. Type: Is text, indicating how the segmentation should be applied. The column specified can have a type of "AS_CATEGORY", or "AS_BOOLEAN"
