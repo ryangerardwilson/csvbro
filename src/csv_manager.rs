@@ -23,6 +23,7 @@ use crate::user_interaction::{
 use calamine::{open_workbook, Reader, Xls};
 use chrono::{DateTime, Local};
 use fuzzywuzzy::fuzz;
+use regex::Regex;
 use rgwml::csv_utils::CsvBuilder;
 use std::error::Error;
 use std::fs::{self};
@@ -514,28 +515,6 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     database = get_user_input_level_2("Enter MSSQL database name: ");
                 }
 
-                //dbg!(&confirmation, &last_sql_query);
-                /*
-                                let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
-                                    // Use vim_edit only if confirmation is "retry"
-                                    let new_query = get_edited_user_sql_input(last_sql_query.clone());
-                                    last_sql_query = new_query.clone();
-                                    new_query
-                                } else if confirmation == "TINKER"
-                                    || confirmation == "SEARCH"
-                                    || confirmation == "INSPECT"
-                                    || confirmation == "PIVOT"
-                                    || confirmation == "JOIN"
-                                {
-                                    last_sql_query.clone()
-                                } else {
-                                    // Get new query from user, except when confirmation is "inspect"
-                                    let new_query = get_user_sql_input();
-                                    last_sql_query = new_query.clone();
-                                    new_query
-                                };
-                */
-
                 if confirmation == "TINKER"
                     || confirmation == "SEARCH"
                     || confirmation == "INSPECT"
@@ -557,11 +536,62 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                         new_query
                     };
 
+                    /*
+                                        let start_time = Instant::now();
+                                        let query_execution_result = CsvBuilder::from_mssql_query(
+                                            &username, &password, &host, &database, &sql_query,
+                                        )
+                                        .await;
+                                        let elapsed_time = start_time.elapsed();
+                    */
+
                     let start_time = Instant::now();
-                    let query_execution_result = CsvBuilder::from_mssql_query(
-                        &username, &password, &host, &database, &sql_query,
-                    )
-                    .await;
+                    let query_execution_result;
+
+                    // Check if the sql_query starts with "@bro_union"
+                    if sql_query.starts_with("@bro_union") {
+                        let pattern = Regex::new(r"\{\s*(.*?)\s*\}").unwrap(); // Regex to extract queries within curly braces
+                        let mut csv_builders = Vec::new();
+
+                        for cap in pattern.captures_iter(&sql_query) {
+                            let query = cap[1].to_string(); // Extract the query inside the braces
+                                                            //dbg!(&query);
+                            let result = CsvBuilder::from_mssql_query(
+                                &username, &password, &host, &database, &query,
+                            )
+                            .await;
+                            //dbg!(&result);
+                            match result {
+                                Ok(builder) => csv_builders.push(builder),
+                                Err(e) => return Err(e), // Propagate the error up if query fails
+                            }
+                        }
+
+                        if !csv_builders.is_empty() {
+                            let mut combined_builder = csv_builders.remove(0); // Start with the first builder object
+
+                            for builder in csv_builders.iter_mut() {
+                                combined_builder
+                                    .set_union_with_csv_builder(
+                                        builder,
+                                        "UNION_TYPE:NORMAL",
+                                        vec!["*"],
+                                    )
+                                    .print_table();
+                            }
+                            query_execution_result = Ok(combined_builder);
+                        } else {
+                            // Return an appropriate error or handle the empty csv_builders case
+                            return Err("No queries to combine".into());
+                        }
+                    } else {
+                        // Execute the query normally
+                        query_execution_result = CsvBuilder::from_mssql_query(
+                            &username, &password, &host, &database, &sql_query,
+                        )
+                        .await;
+                    }
+
                     let elapsed_time = start_time.elapsed();
 
                     if let Err(e) = query_execution_result {
@@ -610,29 +640,6 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     database = get_user_input_level_2("Enter MYSQL database name: ");
                 }
 
-                /*
-                                //dbg!(&confirmation, &last_sql_query);
-                                let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
-                                    // Use vim_edit only if confirmation is "retry"
-                                    let new_query = get_edited_user_sql_input(last_sql_query.clone());
-                                    last_sql_query = new_query.clone();
-                                    new_query
-                                } else if confirmation == "TINKER"
-                                    || confirmation == "SEARCH"
-                                    || confirmation == "INSPECT"
-                                    || confirmation == "PIVOT"
-                                    || confirmation == "JOIN"
-                                {
-                                   // println!("HUHUHAHAHA");
-
-                                    last_sql_query.clone()
-                                } else {
-                                    // Get new query from user, except when confirmation is "inspect"
-                                    let new_query = get_user_sql_input();
-                                    last_sql_query = new_query.clone();
-                                    new_query
-                                };
-                */
                 if confirmation == "TINKER"
                     || confirmation == "SEARCH"
                     || confirmation == "INSPECT"
@@ -654,11 +661,62 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                         new_query
                     };
 
+                    /*
+                                        let start_time = Instant::now();
+                                        let query_execution_result = CsvBuilder::from_mysql_query(
+                                            &username, &password, &host, &database, &sql_query,
+                                        )
+                                        .await;
+                                        let elapsed_time = start_time.elapsed();
+                    */
+
                     let start_time = Instant::now();
-                    let query_execution_result = CsvBuilder::from_mysql_query(
-                        &username, &password, &host, &database, &sql_query,
-                    )
-                    .await;
+                    let query_execution_result;
+
+                    // Check if the sql_query starts with "@bro_union"
+                    if sql_query.starts_with("@bro_union") {
+                        let pattern = Regex::new(r"\{\s*(.*?)\s*\}").unwrap(); // Regex to extract queries within curly braces
+                        let mut csv_builders = Vec::new();
+
+                        for cap in pattern.captures_iter(&sql_query) {
+                            let query = cap[1].to_string(); // Extract the query inside the braces
+                                                            //dbg!(&query);
+                            let result = CsvBuilder::from_mssql_query(
+                                &username, &password, &host, &database, &query,
+                            )
+                            .await;
+                            //dbg!(&result);
+                            match result {
+                                Ok(builder) => csv_builders.push(builder),
+                                Err(e) => return Err(e), // Propagate the error up if query fails
+                            }
+                        }
+
+                        if !csv_builders.is_empty() {
+                            let mut combined_builder = csv_builders.remove(0); // Start with the first builder object
+
+                            for builder in csv_builders.iter_mut() {
+                                combined_builder
+                                    .set_union_with_csv_builder(
+                                        builder,
+                                        "UNION_TYPE:NORMAL",
+                                        vec!["*"],
+                                    )
+                                    .print_table();
+                            }
+                            query_execution_result = Ok(combined_builder);
+                        } else {
+                            // Return an appropriate error or handle the empty csv_builders case
+                            return Err("No queries to combine".into());
+                        }
+                    } else {
+                        // Execute the query normally
+                        query_execution_result = CsvBuilder::from_mysql_query(
+                            &username, &password, &host, &database, &sql_query,
+                        )
+                        .await;
+                    }
+
                     let elapsed_time = start_time.elapsed();
 
                     if let Err(e) = query_execution_result {
