@@ -252,6 +252,7 @@ SYNTAX
         "PRINT ROWS WHERE",
         "PRINT FREQ OF MULTIPLE COLUMN VALUES",
         "PRINT UNIQUE COLUMN VALUES",
+        "PRINT STATS OF UNIQUE VALUE FREQ",
         "PRINT COUNT WHERE",
         "PRINT DOT CHART (NORMAL)",
         "PRINT DOT CHART (CUMULATIVE)",
@@ -747,9 +748,58 @@ Unique values in 'value': 200, 1000, 20000, 1500, 2000, 300, 1100
                 csv_builder.print_unique(&column_name.trim());
             }
 
-            // In your handle_inspect method
             Some(9) => {
                 if choice.to_lowercase() == "9d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Prints the number of unique values in a column, along with the mean and median of their frequencies.
+|id |value |date      |interest |
+---------------------------------
+|1  |500   |2024-04-08|7        |
+|2  |450   |2024-04-07|8        |
+|3  |420   |2024-04-06|9        |
+|4  |400   |2024-04-05|7        |
+|5  |380   |2024-04-05|7.2      |
+|6  |360   |2024-04-03|8.2      |
+|7  |340   |2024-04-02|9.2      |
+|8  |320   |2024-04-01|7.4      |
+|9  |300   |2024-04-08|8.4      |
+|10 |280   |2024-04-08|9.4      |
+Total rows: 10
+
+  @LILbro: Enter column names separated by commas: value, interest
+
+Statistics for column 'value':
+
+  Total cumulative count of unique values: 10
+  Mean frequency of the unique values: 1.00
+  Median frequency of the unique values: 1.00
+
+Statistics for column 'interest':
+
+  Total cumulative count of unique values: 9
+  Mean frequency of the unique values: 1.11
+  Median frequency of the unique values: 1.00
+"#,
+                    );
+                    continue;
+                }
+
+                let column_names =
+                    get_user_input_level_2("Enter column names separated by commas: ");
+
+                if handle_cancel_flag(&column_names) {
+                    continue;
+                }
+
+                let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+                csv_builder.print_unique_values_stats(columns);
+            }
+
+            // In your handle_inspect method
+            Some(10) => {
+                if choice.to_lowercase() == "10d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -815,8 +865,8 @@ Count: 7
                     }
                 }
             }
-            Some(10) => {
-                if choice.to_lowercase() == "10d" {
+            Some(11) => {
+                if choice.to_lowercase() == "11d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -907,8 +957,8 @@ Total rows: 10
                     csv_builder.print_dot_chart(x_axis_column, y_axis_column);
                 }
             }
-            Some(11) => {
-                if choice.to_lowercase() == "11d" {
+            Some(12) => {
+                if choice.to_lowercase() == "12d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -995,8 +1045,8 @@ Total rows: 10
                 }
             }
 
-            Some(12) => {
-                if choice.to_lowercase() == "12d" {
+            Some(13) => {
+                if choice.to_lowercase() == "13d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1088,8 +1138,8 @@ Total rows: 10
                 }
             }
 
-            Some(13) => {
-                if choice.to_lowercase() == "13d" {
+            Some(14) => {
+                if choice.to_lowercase() == "14d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1177,7 +1227,7 @@ Total rows: 10
             }
 
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 13.");
+                println!("Invalid option. Please enter a number from 1 to 14.");
                 continue; // Ask for the choice again
             }
         }
