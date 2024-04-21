@@ -442,18 +442,18 @@ A LEFT JOIN on tables A and B includes every row from A along with any matching 
 
 TABLE A
 +++++++
-|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
----------------------------------------------------------------------------
-|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
-|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
-|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
-|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
-|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
-|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
-|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
-|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
-|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
-|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+|id |value |date      |interest |type  |
+----------------------------------------
+|1  |500   |2024-04-08|7        |FOOD  |
+|2  |450   |2024-04-07|8        |FOOD  |
+|3  |420   |2024-04-06|9        |TRAVEL|
+|4  |400   |2024-04-05|7        |OTHER |
+|5  |380   |2024-04-05|7.2      |TRAVEL|
+|6  |360   |2024-04-03|8.2      |OTHER |
+|7  |340   |2024-04-02|9.2      |FOOD  |
+|8  |320   |2024-04-01|7.4      |TRAVEL|
+|9  |300   |2024-04-08|8.4      |FOOD  |
+|10 |280   |2024-04-08|9.4      |FOOD  |
 Total rows: 10
 
 TABLE B
@@ -461,29 +461,27 @@ TABLE B
   @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A LEFT_JOIN B
   @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
 
-|type  |implication    |
-------------------------
-|FOOD  |Daily Necessity|
-|TRAVEL|Leisure        |
-|OTHER |Misc.          |
+|id |type  |implication    |
+----------------------------
+|1  |FOOD  |Daily Necessity|
+|2  |TRAVEL|Leisure        |
+|3  |OTHER |Misc.          |
 Total rows: 3
 
   @LILbro: Enter column name from your above selected csv to LEFT JOIN at: type
 
-|id |item    |value |type  |  <<+1 col>>   |relates_to_travel |date_YEAR_MONTH |implication    |
-------------------------------------------------------------------------------------------------
-|1  |books   |1000  |OTHER |...            |0                 |Y2024-M01       |Misc.          |
-|2  |snacks  |200   |FOOD  |...            |0                 |Y2024-M02       |Daily Necessity|
-|3  |cab fare|300   |TRAVEL|...            |1                 |Y2024-M03       |Leisure        |
-|4  |rent    |20000 |OTHER |...            |0                 |Y2024-M01       |Misc.          |
-|5  |movies  |1500  |OTHER |...            |0                 |Y2024-M02       |Misc.          |
-|6  |books   |1000  |OTHER |...            |0                 |Y2024-M03       |Misc.          |
-|7  |snacks  |200   |FOOD  |...            |0                 |Y2024-M01       |Daily Necessity|
-|8  |cab fare|300   |TRAVEL|...            |1                 |Y2024-M02       |Leisure        |
-|9  |rent    |20000 |OTHER |...            |0                 |Y2024-M03       |Misc.          |
-|10 |movies  |1500  |OTHER |...            |0                 |Y2024-M01       |Misc.          |
-
-Omitted columns: date
+|id |value |date      |interest |type  |joined_id |joined_implication |
+-----------------------------------------------------------------------
+|1  |500   |2024-04-08|7        |FOOD  |1         |Daily Necessity    |
+|2  |450   |2024-04-07|8        |FOOD  |1         |Daily Necessity    |
+|3  |420   |2024-04-06|9        |TRAVEL|2         |Leisure            |
+|4  |400   |2024-04-05|7        |OTHER |3         |Misc.              |
+|5  |380   |2024-04-05|7.2      |TRAVEL|2         |Leisure            |
+|6  |360   |2024-04-03|8.2      |OTHER |3         |Misc.              |
+|7  |340   |2024-04-02|9.2      |FOOD  |1         |Daily Necessity    |
+|8  |320   |2024-04-01|7.4      |TRAVEL|2         |Leisure            |
+|9  |300   |2024-04-08|8.4      |FOOD  |1         |Daily Necessity    |
+|10 |280   |2024-04-08|9.4      |FOOD  |1         |Daily Necessity    |
 Total rows: 10
 "#,
                     );
@@ -550,11 +548,11 @@ A RIGHT JOIN between tables A and B is essentially the same as a LEFT JOIN betwe
 
 TABLE A
 +++++++
-|type  |implication    |
-------------------------
-|FOOD  |Daily Necessity|
-|TRAVEL|Leisure        |
-|OTHER |Misc.          |
+|id |type  |implication    |
+----------------------------
+|1  |FOOD  |Daily Necessity|
+|2  |TRAVEL|Leisure        |
+|3  |OTHER |Misc.          |
 Total rows: 3
 
 TABLE B
@@ -562,36 +560,34 @@ TABLE B
   @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A RIGHT_JOIN B
   @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
 
-|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
----------------------------------------------------------------------------
-|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
-|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
-|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
-|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
-|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
-|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
-|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
-|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
-|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
-|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+|id |value |date      |interest |type  |
+----------------------------------------
+|1  |500   |2024-04-08|7        |FOOD  |
+|2  |450   |2024-04-07|8        |FOOD  |
+|3  |420   |2024-04-06|9        |TRAVEL|
+|4  |400   |2024-04-05|7        |OTHER |
+|5  |380   |2024-04-05|7.2      |TRAVEL|
+|6  |360   |2024-04-03|8.2      |OTHER |
+|7  |340   |2024-04-02|9.2      |FOOD  |
+|8  |320   |2024-04-01|7.4      |TRAVEL|
+|9  |300   |2024-04-08|8.4      |FOOD  |
+|10 |280   |2024-04-08|9.4      |FOOD  |
 Total rows: 10
 
   @LILbro: Enter column name from your above selected csv to RIGHT JOIN at: type
 
-|id |item    |value |type  |  <<+1 col>>   |relates_to_travel |date_YEAR_MONTH |implication    |
-------------------------------------------------------------------------------------------------
-|1  |books   |1000  |OTHER |...            |0                 |Y2024-M01       |Misc.          |
-|2  |snacks  |200   |FOOD  |...            |0                 |Y2024-M02       |Daily Necessity|
-|3  |cab fare|300   |TRAVEL|...            |1                 |Y2024-M03       |Leisure        |
-|4  |rent    |20000 |OTHER |...            |0                 |Y2024-M01       |Misc.          |
-|5  |movies  |1500  |OTHER |...            |0                 |Y2024-M02       |Misc.          |
-|6  |books   |1000  |OTHER |...            |0                 |Y2024-M03       |Misc.          |
-|7  |snacks  |200   |FOOD  |...            |0                 |Y2024-M01       |Daily Necessity|
-|8  |cab fare|300   |TRAVEL|...            |1                 |Y2024-M02       |Leisure        |
-|9  |rent    |20000 |OTHER |...            |0                 |Y2024-M03       |Misc.          |
-|10 |movies  |1500  |OTHER |...            |0                 |Y2024-M01       |Misc.          |
-
-Omitted columns: date
+|joined_id |joined_value |joined_date |joined_interest |type  |id |implication    |
+-----------------------------------------------------------------------------------
+|1         |500          |2024-04-08  |7               |FOOD  |1  |Daily Necessity|
+|2         |450          |2024-04-07  |8               |FOOD  |1  |Daily Necessity|
+|3         |420          |2024-04-06  |9               |TRAVEL|2  |Leisure        |
+|4         |400          |2024-04-05  |7               |OTHER |3  |Misc.          |
+|5         |380          |2024-04-05  |7.2             |TRAVEL|2  |Leisure        |
+|6         |360          |2024-04-03  |8.2             |OTHER |3  |Misc.          |
+|7         |340          |2024-04-02  |9.2             |FOOD  |1  |Daily Necessity|
+|8         |320          |2024-04-01  |7.4             |TRAVEL|2  |Leisure        |
+|9         |300          |2024-04-08  |8.4             |FOOD  |1  |Daily Necessity|
+|10        |280          |2024-04-08  |9.4             |FOOD  |1  |Daily Necessity|
 Total rows: 10
 "#,
                     );
