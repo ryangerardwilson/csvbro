@@ -644,7 +644,55 @@ Total rows: 10
                 if choice.to_lowercase() == "5d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
+An OUTER FULL JOIN between tables A and B combines the results of both a left join and a right join. This join type includes every row from both tables A and B. If a row from table A matches one from table B based on a join condition (typically a shared column), the joined table will include columns from both rows. If there is no match:
+  - For a row in table A, the row will include this data with null (or similar placeholder) values for the columns from table B.
+  - Conversely, if there is a row in table B that does not match any in table A, the row will include this data with null values for the columns from table A.
 
+TABLE A
++++++++
+|id |value |date      |interest |type  |
+----------------------------------------
+|1  |500   |2024-04-08|7        |FOOD  |
+|2  |450   |2024-04-07|8        |FOOD  |
+|3  |420   |2024-04-06|9        |TRAVEL|
+|4  |400   |2024-04-05|7        |OTHER |
+|5  |380   |2024-04-05|7.2      |TRAVEL|
+|6  |360   |2024-04-03|8.2      |OTHER |
+|7  |340   |2024-04-02|9.2      |FOOD  |
+|8  |320   |2024-04-01|7.4      |TRAVEL|
+|9  |300   |2024-04-08|8.4      |FOOD  |
+|10 |280   |2024-04-08|9.4      |FOOD  |
+Total rows: 10
+
+TABLE B
++++++++
+  @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A LEFT_JOIN B
+  @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
+
+|id |type    |implication    |
+------------------------------
+|1  |FOOD    |Daily Necessity|
+|2  |TRAVEL  |Leisure        |
+|3  |OTHER   |Misc.          |
+|4  |BUSINESS|Refund         |
+Total rows: 4
+
+  @LILbro: Enter column name from your above selected csv to LEFT JOIN at: type
+
+  |id |value |date      |interest |type    |joined_id |joined_implication |
+-------------------------------------------------------------------------
+|1  |500   |2024-04-08|7        |FOOD    |1         |Daily Necessity    |
+|2  |450   |2024-04-07|8        |FOOD    |1         |Daily Necessity    |
+|3  |420   |2024-04-06|9        |TRAVEL  |2         |Leisure            |
+|4  |400   |2024-04-05|7        |OTHER   |3         |Misc.              |
+|5  |380   |2024-04-05|7.2      |TRAVEL  |2         |Leisure            |
+<<+1 row>>
+|7  |340   |2024-04-02|9.2      |FOOD    |1         |Daily Necessity    |
+|8  |320   |2024-04-01|7.4      |TRAVEL  |2         |Leisure            |
+|9  |300   |2024-04-08|8.4      |FOOD    |1         |Daily Necessity    |
+|10 |280   |2024-04-08|9.4      |FOOD    |1         |Daily Necessity    |
+|   |      |          |         |BUSINESS|4         |Refund             |
+Total rows: 11
 "#,
                     );
                     continue;
