@@ -963,22 +963,22 @@ TABLE B
   @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_INNER_JOIN_INTERSECTION_WITH B
   @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
 
-|customer_id |online_sales |instore_date |
-------------------------------------------
-|6           |190          |2024-03-07   |
-|2           |40           |2024-03-08   |
-|3           |700          |2024-03-09   |
-|9           |100          |2024-03-10   |
-|5           |200          |2024-03-05   |
+|customer_id |instore_sales |instore_date |
+-------------------------------------------
+|6           |190           |2024-03-07   |
+|2           |40            |2024-03-08   |
+|3           |700           |2024-03-09   |
+|9           |100           |2024-03-10   |
+|5           |200           |2024-03-05   |
 Total rows: 5
 
   @LILbro: Enter column names (comma separated, if multiple) to SET_INTERSECTION_WITH at: customer_id
 
-|customer_id |online_sales |online_date |online_sales |instore_date |
----------------------------------------------------------------------
-|2           |60           |2024-03-02  |40           |2024-03-08   |
-|3           |200          |2024-03-03  |700          |2024-03-09   |
-|5           |300          |2024-03-05  |200          |2024-03-05   |
+|customer_id |online_sales |online_date |instore_sales |instore_date |
+----------------------------------------------------------------------
+|2           |60           |2024-03-02  |40            |2024-03-08   |
+|3           |200          |2024-03-03  |700           |2024-03-09   |
+|5           |300          |2024-03-05  |200           |2024-03-05   |
 Total rows: 3
 
 ### Example 2
@@ -1042,12 +1042,7 @@ Total rows: 3
         "Enter column names (comma separated, if multiple) to SET_INNER_JOIN_INTERSECTION_WITH at: ",
     );
 
-                    /*
-                    if set_intersection_at_choice.to_lowercase() == "@cancel" {
-                        //return None;
-                        return Ok(());
-                    }
-                    */
+
                     if handle_cancel_flag(&set_intersection_at_choice) {
                         continue;
                         //return Ok(());
