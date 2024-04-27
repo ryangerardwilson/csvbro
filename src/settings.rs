@@ -6,9 +6,9 @@ use std::error::Error;
 use std::fs;
 use std::path::Path;
 
-use crate::user_experience::{handle_back_flag, handle_quit_flag};
+use crate::user_experience::{handle_back_flag, handle_cancel_flag, handle_quit_flag};
 use crate::user_interaction::{
-    determine_action_as_number, determine_action_as_text, get_edited_user_sql_input,
+    determine_action_as_number, determine_action_as_text, get_edited_user_json_input,
     get_user_input, get_user_input_level_2, print_insight, print_insight_level_2, print_list,
     print_list_level_2,
 };
@@ -187,14 +187,17 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                 */
             },
 
-            /*
-            Some(ref action) if action == "BACK" => {
-                break;
-            }
-            */
-            //"done" => break,
-            Some(_) => print_insight("Unrecognized action, please try again."),
-            None => print_insight("No action determined"),
+            _ => {
+                //println!("Invalid option. Please enter a number from 1 to 4.");
+                continue; // Ask for the choice again
+            } /*
+              Some(ref action) if action == "BACK" => {
+                  break;
+              }
+              */
+              //"done" => break,
+              //Some(_) => print_insight("Unrecognized action, please try again."),
+              //None => print_insight("No action determined"),
         }
     }
 
@@ -270,8 +273,12 @@ fn add_db_preset() -> Result<(), Box<dyn std::error::Error>> {
     //println!("Empty preset as JSON: {}", preset_json);
 
     // Let the user edit the JSON
-    let edited_json = get_edited_user_sql_input(preset_json);
+    let edited_json = get_edited_user_json_input(preset_json);
     //println!("Edited JSON received: {}", edited_json);
+
+    if handle_cancel_flag(&edited_json) {
+        return Ok(());
+    }
 
     // Parse the edited JSON back into a DbPreset
     let new_preset: DbPreset = serde_json::from_str(&edited_json)?;
@@ -303,7 +310,11 @@ fn update_db_preset() -> Result<(), Box<dyn Error>> {
             let preset_json = serde_json::to_string_pretty(&preset)?;
 
             // Let the user edit the JSON
-            let edited_json = get_edited_user_sql_input(preset_json);
+            let edited_json = get_edited_user_json_input(preset_json);
+
+            if handle_cancel_flag(&edited_json) {
+                return Ok(());
+            }
 
             // Parse the edited JSON back into the preset
             *preset = serde_json::from_str(&edited_json)?;
@@ -317,6 +328,10 @@ fn update_db_preset() -> Result<(), Box<dyn Error>> {
 fn delete_db_preset() -> Result<(), Box<dyn std::error::Error>> {
     view_db_presets()?;
     let input = get_user_input_level_2("Enter the name or the number of the preset to delete: ");
+
+    if handle_cancel_flag(&input) {
+        return Ok(());
+    }
 
     manage_db_config_file(|config| {
         if let Ok(index) = input.parse::<usize>() {
@@ -429,7 +444,12 @@ fn add_open_ai_preset() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let preset_json = serde_json::to_string_pretty(&empty_preset)?;
-    let edited_json = get_edited_user_sql_input(preset_json);
+    let edited_json = get_edited_user_json_input(preset_json);
+
+    if handle_cancel_flag(&edited_json) {
+        return Ok(());
+    }
+
     let new_preset: OpenAiPreset = serde_json::from_str(&edited_json)?;
 
     manage_open_ai_config_file(|config| {
@@ -449,7 +469,12 @@ fn update_open_ai_preset() -> Result<(), Box<dyn Error>> {
             // Serialize the existing preset to JSON for editing
             let preset_json = serde_json::to_string_pretty(&config.open_ai_presets[0])?;
             // Get edited JSON from the user
-            let edited_json = get_edited_user_sql_input(preset_json);
+            let edited_json = get_edited_user_json_input(preset_json);
+
+            if handle_cancel_flag(&edited_json) {
+                return Ok(());
+            }
+
             // Deserialize the edited JSON back into the OpenAiPreset struct
             config.open_ai_presets[0] = serde_json::from_str(&edited_json)?;
             Ok(())
