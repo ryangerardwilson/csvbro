@@ -187,6 +187,7 @@ pub fn print_list(options: &Vec<&str>) {
     println!("{} +{}+{}", bold_yellow, "-".repeat(max_length), reset);
 }
 
+/*
 pub fn print_list_level_2(options: &Vec<&str>) {
     // ANSI escape code for bold yellow font
     let yellow = "\x1b[38;5;227m"; // Bold yellow
@@ -209,6 +210,43 @@ pub fn print_list_level_2(options: &Vec<&str>) {
     }
     //println!("{} +{}+{}", yellow, "-".repeat(max_length), reset);
     println!(" {} +{}+{}", yellow, "-".repeat(max_length), reset);
+}
+*/
+
+pub fn print_list_level_2(options: &Vec<&str>) {
+    // ANSI escape code for bold yellow font
+    let yellow = "\x1b[38;5;227m"; // Bold yellow
+                                   // ANSI escape code to reset formatting
+    let reset = "\x1b[0m";
+
+    // Calculate the length of the longest option to ensure neat box sizing
+    let max_length = options
+        .iter()
+        .flat_map(|o| o.lines())
+        .map(|line| line.len())
+        .max()
+        .unwrap_or(0)
+        + 14; // Adjusted for padding and border
+
+    println!("{} +{}+{}", yellow, "-".repeat(max_length), reset);
+    for (index, option) in options.iter().enumerate() {
+        let lines: Vec<&str> = option.lines().collect();
+        for (i, line) in lines.iter().enumerate() {
+            let prefix = if i == 0 {
+                format!("{}. ", index + 1)
+            } else {
+                "  ".to_string()
+            };
+            let padded_option = format!(
+                " | {}{:width$}   |",
+                prefix,
+                line,
+                width = max_length - 4 - prefix.len()
+            );
+            println!("{}{}{}", yellow, padded_option, reset);
+        }
+    }
+    println!("{} +{}+{}", yellow, "-".repeat(max_length), reset);
 }
 
 pub fn determine_action_as_text(menu_options: &[&str], choice: &str) -> Option<String> {

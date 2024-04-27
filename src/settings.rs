@@ -8,8 +8,9 @@ use std::path::Path;
 
 use crate::user_experience::{handle_back_flag, handle_quit_flag};
 use crate::user_interaction::{
-    determine_action_as_text, get_edited_user_sql_input, get_user_input, get_user_input_level_2,
-    print_insight, print_list,
+    determine_action_as_number, determine_action_as_text, get_edited_user_sql_input,
+    get_user_input, get_user_input_level_2, print_insight, print_insight_level_2, print_list,
+    print_list_level_2,
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -61,9 +62,8 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                     "update db preset",
                     "delete db preset",
                     "view db presets",
-                    //"BACK",
                 ];
-                print_list(&menu_options);
+                print_list_level_2(&menu_options);
                 let choice = get_user_input("Enter your choice: ").to_lowercase();
 
                 if handle_back_flag(&choice) {
@@ -71,8 +71,33 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 let _ = handle_quit_flag(&choice);
 
-                let selected_option = determine_action_as_text(&menu_options, &choice);
+                let selected_option = determine_action_as_number(&menu_options, &choice);
 
+                match selected_option {
+                    Some(1) => {
+                        add_db_preset()?;
+                        continue;
+                    }
+                    Some(2) => {
+                        update_db_preset()?;
+                        continue;
+                    }
+                    Some(3) => {
+                        delete_db_preset()?;
+                        continue;
+                    }
+                    Some(4) => {
+                        view_db_presets()?;
+                        continue;
+                    }
+
+                    _ => {
+                        println!("Invalid option. Please enter a number from 1 to 4.");
+                        continue; // Ask for the choice again
+                    }
+                }
+
+                /*
                 match selected_option {
                     Some(ref action) if action == "add db preset" => {
                         add_db_preset()?;
@@ -90,15 +115,10 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                         view_db_presets()?;
                         continue;
                     }
-                    /*
-                    Some(ref action) if action == "BACK" => {
-                        break;
-                    }
-                    */
-                    //"done" => break,
                     Some(_) => print_insight("Unrecognized action, please try again."),
                     None => print_insight("No action determined"),
                 }
+                */
             },
             Some(ref action) if action == "open ai presets" => loop {
                 print_insight("Configure OpenAI Presets");
@@ -118,8 +138,32 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 let _ = handle_quit_flag(&choice);
 
-                let selected_option = determine_action_as_text(&menu_options, &choice);
+                let selected_option = determine_action_as_number(&menu_options, &choice);
 
+                match selected_option {
+                    Some(1) => {
+                        add_open_ai_preset()?;
+                        continue;
+                    }
+                    Some(2) => {
+                        update_open_ai_preset()?;
+                        continue;
+                    }
+                    Some(3) => {
+                        delete_open_ai_preset()?;
+                        continue;
+                    }
+                    Some(4) => {
+                        view_open_ai_preset()?;
+                        continue;
+                    }
+                    _ => {
+                        println!("Invalid option. Please enter a number from 1 to 4.");
+                        continue; // Ask for the choice again
+                    }
+                }
+
+                /*
                 match selected_option {
                     Some(ref action) if action == "add open ai preset" => {
                         add_open_ai_preset()?;
@@ -137,15 +181,10 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                         view_open_ai_preset()?;
                         continue;
                     }
-                    /*
-                    Some(ref action) if action == "BACK" => {
-                        break;
-                    }
-                    */
-                    //"done" => break,
                     Some(_) => print_insight("Unrecognized action, please try again."),
                     None => print_insight("No action determined"),
                 }
+                */
             },
 
             /*
@@ -301,10 +340,9 @@ pub fn view_db_presets() -> Result<(), Box<dyn std::error::Error>> {
         // Initialize a vector to hold the formatted preset strings
         let mut formatted_presets = Vec::new();
 
-        for (index, preset) in config.db_presets.iter().enumerate() {
+        for (_index, preset) in config.db_presets.iter().enumerate() {
             let formatted_preset = format!(
-        "{}. {} {{db_type: \"{}\", host: \"{}\", username: \"{}\", password: \"{}\", database: \"{}\" }}", 
-        index + 1,
+        "{}\n\n{{\n  db_type: \"{}\",\n  host: \"{}\",\n  username: \"{}\",\n  password: \"{}\",\n  database: \"{}\"\n}}\n\n", 
         preset.name,
         preset.db_type,
         preset.host,
@@ -322,7 +360,7 @@ pub fn view_db_presets() -> Result<(), Box<dyn std::error::Error>> {
             formatted_presets.iter().map(AsRef::as_ref).collect();
 
         // Call print_list with a reference to the vector of string slices
-        print_list(&formatted_presets_slices);
+        print_list_level_2(&formatted_presets_slices);
 
         println!();
         Ok(())
@@ -441,12 +479,13 @@ pub fn view_open_ai_preset() -> Result<(), Box<dyn std::error::Error>> {
     match manage_open_ai_config_file(|config| {
         if !config.open_ai_presets.is_empty() {
             let message = format!(
-                "Current OpenAI API Key: {}",
+                "Current OpenAI API Key: {}\n",
                 config.open_ai_presets[0].api_key
             );
-            print_insight(&message);
+            println!();
+            print_insight_level_2(&message);
         } else {
-            print_insight("No OpenAI preset found.");
+            print_insight_level_2("No OpenAI preset found.");
         }
         Ok(())
     }) {

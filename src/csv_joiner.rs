@@ -1042,7 +1042,6 @@ Total rows: 3
         "Enter column names (comma separated, if multiple) to SET_INNER_JOIN_INTERSECTION_WITH at: ",
     );
 
-
                     if handle_cancel_flag(&set_intersection_at_choice) {
                         continue;
                         //return Ok(());
