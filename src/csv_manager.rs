@@ -546,44 +546,84 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     */
 
                     let start_time = Instant::now();
-                    let query_execution_result;
+                    //let query_execution_result;
 
-                    // Check if the sql_query starts with "@bro_union"
-                    if sql_query.starts_with("@bro_union") {
-                        let pattern = Regex::new(r"\{\s*(.*?)\s*\}").unwrap(); // Regex to extract queries within curly braces
-                        let mut csv_builders = Vec::new();
+                    let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
 
-                        for cap in pattern.captures_iter(&sql_query) {
-                            let query = cap[1].to_string(); // Extract the query inside the braces
-                                                            //dbg!(&query);
-                            let result = CsvBuilder::from_mssql_query(
-                                &username, &password, &host, &database, &query,
+                    // Regex to parse the chunking directive
+                    let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
+
+                    // Check for the chunking directive
+                    if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
+                        dbg!(&sql_query);
+                        let chunk_size: i64 =
+                            caps.get(1).map_or(0, |m| m.as_str().parse().unwrap_or(0));
+                        let mut offset = 0; // Start with no offset
+                        let mut combined_builder: Option<CsvBuilder> = None;
+
+                        // Remove the chunk directive and trim extra characters
+                        let base_query = chunk_directive_regex
+                            .replace(&sql_query, "")
+                            .trim()
+                            .to_string();
+                        let base_query = base_query
+                            .trim_matches(|c: char| c == '{' || c == '}')
+                            .trim()
+                            .to_string();
+                        //dbg!(&base_query);
+
+                        loop {
+                            // Wrap the entire original query in a subquery for proper pagination
+                            let chunk_query = format!(
+            "SELECT * FROM ({} ) AS SubQuery ORDER BY (SELECT NULL) OFFSET {} ROWS FETCH NEXT {} ROWS ONLY",
+            base_query, offset, chunk_size
+        );
+
+                            let chunk_insight =
+                                format!("Executing the below chunk query ...\n\n{}", &chunk_query);
+
+                            println!();
+                            print_insight_level_2(&chunk_insight);
+
+                            // Fetch the chunk as a mutable CsvBuilder
+                            let mut result = CsvBuilder::from_mssql_query(
+                                &username,
+                                &password,
+                                &host,
+                                &database,
+                                &chunk_query,
                             )
-                            .await;
-                            //dbg!(&result);
-                            match result {
-                                Ok(builder) => csv_builders.push(builder),
-                                Err(e) => return Err(e), // Propagate the error up if query fails
+                            .await?;
+
+                            result.print_table();
+
+                            // Check if the current chunk is empty to break the loop
+                            if !result.has_data() {
+                                break;
+                            }
+
+                            // Update offset for the next chunk
+                            offset += chunk_size;
+
+                            // Combine the current chunk with the previous results
+                            match &mut combined_builder {
+                                Some(builder) => {
+                                    // Pass the mutable reference of `result`
+                                    builder
+                                        .set_union_with_csv_builder(
+                                            &mut result,
+                                            "UNION_TYPE:NORMAL",
+                                            vec!["*"],
+                                        )
+                                        .print_table();
+                                }
+                                None => combined_builder = Some(result),
                             }
                         }
 
-                        if !csv_builders.is_empty() {
-                            let mut combined_builder = csv_builders.remove(0); // Start with the first builder object
-
-                            for builder in csv_builders.iter_mut() {
-                                combined_builder
-                                    .set_union_with_csv_builder(
-                                        builder,
-                                        "UNION_TYPE:NORMAL",
-                                        vec!["*"],
-                                    )
-                                    .print_table();
-                            }
-                            query_execution_result = Ok(combined_builder);
-                        } else {
-                            // Return an appropriate error or handle the empty csv_builders case
-                            return Err("No queries to combine".into());
-                        }
+                        // Finalize the combined result
+                        query_execution_result =
+                            combined_builder.ok_or_else(|| "No data fetched".into());
                     } else {
                         // Execute the query normally
                         query_execution_result = CsvBuilder::from_mssql_query(
@@ -661,54 +701,85 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                         new_query
                     };
 
-                    /*
-                                        let start_time = Instant::now();
-                                        let query_execution_result = CsvBuilder::from_mysql_query(
-                                            &username, &password, &host, &database, &sql_query,
-                                        )
-                                        .await;
-                                        let elapsed_time = start_time.elapsed();
-                    */
-
                     let start_time = Instant::now();
-                    let query_execution_result;
 
-                    // Check if the sql_query starts with "@bro_union"
-                    if sql_query.starts_with("@bro_union") {
-                        let pattern = Regex::new(r"\{\s*(.*?)\s*\}").unwrap(); // Regex to extract queries within curly braces
-                        let mut csv_builders = Vec::new();
+                    let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
 
-                        for cap in pattern.captures_iter(&sql_query) {
-                            let query = cap[1].to_string(); // Extract the query inside the braces
-                                                            //dbg!(&query);
-                            let result = CsvBuilder::from_mssql_query(
-                                &username, &password, &host, &database, &query,
+                    // Regex to parse the chunking directive
+                    let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
+
+                    // Check for the chunking directive
+                    if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
+                        //dbg!(&sql_query);
+                        let chunk_size: i64 =
+                            caps.get(1).map_or(0, |m| m.as_str().parse().unwrap_or(0));
+                        let mut offset = 0; // Start with no offset
+                        let mut combined_builder: Option<CsvBuilder> = None;
+
+                        // Remove the chunk directive and trim extra characters
+                        let base_query = chunk_directive_regex
+                            .replace(&sql_query, "")
+                            .trim()
+                            .to_string();
+                        let base_query = base_query
+                            .trim_matches(|c: char| c == '{' || c == '}')
+                            .trim()
+                            .to_string();
+                        //dbg!(&base_query);
+
+                        loop {
+                            // Use MySQL's LIMIT and OFFSET for pagination
+                            let chunk_query = format!(
+                                "SELECT * FROM ({}) AS SubQuery LIMIT {} OFFSET {}",
+                                base_query, chunk_size, offset
+                            );
+
+                            //dbg!(&chunk_query);
+                            let chunk_insight =
+                                format!("Executing the below chunk query ...\n\n{}", &chunk_query);
+
+                            println!();
+                            print_insight_level_2(&chunk_insight);
+
+                            // Fetch the chunk as a mutable CsvBuilder
+                            let mut result = CsvBuilder::from_mysql_query(
+                                &username,
+                                &password,
+                                &host,
+                                &database,
+                                &chunk_query,
                             )
-                            .await;
-                            //dbg!(&result);
-                            match result {
-                                Ok(builder) => csv_builders.push(builder),
-                                Err(e) => return Err(e), // Propagate the error up if query fails
+                            .await?;
+
+                            result.print_table();
+
+                            // Check if the current chunk is empty to break the loop
+                            if !result.has_data() {
+                                break;
+                            }
+
+                            // Update offset for the next chunk
+                            offset += chunk_size;
+
+                            // Combine the current chunk with the previous results
+                            match &mut combined_builder {
+                                Some(builder) => {
+                                    // Pass the mutable reference of `result`
+                                    builder
+                                        .set_union_with_csv_builder(
+                                            &mut result,
+                                            "UNION_TYPE:NORMAL",
+                                            vec!["*"],
+                                        )
+                                        .print_table();
+                                }
+                                None => combined_builder = Some(result),
                             }
                         }
 
-                        if !csv_builders.is_empty() {
-                            let mut combined_builder = csv_builders.remove(0); // Start with the first builder object
-
-                            for builder in csv_builders.iter_mut() {
-                                combined_builder
-                                    .set_union_with_csv_builder(
-                                        builder,
-                                        "UNION_TYPE:NORMAL",
-                                        vec!["*"],
-                                    )
-                                    .print_table();
-                            }
-                            query_execution_result = Ok(combined_builder);
-                        } else {
-                            // Return an appropriate error or handle the empty csv_builders case
-                            return Err("No queries to combine".into());
-                        }
+                        // Finalize the combined result
+                        query_execution_result =
+                            combined_builder.ok_or_else(|| "No data fetched".into());
                     } else {
                         // Execute the query normally
                         query_execution_result = CsvBuilder::from_mysql_query(
