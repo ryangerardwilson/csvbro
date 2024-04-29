@@ -536,46 +536,42 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                         new_query
                     };
 
-
                     let start_time = Instant::now();
-let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
+                    let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
 
-// Regex to parse the chunking directive
-let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
+                    // Regex to parse the chunking directive
+                    let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
 
-// Check for the chunking directive
-if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
-    let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string
+                    // Check for the chunking directive
+                    if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
+                        let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string
 
-    // Remove the chunk directive and trim extra characters
-    let base_query = chunk_directive_regex
-        .replace(&sql_query, "")
-        .trim()
-        .trim_matches(|c: char| c == '{' || c == '}')
-        .to_string();
+                        // Remove the chunk directive and trim extra characters
+                        let base_query = chunk_directive_regex
+                            .replace(&sql_query, "")
+                            .trim()
+                            .trim_matches(|c: char| c == '{' || c == '}')
+                            .to_string();
 
+                        //dbg!(&base_query);
 
-    //dbg!(&base_query);
-
-    // Execute the chunked query using the newly created method
-    query_execution_result = CsvBuilder::from_chunked_mssql_query(
-        &username,
-        &password,
-        &host,
-        &database,
-        &base_query,
-        chunk_size,
-    )
-    .await;
-} else {
-    // Execute the query normally
-    query_execution_result = CsvBuilder::from_mssql_query(
-        &username, &password, &host, &database, &sql_query,
-    )
-    .await;
-}
-
-
+                        // Execute the chunked query using the newly created method
+                        query_execution_result = CsvBuilder::from_chunked_mssql_query(
+                            &username,
+                            &password,
+                            &host,
+                            &database,
+                            &base_query,
+                            chunk_size,
+                        )
+                        .await;
+                    } else {
+                        // Execute the query normally
+                        query_execution_result = CsvBuilder::from_mssql_query(
+                            &username, &password, &host, &database, &sql_query,
+                        )
+                        .await;
+                    }
 
                     let elapsed_time = start_time.elapsed();
 
@@ -648,47 +644,41 @@ if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
 
                     let start_time = Instant::now();
 
+                    let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
 
-let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
+                    // Regex to parse the chunking directive
+                    let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
 
-// Regex to parse the chunking directive
-let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
+                    // Check for the chunking directive
+                    if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
+                        let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string
 
-// Check for the chunking directive
-if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
-    let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string
+                        // Remove the chunk directive and trim extra characters
+                        let base_query = chunk_directive_regex
+                            .replace(&sql_query, "")
+                            .trim()
+                            .trim_matches(|c: char| c == '{' || c == '}')
+                            .to_string();
 
-    // Remove the chunk directive and trim extra characters
-    let base_query = chunk_directive_regex
-        .replace(&sql_query, "")
-        .trim()
-        .trim_matches(|c: char| c == '{' || c == '}')
-        .to_string();
+                        //dbg!(&base_query);
 
-
-    //dbg!(&base_query);
-
-    // Execute the chunked query using the newly created method
-    query_execution_result = CsvBuilder::from_chunked_mysql_query(
-        &username,
-        &password,
-        &host,
-        &database,
-        &base_query,
-        chunk_size,
-    )
-    .await;
-} else {
-    // Execute the query normally
-    query_execution_result = CsvBuilder::from_mysql_query(
-        &username, &password, &host, &database, &sql_query,
-    )
-    .await;
-}
-
-
-
-
+                        // Execute the chunked query using the newly created method
+                        query_execution_result = CsvBuilder::from_chunked_mysql_query(
+                            &username,
+                            &password,
+                            &host,
+                            &database,
+                            &base_query,
+                            chunk_size,
+                        )
+                        .await;
+                    } else {
+                        // Execute the query normally
+                        query_execution_result = CsvBuilder::from_mysql_query(
+                            &username, &password, &host, &database, &sql_query,
+                        )
+                        .await;
+                    }
 
                     let elapsed_time = start_time.elapsed();
 

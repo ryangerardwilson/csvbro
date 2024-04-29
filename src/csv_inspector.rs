@@ -250,7 +250,8 @@ SYNTAX
         "PRINT ALL ROWS (JSON)",
         "PRINT ALL ROWS (TABULATED)",
         "PRINT ROWS WHERE",
-        "PRINT FREQ OF MULTIPLE COLUMN VALUES",
+        "PRINT FREQ OF MULTIPLE COLUMN VALUES (LINEAR)",
+        "PRINT FREQ OF MULTIPLE COLUMN VALUES (CASCADING)",
         "PRINT UNIQUE COLUMN VALUES",
         "PRINT STATS OF UNIQUE VALUE FREQ",
         "PRINT COUNT WHERE",
@@ -658,45 +659,37 @@ Total rows printed: 4
                         r#"DOCUMENTATION
 
 Prints frequencies of unique values in the specified columns.
-|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
----------------------------------------------------------------------------
-|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
-|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
-|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
-|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
-|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
-<<+2 rows>>
-|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
-|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
-|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
-|11 |concert |2000  |OTHER |2024-03-27|0                 |Y2024-M03       |
-|12 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
-Total rows: 12
+|id |value |date      |interest |type  |
+----------------------------------------
+|1  |500   |2024-04-08|7        |FOOD  |
+|2  |450   |2024-04-07|8        |FOOD  |
+|3  |420   |2024-04-06|9        |TRAVEL|
+|4  |400   |2024-04-05|7        |OTHER |
+|5  |380   |2024-04-05|7.2      |TRAVEL|
+|6  |360   |2024-04-03|8.2      |OTHER |
+|7  |340   |2024-04-02|9.2      |FOOD  |
+|8  |320   |2024-04-01|7.4      |TRAVEL|
+|9  |300   |2024-04-08|8.4      |FOOD  |
+|10 |280   |2024-04-08|9.4      |FOOD  |
+Total rows: 10
 
-  @LILbro: Enter column names separated by commas: item, value, type
-
-Frequency for column 'item':
-  alcohol: 1
-  books: 2
-  cab fare: 2
-  concert: 1
-  movies: 2
-  rent: 2
-  snacks: 2
-
-Frequency for column 'value':
-  1000: 2
-  1100: 1
-  1500: 2
-  200: 2
-  2000: 1
-  20000: 2
-  300: 2
+  @LILbro: Enter column names separated by commas: type, interest
 
 Frequency for column 'type':
-  FOOD: 2
-  OTHER: 8
-  TRAVEL: 2
+  OTHER : f = 2 (20%)
+  FOOD  : f = 5 (50%)
+  TRAVEL: f = 3 (30%)
+
+Frequency for column 'interest':
+  7  : f = 2 (20%)
+  7.2: f = 1 (10%)
+  7.4: f = 1 (10%)
+  8  : f = 1 (10%)
+  8.2: f = 1 (10%)
+  8.4: f = 1 (10%)
+  9  : f = 1 (10%)
+  9.2: f = 1 (10%)
+  9.4: f = 1 (10%)
 "#,
                     );
                     continue;
@@ -714,6 +707,82 @@ Frequency for column 'type':
             }
             Some(8) => {
                 if choice.to_lowercase() == "8d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Prints cascading frequency tables for selected columns of a dataset.
+|id |value |date      |interest |type  |
+----------------------------------------
+|1  |500   |2024-04-08|7        |FOOD  |
+|2  |450   |2024-04-07|8        |FOOD  |
+|3  |420   |2024-04-06|9        |TRAVEL|
+|4  |400   |2024-04-05|7        |OTHER |
+|5  |380   |2024-04-05|7.2      |TRAVEL|
+|6  |360   |2024-04-03|8.2      |OTHER |
+|7  |340   |2024-04-02|9.2      |FOOD  |
+|8  |320   |2024-04-01|7.4      |TRAVEL|
+|9  |300   |2024-04-08|8.4      |FOOD  |
+|10 |280   |2024-04-08|9.4      |FOOD  |
+Total rows: 10
+
+  @LILbro: Enter column names separated by commas: type, interest, value
+
+Frequency for column 'type':
+  OTHER : f = 2 (20.00%)
+    Frequency for column 'interest':
+      7  : f = 1 (50.00%)
+        Frequency for column 'value':
+          400: f = 1 (100.00%)
+      8.2: f = 1 (50.00%)
+        Frequency for column 'value':
+          360: f = 1 (100.00%)
+  FOOD  : f = 5 (50.00%)
+    Frequency for column 'interest':
+      7  : f = 1 (20.00%)
+        Frequency for column 'value':
+          500: f = 1 (100.00%)
+      8  : f = 1 (20.00%)
+        Frequency for column 'value':
+          450: f = 1 (100.00%)
+      8.4: f = 1 (20.00%)
+        Frequency for column 'value':
+          300: f = 1 (100.00%)
+      9.2: f = 1 (20.00%)
+        Frequency for column 'value':
+          340: f = 1 (100.00%)
+      9.4: f = 1 (20.00%)
+        Frequency for column 'value':
+          280: f = 1 (100.00%)
+  TRAVEL: f = 3 (30.00%)
+    Frequency for column 'interest':
+      7.2: f = 1 (33.33%)
+        Frequency for column 'value':
+          380: f = 1 (100.00%)
+      7.4: f = 1 (33.33%)
+        Frequency for column 'value':
+          320: f = 1 (100.00%)
+      9  : f = 1 (33.33%)
+        Frequency for column 'value':
+          420: f = 1 (100.00%)
+"#,
+                    );
+                    continue;
+                }
+
+                let column_names =
+                    get_user_input_level_2("Enter column names separated by commas: ");
+
+                if handle_cancel_flag(&column_names) {
+                    continue;
+                }
+
+                let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+                println!();
+                csv_builder.print_freq_cascading(columns);
+            }
+
+            Some(9) => {
+                if choice.to_lowercase() == "9d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -748,8 +817,8 @@ Unique values in 'value': 200, 1000, 20000, 1500, 2000, 300, 1100
                 csv_builder.print_unique(&column_name.trim());
             }
 
-            Some(9) => {
-                if choice.to_lowercase() == "9d" {
+            Some(10) => {
+                if choice.to_lowercase() == "10d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -798,8 +867,8 @@ Statistics for column 'interest':
             }
 
             // In your handle_inspect method
-            Some(10) => {
-                if choice.to_lowercase() == "10d" {
+            Some(11) => {
+                if choice.to_lowercase() == "11d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -865,8 +934,8 @@ Count: 7
                     }
                 }
             }
-            Some(11) => {
-                if choice.to_lowercase() == "11d" {
+            Some(12) => {
+                if choice.to_lowercase() == "12d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -957,8 +1026,8 @@ Total rows: 10
                     csv_builder.print_dot_chart(x_axis_column, y_axis_column);
                 }
             }
-            Some(12) => {
-                if choice.to_lowercase() == "12d" {
+            Some(13) => {
+                if choice.to_lowercase() == "13d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1045,8 +1114,8 @@ Total rows: 10
                 }
             }
 
-            Some(13) => {
-                if choice.to_lowercase() == "13d" {
+            Some(14) => {
+                if choice.to_lowercase() == "14d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1138,8 +1207,8 @@ Total rows: 10
                 }
             }
 
-            Some(14) => {
-                if choice.to_lowercase() == "14d" {
+            Some(15) => {
+                if choice.to_lowercase() == "15d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1227,7 +1296,7 @@ Total rows: 10
             }
 
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 14.");
+                println!("Invalid option. Please enter a number from 1 to 15.");
                 continue; // Ask for the choice again
             }
         }
