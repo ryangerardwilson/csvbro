@@ -711,6 +711,7 @@ SYNTAX
                     // Logic to find the current maximum ID
                     let mut next_id = csv_builder
                         .get_data()
+                        .unwrap()
                         .iter()
                         .filter_map(|row| {
                             row.get(headers.iter().position(|h| h == "id").unwrap_or(0))
@@ -839,6 +840,7 @@ Total rows: 6
 
                     if let Some((index, _)) = csv_builder
                         .get_data()
+                        .unwrap()
                         .iter()
                         .enumerate()
                         .find(|(_, row)| row.get(0) == Some(&id.to_string()))
@@ -865,13 +867,13 @@ Total rows: 6
                     zero_based_index = row_index.saturating_sub(1);
                 }
 
-                if zero_based_index >= csv_builder.get_data().len() {
+                if zero_based_index >= csv_builder.get_data().unwrap().len() {
                     eprintln!("Row index out of range.");
                     //return;
                     return Err("An error occurred".to_string().into());
                 }
 
-                if let Some(existing_row) = csv_builder.get_data().get(zero_based_index) {
+                if let Some(existing_row) = csv_builder.get_data().unwrap().get(zero_based_index) {
                     if let Some(headers) = csv_builder.get_headers() {
                         let mut json_str = "{\n".to_string();
 
@@ -1012,7 +1014,7 @@ Total rows: 3
                     continue;
                 }
 
-                let existing_data = csv_builder.get_data();
+                let existing_data = csv_builder.get_data().unwrap();
                 //dbg!(&existing_data);
 
                 let existing_headers: Vec<String> = csv_builder
@@ -1208,7 +1210,7 @@ Total rows: 3
                     continue;
                 }
 
-                let existing_data = csv_builder.get_data();
+                let existing_data = csv_builder.get_data().unwrap();
 
                 let existing_headers: Vec<String> = csv_builder
                     .get_headers()
@@ -1761,7 +1763,7 @@ Total rows: 3
                     .collect();
 
                 if !new_columns.is_empty() {
-                    let existing_data = csv_builder.get_data();
+                    let existing_data = csv_builder.get_data().unwrap();
                     let existing_headers = csv_builder.get_headers().unwrap_or(&[]); // Assuming get_headers() method exists
 
                     let mut json_array_str = "[".to_string();
@@ -1859,7 +1861,7 @@ SYNTAX
                         }
 
                         // Update existing rows or add new ones
-                        if row_index < csv_builder.get_data().len() {
+                        if row_index < csv_builder.get_data().unwrap().len() {
                             // Update existing row with new and existing values
                             csv_builder.update_row_by_row_number(row_index + 1, row_values.clone());
                         } else {
