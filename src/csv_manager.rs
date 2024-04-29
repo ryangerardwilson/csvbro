@@ -536,101 +536,46 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                         new_query
                     };
 
-                    /*
-                                        let start_time = Instant::now();
-                                        let query_execution_result = CsvBuilder::from_mssql_query(
-                                            &username, &password, &host, &database, &sql_query,
-                                        )
-                                        .await;
-                                        let elapsed_time = start_time.elapsed();
-                    */
 
                     let start_time = Instant::now();
-                    //let query_execution_result;
+let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
 
-                    let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
+// Regex to parse the chunking directive
+let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
 
-                    // Regex to parse the chunking directive
-                    let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
+// Check for the chunking directive
+if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
+    let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string
 
-                    // Check for the chunking directive
-                    if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
-                        dbg!(&sql_query);
-                        let chunk_size: i64 =
-                            caps.get(1).map_or(0, |m| m.as_str().parse().unwrap_or(0));
-                        let mut offset = 0; // Start with no offset
-                        let mut combined_builder: Option<CsvBuilder> = None;
+    // Remove the chunk directive and trim extra characters
+    let base_query = chunk_directive_regex
+        .replace(&sql_query, "")
+        .trim()
+        .trim_matches(|c: char| c == '{' || c == '}')
+        .to_string();
 
-                        // Remove the chunk directive and trim extra characters
-                        let base_query = chunk_directive_regex
-                            .replace(&sql_query, "")
-                            .trim()
-                            .to_string();
-                        let base_query = base_query
-                            .trim_matches(|c: char| c == '{' || c == '}')
-                            .trim()
-                            .to_string();
-                        //dbg!(&base_query);
 
-                        loop {
-                            // Wrap the entire original query in a subquery for proper pagination
-                            let chunk_query = format!(
-            "SELECT * FROM ({} ) AS SubQuery ORDER BY (SELECT NULL) OFFSET {} ROWS FETCH NEXT {} ROWS ONLY",
-            base_query, offset, chunk_size
-        );
+    //dbg!(&base_query);
 
-                            let chunk_insight =
-                                format!("Executing the below chunk query ...\n\n{}", &chunk_query);
+    // Execute the chunked query using the newly created method
+    query_execution_result = CsvBuilder::from_chunked_mssql_query(
+        &username,
+        &password,
+        &host,
+        &database,
+        &base_query,
+        chunk_size,
+    )
+    .await;
+} else {
+    // Execute the query normally
+    query_execution_result = CsvBuilder::from_mssql_query(
+        &username, &password, &host, &database, &sql_query,
+    )
+    .await;
+}
 
-                            println!();
-                            print_insight_level_2(&chunk_insight);
 
-                            // Fetch the chunk as a mutable CsvBuilder
-                            let mut result = CsvBuilder::from_mssql_query(
-                                &username,
-                                &password,
-                                &host,
-                                &database,
-                                &chunk_query,
-                            )
-                            .await?;
-
-                            result.print_table();
-
-                            // Check if the current chunk is empty to break the loop
-                            if !result.has_data() {
-                                break;
-                            }
-
-                            // Update offset for the next chunk
-                            offset += chunk_size;
-
-                            // Combine the current chunk with the previous results
-                            match &mut combined_builder {
-                                Some(builder) => {
-                                    // Pass the mutable reference of `result`
-                                    builder
-                                        .set_union_with_csv_builder(
-                                            &mut result,
-                                            "UNION_TYPE:NORMAL",
-                                            vec!["*"],
-                                        )
-                                        .print_table();
-                                }
-                                None => combined_builder = Some(result),
-                            }
-                        }
-
-                        // Finalize the combined result
-                        query_execution_result =
-                            combined_builder.ok_or_else(|| "No data fetched".into());
-                    } else {
-                        // Execute the query normally
-                        query_execution_result = CsvBuilder::from_mssql_query(
-                            &username, &password, &host, &database, &sql_query,
-                        )
-                        .await;
-                    }
 
                     let elapsed_time = start_time.elapsed();
 
@@ -703,90 +648,47 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
 
                     let start_time = Instant::now();
 
-                    let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
 
-                    // Regex to parse the chunking directive
-                    let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
+let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
 
-                    // Check for the chunking directive
-                    if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
-                        //dbg!(&sql_query);
-                        let chunk_size: i64 =
-                            caps.get(1).map_or(0, |m| m.as_str().parse().unwrap_or(0));
-                        let mut offset = 0; // Start with no offset
-                        let mut combined_builder: Option<CsvBuilder> = None;
+// Regex to parse the chunking directive
+let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
 
-                        // Remove the chunk directive and trim extra characters
-                        let base_query = chunk_directive_regex
-                            .replace(&sql_query, "")
-                            .trim()
-                            .to_string();
-                        let base_query = base_query
-                            .trim_matches(|c: char| c == '{' || c == '}')
-                            .trim()
-                            .to_string();
-                        //dbg!(&base_query);
+// Check for the chunking directive
+if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
+    let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string
 
-                        loop {
-                            // Use MySQL's LIMIT and OFFSET for pagination
-                            let chunk_query = format!(
-                                "SELECT * FROM ({}) AS SubQuery LIMIT {} OFFSET {}",
-                                base_query, chunk_size, offset
-                            );
+    // Remove the chunk directive and trim extra characters
+    let base_query = chunk_directive_regex
+        .replace(&sql_query, "")
+        .trim()
+        .trim_matches(|c: char| c == '{' || c == '}')
+        .to_string();
 
-                            //dbg!(&chunk_query);
-                            let chunk_insight =
-                                format!("Executing the below chunk query ...\n\n{}", &chunk_query);
 
-                            println!();
-                            print_insight_level_2(&chunk_insight);
+    //dbg!(&base_query);
 
-                            // Fetch the chunk as a mutable CsvBuilder
-                            let mut result = CsvBuilder::from_mysql_query(
-                                &username,
-                                &password,
-                                &host,
-                                &database,
-                                &chunk_query,
-                            )
-                            .await?;
+    // Execute the chunked query using the newly created method
+    query_execution_result = CsvBuilder::from_chunked_mysql_query(
+        &username,
+        &password,
+        &host,
+        &database,
+        &base_query,
+        chunk_size,
+    )
+    .await;
+} else {
+    // Execute the query normally
+    query_execution_result = CsvBuilder::from_mysql_query(
+        &username, &password, &host, &database, &sql_query,
+    )
+    .await;
+}
 
-                            result.print_table();
 
-                            // Check if the current chunk is empty to break the loop
-                            if !result.has_data() {
-                                break;
-                            }
 
-                            // Update offset for the next chunk
-                            offset += chunk_size;
 
-                            // Combine the current chunk with the previous results
-                            match &mut combined_builder {
-                                Some(builder) => {
-                                    // Pass the mutable reference of `result`
-                                    builder
-                                        .set_union_with_csv_builder(
-                                            &mut result,
-                                            "UNION_TYPE:NORMAL",
-                                            vec!["*"],
-                                        )
-                                        .print_table();
-                                }
-                                None => combined_builder = Some(result),
-                            }
-                        }
-
-                        // Finalize the combined result
-                        query_execution_result =
-                            combined_builder.ok_or_else(|| "No data fetched".into());
-                    } else {
-                        // Execute the query normally
-                        query_execution_result = CsvBuilder::from_mysql_query(
-                            &username, &password, &host, &database, &sql_query,
-                        )
-                        .await;
-                    }
 
                     let elapsed_time = start_time.elapsed();
 
