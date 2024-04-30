@@ -551,6 +551,10 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                     //let show_tables_directive_regex = Regex::new(r"@bro_show_tables::([^.]+)\.(\w+)").unwrap();
                     let show_tables_directive_regex =
                         Regex::new(r"@bro_show_tables::([^.]+)(?:\.(\w+))?").unwrap();
+                    //let describe_directive_regex = Regex::new(r"@bro_describe::(\w+)").unwrap();
+                    let describe_directive_regex =
+                        Regex::new(r"@bro_describe::(?:([^.\s]+)\.)?(?:([^.\s]+)\.)?(\w+)")
+                            .unwrap();
 
                     // Check for the chunking directive
                     if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
@@ -611,6 +615,23 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                             &host,
                             in_focus_database,
                             schema,
+                        )
+                        .await;
+
+                        query_execution_result = Ok(CsvBuilder::new());
+                    } else if let Some(caps) = describe_directive_regex.captures(&sql_query) {
+                        let specified_database =
+                            caps.get(1).map_or(database.as_str(), |m| m.as_str());
+                        let _schema = caps.get(2).map_or("dbo", |m| m.as_str());
+                        let table_name = caps.get(3).unwrap().as_str();
+
+                        let _ = CsvBuilder::print_mssql_table_description(
+                            &username,
+                            &password,
+                            &host,
+                            &specified_database,
+                            //schema,
+                            table_name,
                         )
                         .await;
 
@@ -705,6 +726,8 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                         Regex::new(r"^@bro_show_databases").unwrap();
                     let show_tables_directive_regex =
                         Regex::new(r"@bro_show_tables::([^\s]+)").unwrap();
+                    let describe_directive_regex =
+                        Regex::new(r"@bro_describe::(?:([^.\s]+)\.)?(\w+)").unwrap();
 
                     // Check for the chunking directive
                     if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
@@ -730,6 +753,7 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                         )
                         .await;
                     } else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
+                        dbg!(&sql_query);
                         let _ = CsvBuilder::print_mysql_architecture(
                             &username, &password, &host, &database,
                         )
@@ -761,6 +785,24 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                             &password,
                             &host,
                             in_focus_database,
+                        )
+                        .await;
+
+                        query_execution_result = Ok(CsvBuilder::new());
+                    } else if let Some(caps) = describe_directive_regex.captures(&sql_query) {
+                        // Extract database and table name from the captures
+                        let specified_database =
+                            caps.get(1).map_or(database.as_str(), |m| m.as_str()); // Use the default database if not specified
+                        let table_name = caps.get(2).unwrap().as_str(); // Table name is required
+                                                                        //dbg!(&specified_database, &table_name);
+
+                        // Call the print_mysql_table_description function
+                        let _ = CsvBuilder::print_mysql_table_description(
+                            &username,
+                            &password,
+                            &host,
+                            &specified_database,
+                            table_name,
                         )
                         .await;
 
