@@ -71,7 +71,7 @@ async fn main() {
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 0.7.8");
+        print_insight("csvbro 0.7.9");
         std::process::exit(0);
     }
 

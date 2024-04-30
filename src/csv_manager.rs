@@ -541,6 +541,16 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
 
                     // Regex to parse the chunking directive
                     let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
+                    let show_architecture_directive_regex = Regex::new(r"^@bro_show_all").unwrap();
+                    let show_databases_directive_regex =
+                        Regex::new(r"^@bro_show_databases").unwrap();
+                    //let show_schemas_directive_regex = Regex::new(r"@bro_show_schemas::(\d+)").unwrap();
+                    let show_schemas_directive_regex =
+                        Regex::new(r"@bro_show_schemas::(\w+)").unwrap();
+
+                    //let show_tables_directive_regex = Regex::new(r"@bro_show_tables::([^.]+)\.(\w+)").unwrap();
+                    let show_tables_directive_regex =
+                        Regex::new(r"@bro_show_tables::([^.]+)(?:\.(\w+))?").unwrap();
 
                     // Check for the chunking directive
                     if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
@@ -565,6 +575,46 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                             chunk_size,
                         )
                         .await;
+                    } else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
+                        let _ = CsvBuilder::print_mssql_architecture(
+                            &username, &password, &host, &database,
+                        )
+                        .await;
+
+                        query_execution_result = Ok(CsvBuilder::new());
+                    } else if let Some(_) = show_databases_directive_regex.captures(&sql_query) {
+                        let _ = CsvBuilder::print_mssql_databases(
+                            &username, &password, &host, &database,
+                        )
+                        .await;
+
+                        query_execution_result = Ok(CsvBuilder::new());
+                    } else if let Some(caps) = show_schemas_directive_regex.captures(&sql_query) {
+                        let in_focus_database = caps.get(1).unwrap().as_str();
+
+                        let _ = CsvBuilder::print_mssql_schemas(
+                            &username,
+                            &password,
+                            &host,
+                            in_focus_database,
+                        )
+                        .await;
+
+                        query_execution_result = Ok(CsvBuilder::new());
+                    } else if let Some(caps) = show_tables_directive_regex.captures(&sql_query) {
+                        let in_focus_database = caps.get(1).unwrap().as_str();
+                        let schema = caps.get(2).map_or("", |m| m.as_str());
+
+                        let _ = CsvBuilder::print_mssql_tables(
+                            &username,
+                            &password,
+                            &host,
+                            in_focus_database,
+                            schema,
+                        )
+                        .await;
+
+                        query_execution_result = Ok(CsvBuilder::new());
                     } else {
                         // Execute the query normally
                         query_execution_result = CsvBuilder::from_mssql_query(
@@ -600,7 +650,9 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                         }
                     } else {
                         csv_builder = query_execution_result.unwrap();
-                        csv_builder.print_table(); // Print the table on success
+                        if csv_builder.has_data() && csv_builder.has_headers() {
+                            csv_builder.print_table(); // Print the table on success
+                        }
                         println!("Executiom Time: {:?}", elapsed_time);
                         confirmation = String::new(); // Reset confirmation for the next loop iteration
                     }
@@ -648,6 +700,11 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
 
                     // Regex to parse the chunking directive
                     let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
+                    let show_architecture_directive_regex = Regex::new(r"^@bro_show_all").unwrap();
+                    let show_databases_directive_regex =
+                        Regex::new(r"^@bro_show_databases").unwrap();
+                    let show_tables_directive_regex =
+                        Regex::new(r"@bro_show_tables::([^\s]+)").unwrap();
 
                     // Check for the chunking directive
                     if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
@@ -672,6 +729,42 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                             chunk_size,
                         )
                         .await;
+                    } else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
+                        let _ = CsvBuilder::print_mysql_architecture(
+                            &username, &password, &host, &database,
+                        )
+                        .await;
+
+                        query_execution_result = Ok(CsvBuilder::new());
+                    } else if let Some(_) = show_databases_directive_regex.captures(&sql_query) {
+                        let _ = CsvBuilder::print_mysql_databases(
+                            &username, &password, &host, &database,
+                        )
+                        .await;
+
+                        query_execution_result = Ok(CsvBuilder::new());
+                    } else if let Some(caps) = show_tables_directive_regex.captures(&sql_query) {
+                        /*
+                            let in_focus_database = caps.get(1).unwrap().as_str();
+                            let schema = caps.get(2).unwrap().as_str();
+
+                            let _ = CsvBuilder::list_mysql_tables(
+                                &username, &password, &host, in_focus_database, schema
+                                ).await;
+
+                            query_execution_result = Ok(CsvBuilder::new());
+                        */
+                        let in_focus_database = caps.get(1).unwrap().as_str();
+
+                        let _ = CsvBuilder::print_mysql_tables(
+                            &username,
+                            &password,
+                            &host,
+                            in_focus_database,
+                        )
+                        .await;
+
+                        query_execution_result = Ok(CsvBuilder::new());
                     } else {
                         // Execute the query normally
                         query_execution_result = CsvBuilder::from_mysql_query(
@@ -707,7 +800,12 @@ pub async fn query() -> Result<CsvBuilder, Box<dyn std::error::Error>> {
                         }
                     } else {
                         csv_builder = query_execution_result.unwrap();
-                        csv_builder.print_table(); // Print the table on success
+
+                        if csv_builder.has_data() && csv_builder.has_headers() {
+                            csv_builder.print_table(); // Print the table on success
+                        }
+
+                        //csv_builder.print_table(); // Print the table on success
                         println!("Executiom Time: {:?}", elapsed_time);
                         confirmation = String::new(); // Reset confirmation for the next loop iteration
                     }
