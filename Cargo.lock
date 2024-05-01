@@ -545,7 +545,7 @@ dependencies = [
 
 [[package]]
 name = "csvbro"
-version = "0.8.1"
+version = "0.8.2"
 dependencies = [
  "async-recursion",
  "calamine 0.23.1",

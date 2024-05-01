@@ -4,12 +4,14 @@ mod csv_manager;
 mod csv_pivoter;
 mod csv_searcher;
 mod csv_tinkerer;
+mod db_connector;
 mod settings;
 mod user_experience;
 mod user_interaction;
 mod utils;
 
-use crate::csv_manager::{chain_builder, delete_csv_file, import, open_csv_file, query};
+use crate::csv_manager::{chain_builder, delete_csv_file, import, open_csv_file};
+use crate::db_connector::query;
 use crate::settings::open_settings;
 use crate::user_experience::handle_quit_flag;
 use crate::user_interaction::{
@@ -71,7 +73,7 @@ async fn main() {
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 0.8.2");
+        print_insight("csvbro 0.8.3");
         std::process::exit(0);
     }
 
