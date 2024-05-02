@@ -4,7 +4,9 @@ use crate::csv_joiner::handle_join;
 use crate::csv_pivoter::handle_pivot;
 use crate::csv_searcher::handle_search;
 use crate::csv_tinkerer::handle_tinker;
-use crate::user_experience::{handle_back_flag, handle_quit_flag, handle_special_flag};
+use crate::user_experience::{
+    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
+};
 use crate::user_interaction::{
     determine_action_as_text, get_user_input, print_insight, print_insight_level_2, print_list,
 };
@@ -143,114 +145,79 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
         Ok(files)
     }
 
-    match list_csv_files(csv_db_path) {
-        Ok(mut files) => {
-            if files.is_empty() {
-                print_insight("No files in sight, bro.");
-                return;
-            }
-
-            files.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
-
-            // Collect file names into a Vec<&str>
-            let file_names: Vec<String> = files
-                .iter()
-                .filter_map(|file| file.file_name()?.to_str().map(String::from))
-                .collect();
-
-            let mut file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
-            file_name_slices.push("BACK");
-
-            // Now, call print_list with this vector
-            print_list(&file_name_slices);
-
-            let choice = get_user_input("Punch in the serial number or a slice of the file name to DELETE, or hit 'back' to bail.\nWhat's it gonna be?: ")
-    .trim().to_lowercase();
-
-            // Assuming 'back' is always the last option
-            let back_option_serial = file_name_slices.len();
-
-            // Check if the user's choice is a number and matches the serial number for 'back'
-            if choice
-                .parse::<usize>()
-                .ok()
-                .map_or(false, |num| num == back_option_serial)
-            {
-                print_insight("Bailed on that. Heading back to the last menu, bro.");
-                return; // Assuming this is within a function that allows for an early return
-            } else {
-                // Fuzzy match logic for 'back'
-                let options = &["back"];
-                let mut highest_score = 0;
-                let mut best_match = "";
-
-                for &option in options {
-                    let score = fuzz::ratio(&choice, option);
-                    if score > highest_score {
-                        highest_score = score;
-                        best_match = option;
-                    }
-                }
-
-                // Check if the best match is 'back' with a score above 60
-                if best_match == "back" && highest_score > 60 {
-                    print_insight("Bailed on that. Heading back to the last menu, bro.");
-                    return;
-                }
-                // Continue with additional logic for handling other inputs or choices
-            }
-
-            let mut file_deleted = false;
-
-            match choice.parse::<usize>() {
-                Ok(serial) if serial > 0 && serial <= files.len() => {
-                    let file_path = &files[serial - 1];
-                    if file_path.is_file() {
-                        if let Some(file_name) = file_path.file_name().and_then(|n| n.to_str()) {
-                            print_insight_level_2(&format!("Deleting {}", file_name));
-                            if let Err(e) = fs::remove_file(file_path) {
-                                print_insight(&format!("Failed to delete file: {}", e));
-                            } else {
-                                print_insight("File deleted successfully.");
-                                file_deleted = true;
-                            }
-                        }
-                    }
-                }
-                _ => (),
-            }
-
-            // Proceed to fuzzy search only if no file was deleted by index
-            if !file_deleted {
-                let best_match_result = files
-                    .iter()
-                    .filter_map(|path| {
-                        path.file_name()
-                            .and_then(|n| n.to_str())
-                            .map(|name| (path, fuzz::ratio(&choice, name)))
-                    })
-                    .max_by_key(|&(_, score)| score);
-
-                if let Some((best_match, _)) = best_match_result {
-                    if best_match.is_file() {
-                        if let Some(file_name) = best_match.file_name().and_then(|n| n.to_str()) {
-                            print_insight_level_2(&format!("Deleting {}", file_name));
-                            if let Err(e) = fs::remove_file(best_match) {
-                                print_insight(&format!("Failed to delete file: {}", e));
-                            } else {
-                                print_insight("File deleted successfully.");
-                            }
-                        }
+    fn parse_ranges(range_str: &str) -> Vec<usize> {
+        range_str
+            .split(',')
+            .flat_map(|part| {
+                let part = part.trim(); // Trim each part after splitting by comma
+                if part.contains('-') {
+                    let bounds: Vec<&str> = part.split('-').map(str::trim).collect(); // Trim parts of the range
+                    if bounds.len() == 2 {
+                        let start = bounds[0].parse::<usize>().unwrap_or(0);
+                        let end = bounds[1].parse::<usize>().unwrap_or(0);
+                        (start..=end).collect::<Vec<usize>>()
+                    } else {
+                        vec![] // Return an empty vector if the range format is incorrect
                     }
                 } else {
-                    if !file_deleted {
-                        print_insight("No matching file found for deletion.");
+                    vec![part.parse::<usize>().unwrap_or(0)]
+                }
+            })
+            .collect()
+    }
+
+    loop {
+        match list_csv_files(csv_db_path) {
+            Ok(mut files) => {
+                if files.is_empty() {
+                    println!("No files in sight, bro.");
+                    return;
+                }
+
+                files.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+
+                let file_names: Vec<String> = files
+                    .iter()
+                    .filter_map(|file| file.file_name()?.to_str().map(String::from))
+                    .collect();
+
+                let file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
+                print_list(&file_name_slices);
+
+                let choice = get_user_input("Enter the serial numbers, or ranges (for example, 4-10) of the files to delete, separated by commas: ")
+                    .trim().to_lowercase();
+
+                if handle_back_flag(&choice) || handle_cancel_flag(&choice) {
+                    return;
+                }
+
+                let mut indices = parse_ranges(&choice);
+                indices.sort();
+                indices.reverse();
+
+                for index in indices {
+                    if index > 0 && index <= files.len() {
+                        let file_path = &files[index - 1];
+                        if file_path.is_file() {
+                            if let Some(file_name) = file_path.file_name().and_then(|n| n.to_str())
+                            {
+                                print_insight_level_2(&format!("Deleting {}", file_name));
+                                if let Err(e) = fs::remove_file(file_path) {
+                                    print_insight_level_2(&format!("Failed to delete file: {}", e));
+                                } else {
+                                    print_insight_level_2("File deleted successfully.");
+                                }
+                            }
+                        }
+                    } else {
+                        print_insight_level_2("Invalid serial number provided.");
                     }
                 }
             }
-        }
-        Err(_) => {
-            print_insight("Failed to read the directory.");
+            Err(_) => {
+                print_insight_level_2("Failed to read the directory.");
+                return;
+            }
         }
     }
 }
@@ -384,10 +351,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         let _ = builder.print_table();
         println!();
     }
-
-    //let home_dir = env::var("HOME").expect("Unable to determine user home directory");
-    //let desktop_path = Path::new(&home_dir).join("Desktop");
-    //let csv_db_path = desktop_path.join("csv_db");
 
     loop {
         //let has_data = builder.has_data();
