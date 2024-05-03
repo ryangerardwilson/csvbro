@@ -8,36 +8,40 @@ use crate::user_interaction::{
     print_insight_level_2, print_list_level_2,
 };
 use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal, Piv, Train};
+use serde_json::from_str;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::fs;
+use std::fs::read_to_string;
 use std::path::Path;
 use std::path::PathBuf;
-use serde_json::from_str;
-use std::fs::read_to_string;
 
 // Assuming CsvBuilder, Exp, and ExpVal are updated as per your implementation
 
 #[derive(Debug, Clone, serde::Deserialize)]
 struct Config {
-    db_presets: Vec<DbPreset>,
     #[allow(dead_code)]
+    db_presets: Vec<DbPreset>,
     open_ai_key: String,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
 struct DbPreset {
+    #[allow(dead_code)]
     name: String,
+    #[allow(dead_code)]
     db_type: String,
+    #[allow(dead_code)]
     host: String,
+    #[allow(dead_code)]
     username: String,
+    #[allow(dead_code)]
     password: String,
+    #[allow(dead_code)]
     database: String,
 }
-
-
 
 struct ExpStore {
     expressions: Vec<Exp>, // Store the Exp instances directly
@@ -1873,50 +1877,49 @@ Total rows: 5
                             continue; // Skip the rest of the process
                         }
 
-    if let Some(file_path) = file_path_option {
-        let config_path = PathBuf::from(file_path).join("bro.config");
+                        if let Some(file_path) = file_path_option {
+                            let config_path = PathBuf::from(file_path).join("bro.config");
 
-        let file_contents = read_to_string(config_path)?;
-        let valid_json_part = file_contents.split("SYNTAX").next().ok_or("Invalid configuration format")?;
-        let config: Config = from_str(valid_json_part)?;
-        let api_key = &config.open_ai_key;
+                            let file_contents = read_to_string(config_path)?;
+                            let valid_json_part = file_contents
+                                .split("SYNTAX")
+                                .next()
+                                .ok_or("Invalid configuration format")?;
+                            let config: Config = from_str(valid_json_part)?;
+                            let api_key = &config.open_ai_key;
 
-        // Use the api_key for your needs
-        println!("API Key: {}", api_key);
+                            // Use the api_key for your needs
+                            println!("API Key: {}", api_key);
 
-                        let result = csv_builder
-                            .append_derived_openai_analysis_columns(
-                                &target_column_name,
-                                analysis_query,
-                                api_key,
-                                &model,
-                            )
-                            .await;
+                            let result = csv_builder
+                                .append_derived_openai_analysis_columns(
+                                    &target_column_name,
+                                    analysis_query,
+                                    api_key,
+                                    &model,
+                                )
+                                .await;
 
-                        if result.has_data() {
-                            csv_builder.print_table();
-                            println!();
-                            print_insight_level_2("OpenAI analysis complete.");
-                        }
-
-                        match apply_filter_changes_menu(
-                            csv_builder,
-                            &prev_iteration_builder,
-                            &original_csv_builder,
-                        ) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("{}", e);
-                                continue; // Ask for the choice again if there was an error
+                            if result.has_data() {
+                                csv_builder.print_table();
+                                println!();
+                                print_insight_level_2("OpenAI analysis complete.");
                             }
+
+                            match apply_filter_changes_menu(
+                                csv_builder,
+                                &prev_iteration_builder,
+                                &original_csv_builder,
+                            ) {
+                                Ok(_) => (),
+                                Err(e) => {
+                                    println!("{}", e);
+                                    continue; // Ask for the choice again if there was an error
+                                }
+                            }
+                        } else {
+                            return Err("File path is not provided".into());
                         }
-
-
-    } else {
-        return Err("File path is not provided".into());
-    }
-
-
 
                         /*
                         let mut presets = Vec::new();
@@ -1929,35 +1932,34 @@ Total rows: 5
                         */
 
                         //dbg!(&presets, &api_key);
-    /*
-                        let result = csv_builder
-                            .append_derived_openai_analysis_columns(
-                                &target_column_name,
-                                analysis_query,
-                                api_key,
-                                &model,
-                            )
-                            .await;
+                        /*
+                                                let result = csv_builder
+                                                    .append_derived_openai_analysis_columns(
+                                                        &target_column_name,
+                                                        analysis_query,
+                                                        api_key,
+                                                        &model,
+                                                    )
+                                                    .await;
 
-                        if result.has_data() {
-                            csv_builder.print_table();
-                            println!();
-                            print_insight_level_2("OpenAI analysis complete.");
-                        }
+                                                if result.has_data() {
+                                                    csv_builder.print_table();
+                                                    println!();
+                                                    print_insight_level_2("OpenAI analysis complete.");
+                                                }
 
-                        match apply_filter_changes_menu(
-                            csv_builder,
-                            &prev_iteration_builder,
-                            &original_csv_builder,
-                        ) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("{}", e);
-                                continue; // Ask for the choice again if there was an error
-                            }
-                        }
-*/
-
+                                                match apply_filter_changes_menu(
+                                                    csv_builder,
+                                                    &prev_iteration_builder,
+                                                    &original_csv_builder,
+                                                ) {
+                                                    Ok(_) => (),
+                                                    Err(e) => {
+                                                        println!("{}", e);
+                                                        continue; // Ask for the choice again if there was an error
+                                                    }
+                                                }
+                        */
                     }
                     Err(e) if e.to_string() == "Operation canceled" => {
                         continue;

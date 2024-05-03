@@ -1,3 +1,4 @@
+mod config;
 mod csv_inspector;
 mod csv_joiner;
 mod csv_manager;
@@ -5,16 +6,13 @@ mod csv_pivoter;
 mod csv_searcher;
 mod csv_tinkerer;
 mod db_connector;
-mod settings;
-mod config;
 mod user_experience;
 mod user_interaction;
 mod utils;
 
+use crate::config::edit_config;
 use crate::csv_manager::{chain_builder, delete_csv_file, import, open_csv_file};
 use crate::db_connector::query;
-use crate::settings::open_settings;
-use crate::config::edit_config;
 use crate::user_experience::handle_quit_flag;
 use crate::user_interaction::{
     determine_action_as_text, get_user_input, print_insight, print_list,
@@ -75,7 +73,7 @@ async fn main() {
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 0.8.4");
+        print_insight("csvbro 0.8.5");
         std::process::exit(0);
     }
 
@@ -129,7 +127,7 @@ async fn main() {
 "#
     );
 
-    let menu_options = vec!["NEW", "OPEN", "IMPORT", "QUERY", "DELETE", "SETTINGS", "CONFIG"];
+    let menu_options = vec!["NEW", "OPEN", "IMPORT", "QUERY", "DELETE", "CONFIG"];
 
     loop {
         let _builder = loop {
@@ -194,15 +192,10 @@ async fn main() {
                     delete_csv_file(&csv_db_path_buf); // No return value expected
                     continue; // Continue the loop after deletion
                 }
-                Some(ref action) if action == "SETTINGS" => {
-                    let _ = open_settings();
+                Some(ref action) if action == "CONFIG" => {
+                    let _ = edit_config(&csv_db_path_buf);
                     continue;
                 }
-                Some(ref action) if action == "CONFIG" => {
-                    let _ = edit_config(&csv_db_path_buf); 
-                    continue; 
-                }
-
 
                 _ => {
                     print_insight("Dude, that action's a no-go. Give it another whirl, alright?");

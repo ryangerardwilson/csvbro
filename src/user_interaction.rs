@@ -57,7 +57,6 @@ pub fn get_user_sql_input() -> String {
     input.trim().to_string()
 }
 
-
 pub fn get_edited_user_json_input(last_query: String) -> String {
     // Invoke vim_edit to edit the last query
     let edited_query = vim_edit(last_query);
@@ -115,7 +114,6 @@ pub fn get_edited_user_config_input(last_config: String) -> String {
     // Return the truncated and trimmed query
     edited_config.trim().to_string()
 }
-
 
 pub fn get_edited_user_sql_input(last_query: String) -> String {
     // Invoke vim_edit to edit the last query
