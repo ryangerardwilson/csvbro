@@ -1,10 +1,10 @@
 // db_connector.rs
+use crate::config::{Config, DbPreset};
 use crate::csv_inspector::handle_inspect;
 use crate::csv_joiner::handle_join;
 use crate::csv_pivoter::handle_pivot;
 use crate::csv_searcher::handle_search;
 use crate::csv_tinkerer::handle_tinker;
-//use crate::settings::{manage_db_config_file, DbPreset};
 use crate::user_experience::{
     handle_back_flag, handle_query_retry_flag, handle_query_special_flag, handle_quit_flag,
 };
@@ -26,155 +26,8 @@ enum DbType {
     MySql,
 }
 
-#[derive(Debug, Clone, serde::Deserialize)]
-struct Config {
-    db_presets: Vec<DbPreset>,
-    #[allow(dead_code)]
-    #[allow(dead_code)]
-    open_ai_key: String,
-}
-
-#[derive(Debug, Clone, serde::Deserialize)]
-struct DbPreset {
-    name: String,
-    db_type: String,
-    host: String,
-    username: String,
-    password: String,
-    database: String,
-}
-
 #[allow(unused_assignments)]
-//pub async fn query() {
 pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::error::Error>> {
-    /*
-        fn get_db_type(csv_db_path: &PathBuf) -> Result<(DbType, Option<DbPreset>), Box<dyn std::error::Error>> {
-            fn process_option(
-                index: usize,
-                presets: &[DbPreset],
-                db_choice_index: usize,
-            ) -> Result<(DbType, Option<DbPreset>), Box<dyn Error>> {
-                match index {
-                    i if i < db_choice_index => {
-                        let preset = &presets[i];
-                        let db_type = match preset.db_type.to_lowercase().as_str() {
-                            "mssql" => DbType::MsSql,
-                            "mysql" => DbType::MySql,
-                            _ => return Err("Unknown database type in preset".into()),
-                        };
-                        Ok((db_type, Some(preset.clone())))
-                    }
-                    i if i == db_choice_index => Ok((DbType::MsSql, None)),
-                    i if i == db_choice_index + 1 => Ok((DbType::MySql, None)),
-                    _ => Err("return_to_main".into()), // This is for the "back" option
-                }
-            }
-            let mut presets = Vec::new(); // Declare a variable to store presets
-
-            let _ = manage_db_config_file(|config| {
-                presets = config.db_presets.clone(); // Assign the presets here
-                Ok(()) // Return Ok(()) as expected by the function signature
-            });
-
-            let mut options = presets
-                .iter()
-                .map(|p| p.name.to_lowercase())
-                .collect::<Vec<_>>();
-            let db_choice_index = presets.len();
-            options.push("mssql".to_string());
-            options.push("mysql".to_string());
-            options.push("back".to_string());
-            let options_slices: Vec<&str> = options.iter().map(AsRef::as_ref).collect();
-
-            print_insight_level_2("Choose a database:");
-            print_list(&options_slices);
-
-            let input = get_user_input_level_2("Enter your choice: ").to_lowercase();
-
-            // Direct Index Selection
-            if let Ok(index) = input.parse::<usize>() {
-                if index > 0 && index <= options.len() {
-                    return process_option(index - 1, &presets, db_choice_index);
-                }
-            }
-
-            // Starts With Match
-            if let Some(index) = options.iter().position(|option| option.starts_with(&input)) {
-                return process_option(index, &presets, db_choice_index);
-            }
-
-            // Existing Fuzzy Match Logic
-            let (best_match_index, best_match_score) = options
-                .iter()
-                .enumerate()
-                .map(|(index, option)| (index, fuzz::ratio(&input, option)))
-                .max_by_key(|&(_, score)| score)
-                .unwrap_or((0, 0));
-
-            if best_match_score < 60 {
-                return Err("No matching option found".into());
-            }
-
-            process_option(best_match_index, &presets, db_choice_index)
-        }
-    */
-
-    /*
-    fn get_db_type(csv_db_path: &PathBuf) -> Result<(DbType, Option<DbPreset>), Box<dyn std::error::Error>> {
-        let config_path = csv_db_path.join("bro.config");
-        dbg!(&config_path);
-        //let file = File::open(config_path)?;
-        //let config: Config = from_reader(file)?;
-        let file_contents = read_to_string(config_path)?;
-        let valid_json_part = file_contents.split("SYNTAX").next().ok_or("Invalid configuration format")?;
-        let config: Config = from_str(valid_json_part)?;
-
-        let presets = config.db_presets;
-        dbg!(&presets);
-
-        let options = presets.iter()
-                             .map(|p| p.name.to_lowercase())
-                             .chain(vec!["mssql", "mysql", "back"].into_iter().map(String::from))
-                             .collect::<Vec<_>>();
-        let options_slices: Vec<&str> = options.iter().map(AsRef::as_ref).collect();
-
-        print_insight_level_2("Choose a database:");
-        print_list(&options_slices);
-
-        let input = get_user_input_level_2("Enter your choice: ").to_lowercase();
-
-        let db_choice_index = presets.len();
-        if let Some(index) = options.iter().position(|option| option == &input) {
-            match index {
-                i if i < db_choice_index => {
-                    let preset = &presets[i];
-                    let db_type = match preset.db_type.to_lowercase().as_str() {
-                        "mssql" => Ok((DbType::MsSql, Some(preset.clone()))),
-                        "mysql" => Ok((DbType::MySql, Some(preset.clone()))),
-                        _ => Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Unknown database type in preset")) as Box<dyn Error>),
-                    };
-                    db_type
-                },
-                _ if input == "mssql" => Ok((DbType::MsSql, None)),
-                _ if input == "mysql" => Ok((DbType::MySql, None)),
-                _ => Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "return_to_main")) as Box<dyn Error>),
-            }
-        } else {
-            let (best_match_index, best_match_score) = options
-                .iter()
-                .enumerate()
-                .map(|(index, option)| (index, fuzz::ratio(&input, option)))
-                .max_by_key(|&(_, score)| score)
-                .unwrap_or((0, 0));
-
-            if best_match_score >= 60 {
-                return get_db_type(csv_db_path);  // Recursion on high score fuzzy match
-            }
-            Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "No matching option found")) as Box<dyn Error>)
-        }
-    }
-    */
-
     fn get_db_type(
         csv_db_path: &PathBuf,
     ) -> Result<(DbType, Option<DbPreset>), Box<dyn std::error::Error>> {
@@ -187,41 +40,12 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
         let config: Config = from_str(valid_json_part)?;
 
         let presets = config.db_presets;
-        //dbg!(&presets);
-        //print_list(&options);
-        //let choice = get_user_input_level_2("Choose a database: ").to_lowercase();
-        //print_insight_level_2("Choose a database:");
-        // Create a vector of string slices to pass to the print_list function
         let options: Vec<&str> = presets.iter().map(|preset| preset.name.as_str()).collect();
 
         print_list(&options);
         let choice = get_user_input_level_2("Choose a database: ").to_lowercase();
-        //print_insight_level_2("Choose a database:");
-        //print_list(&options); // Use the print_list function to display options
-
-        /*
-        for (i, preset) in presets.iter().enumerate() {
-            println!("{}: {}", i + 1, preset.name);
-        }
-        */
         let selected_option = determine_action_as_number(&options, &choice);
 
-        //let input = get_user_input_level_2("Enter the number of your choice: ").to_lowercase();
-
-        /*
-        if let Ok(serial) = selected_option.parse::<usize>() {
-            if serial > 0 && serial <= presets.len() {
-                let preset = &presets[serial - 1];
-                let db_type = match preset.db_type.to_lowercase().as_str() {
-                    "mssql" => DbType::MsSql,
-                    "mysql" => DbType::MySql,
-                    _ => return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Unknown database type in preset")) as Box<dyn Error>),
-                };
-                return Ok((db_type, Some(preset.clone())));
-            }
-        }
-        */
-        // Process the selected option
         if let Some(serial) = selected_option {
             if serial > 0 && serial <= presets.len() {
                 let preset = &presets[serial - 1];
@@ -273,7 +97,6 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
         (String::new(), String::new(), String::new(), String::new())
     };
 
-    dbg!(&username, &password, &host, &database);
     loop {
         let _query_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
 
@@ -558,23 +381,8 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
                     } else if let Some(caps) = describe_directive_regex.captures(&sql_query) {
                         // Extract database and table name from the captures
                         let specified_database =
-                            caps.get(1).map_or(database.as_str(), |m| m.as_str()); // Use the default database if not specified
-                        let table_name = caps.get(2).unwrap().as_str(); // Table name is required
-                                                                        //dbg!(&specified_database, &table_name);
-                                                                        /*
-                                                                        // Call the print_mysql_table_description function
-                                                                        let _ = DbConnect::print_mysql_table_description(
-                                                                            &username,
-                                                                            &password,
-                                                                            &host,
-                                                                            &specified_database,
-                                                                            table_name,
-                                                                        )
-                                                                        .await;
-
-                                                                        query_execution_result = Ok(CsvBuilder::new());
-                                                                        */
-
+                            caps.get(1).map_or(database.as_str(), |m| m.as_str());
+                        let table_name = caps.get(2).unwrap().as_str();
                         let result = CsvBuilder::get_mysql_table_description(
                             &username,
                             &password,

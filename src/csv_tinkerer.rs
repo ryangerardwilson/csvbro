@@ -1014,8 +1014,7 @@ Total rows: 3
                     continue;
                 }
 
-                let existing_data = csv_builder.get_data().unwrap();
-                //dbg!(&existing_data);
+                let existing_data_option = csv_builder.get_data();
 
                 let existing_headers: Vec<String> = csv_builder
                     .get_headers()
@@ -1026,17 +1025,27 @@ Total rows: 3
 
                 let mut json_array_str = "[".to_string();
 
-                if existing_data.is_empty() {
+                if existing_data_option == None {
                     // Handle case when there is no data
                     json_array_str.push_str("\n  {");
+                    /*
                     for (col_index, header) in existing_headers.iter().enumerate() {
                         json_array_str.push_str(&format!("\n    \"{}\": \"\"", header));
                         if col_index < existing_headers.len() - 1 {
                             json_array_str.push(',');
                         }
                     }
+                    */
+                    for (col_index, header) in existing_headers.iter().enumerate() {
+                        json_array_str.push_str(&format!("\n    \"{}\": \"\"", header));
+                        if col_index < existing_headers.len() - 1 {
+                            json_array_str.push(',');
+                        }
+                    }
+
                     json_array_str.push_str("\n  }");
                 } else {
+                    let existing_data = existing_data_option.unwrap();
                     // Original logic for when data exists
                     for (row_index, row) in existing_data.iter().enumerate() {
                         json_array_str.push_str("\n  {");
@@ -1210,7 +1219,7 @@ Total rows: 3
                     continue;
                 }
 
-                let existing_data = csv_builder.get_data().unwrap();
+                let existing_data_option = csv_builder.get_data();
 
                 let existing_headers: Vec<String> = csv_builder
                     .get_headers()
@@ -1220,7 +1229,7 @@ Total rows: 3
                     .collect();
                 let mut json_array_str = "[".to_string();
 
-                if existing_data.is_empty() {
+                if existing_data_option == None {
                     // Handle case when there is no data: add one JSON object with all headers and empty strings
                     json_array_str.push_str("\n  {");
                     for (col_index, header) in existing_headers.iter().enumerate() {
@@ -1231,6 +1240,7 @@ Total rows: 3
                     }
                     json_array_str.push_str("\n  }");
                 } else {
+                    let existing_data = existing_data_option.unwrap();
                     // If there is data, iterate in reverse and construct JSON string
                     for row in existing_data.iter().rev() {
                         json_array_str.push_str("\n  {");

@@ -5,7 +5,22 @@ use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
-// config_file in csv_db_path: bro.config
+//#[allow(dead_code)]
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct Config {
+    pub db_presets: Vec<DbPreset>,
+    pub open_ai_key: String,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct DbPreset {
+    pub name: String,
+    pub db_type: String,
+    pub host: String,
+    pub username: String,
+    pub password: String,
+    pub database: String,
+}
 
 pub fn edit_config(csv_db_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let config_path = csv_db_path.join("bro.config");
