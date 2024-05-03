@@ -57,32 +57,6 @@ pub fn get_user_sql_input() -> String {
     input.trim().to_string()
 }
 
-/*
-pub fn get_edited_user_json_input(last_query: String) -> String {
-    // Invoke vim_edit to edit the last query
-    let edited_query = vim_edit(last_query);
-
-    // Truncate everything after "SYNTAX\n======"
-    let truncated_query = if let Some(index) = edited_query.find("SYNTAX\n======") {
-        &edited_query[..index]
-    } else {
-        &edited_query[..]
-    };
-
-    let bold_orange = "\x1b[0;38;5;208m";
-    let reset = "\x1b[0m";
-
-    let prompt = "Executing this JSON query:";
-
-    print!(
-        "  {}@LILbro: {}{}{}",
-        bold_orange, bold_orange, prompt, reset
-    );
-    let result = truncated_query.trim().to_string();
-    println!("\n{}", result);
-    result
-}
-*/
 
 pub fn get_edited_user_json_input(last_query: String) -> String {
     // Invoke vim_edit to edit the last query
@@ -112,6 +86,36 @@ pub fn get_edited_user_json_input(last_query: String) -> String {
     // Return the truncated and trimmed query
     truncated_query.trim().to_string()
 }
+
+pub fn get_edited_user_config_input(last_config: String) -> String {
+    // Invoke vim_edit to edit the last query
+    let edited_config = vim_edit(last_config);
+
+    // Truncate everything after "SYNTAX\n======"
+    let truncated_config = if let Some(index) = edited_config.find("SYNTAX\n======") {
+        &edited_config[..index]
+    } else {
+        &edited_config[..]
+    };
+
+    // Prepare styled text for printing
+    let bold_orange = "\x1b[0;38;5;208m";
+    let reset = "\x1b[0m";
+    let prompt = "Updating bro.config:";
+
+    // Check if the truncated query starts with "@c" after being trimmed
+    if !truncated_config.trim().starts_with("@c") {
+        print!(
+            "  {}@LILbro: {}{}{}",
+            bold_orange, bold_orange, prompt, reset
+        );
+        println!("\n{}", truncated_config.trim());
+    }
+
+    // Return the truncated and trimmed query
+    edited_config.trim().to_string()
+}
+
 
 pub fn get_edited_user_sql_input(last_query: String) -> String {
     // Invoke vim_edit to edit the last query

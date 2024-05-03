@@ -6,6 +6,7 @@ mod csv_searcher;
 mod csv_tinkerer;
 mod db_connector;
 mod settings;
+mod config;
 mod user_experience;
 mod user_interaction;
 mod utils;
@@ -13,6 +14,7 @@ mod utils;
 use crate::csv_manager::{chain_builder, delete_csv_file, import, open_csv_file};
 use crate::db_connector::query;
 use crate::settings::open_settings;
+use crate::config::edit_config;
 use crate::user_experience::handle_quit_flag;
 use crate::user_interaction::{
     determine_action_as_text, get_user_input, print_insight, print_list,
@@ -127,7 +129,7 @@ async fn main() {
 "#
     );
 
-    let menu_options = vec!["NEW", "OPEN", "IMPORT", "QUERY", "DELETE", "SETTINGS"];
+    let menu_options = vec!["NEW", "OPEN", "IMPORT", "QUERY", "DELETE", "SETTINGS", "CONFIG"];
 
     loop {
         let _builder = loop {
@@ -179,7 +181,7 @@ async fn main() {
                         None => continue,
                     }
                 }
-                Some(ref action) if action == "QUERY" => match query().await {
+                Some(ref action) if action == "QUERY" => match query(&csv_db_path_buf).await {
                     Ok(csv_builder) => break csv_builder,
                     Err(e) => {
                         if e.to_string() == "User chose to go back" {
@@ -193,9 +195,15 @@ async fn main() {
                     continue; // Continue the loop after deletion
                 }
                 Some(ref action) if action == "SETTINGS" => {
-                    let _ = open_settings(); // No return value expected
-                    continue; // Continue the loop after settings are adjusted
+                    let _ = open_settings();
+                    continue;
                 }
+                Some(ref action) if action == "CONFIG" => {
+                    let _ = edit_config(&csv_db_path_buf); 
+                    continue; 
+                }
+
+
                 _ => {
                     print_insight("Dude, that action's a no-go. Give it another whirl, alright?");
                 }

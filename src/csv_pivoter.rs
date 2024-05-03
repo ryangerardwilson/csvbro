@@ -1,5 +1,5 @@
 // csv_pivoter.rs
-use crate::settings::manage_open_ai_config_file;
+//use crate::settings::manage_open_ai_config_file;
 use crate::user_experience::{
     handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
 };
@@ -14,7 +14,30 @@ use std::env;
 use std::error::Error;
 use std::fs;
 use std::path::Path;
+use std::path::PathBuf;
+use serde_json::from_str;
+use std::fs::read_to_string;
+
 // Assuming CsvBuilder, Exp, and ExpVal are updated as per your implementation
+
+#[derive(Debug, Clone, serde::Deserialize)]
+struct Config {
+    db_presets: Vec<DbPreset>,
+    #[allow(dead_code)]
+    open_ai_key: String,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+struct DbPreset {
+    name: String,
+    db_type: String,
+    host: String,
+    username: String,
+    password: String,
+    database: String,
+}
+
+
 
 struct ExpStore {
     expressions: Vec<Exp>, // Store the Exp instances directly
@@ -1850,15 +1873,16 @@ Total rows: 5
                             continue; // Skip the rest of the process
                         }
 
-                        let mut presets = Vec::new();
-                        let _ = manage_open_ai_config_file(|config| {
-                            presets = config.open_ai_presets.clone(); // Assign the presets here
-                            Ok(()) // Return Ok(()) as expected by the function signature
-                        });
+    if let Some(file_path) = file_path_option {
+        let config_path = PathBuf::from(file_path).join("bro.config");
 
-                        let api_key = &presets[0].api_key;
+        let file_contents = read_to_string(config_path)?;
+        let valid_json_part = file_contents.split("SYNTAX").next().ok_or("Invalid configuration format")?;
+        let config: Config = from_str(valid_json_part)?;
+        let api_key = &config.open_ai_key;
 
-                        //dbg!(&presets, &api_key);
+        // Use the api_key for your needs
+        println!("API Key: {}", api_key);
 
                         let result = csv_builder
                             .append_derived_openai_analysis_columns(
@@ -1886,6 +1910,54 @@ Total rows: 5
                                 continue; // Ask for the choice again if there was an error
                             }
                         }
+
+
+    } else {
+        return Err("File path is not provided".into());
+    }
+
+
+
+                        /*
+                        let mut presets = Vec::new();
+                        let _ = manage_open_ai_config_file(|config| {
+                            presets = config.open_ai_presets.clone(); // Assign the presets here
+                            Ok(()) // Return Ok(()) as expected by the function signature
+                        });
+
+                        let api_key = &presets[0].api_key;
+                        */
+
+                        //dbg!(&presets, &api_key);
+    /*
+                        let result = csv_builder
+                            .append_derived_openai_analysis_columns(
+                                &target_column_name,
+                                analysis_query,
+                                api_key,
+                                &model,
+                            )
+                            .await;
+
+                        if result.has_data() {
+                            csv_builder.print_table();
+                            println!();
+                            print_insight_level_2("OpenAI analysis complete.");
+                        }
+
+                        match apply_filter_changes_menu(
+                            csv_builder,
+                            &prev_iteration_builder,
+                            &original_csv_builder,
+                        ) {
+                            Ok(_) => (),
+                            Err(e) => {
+                                println!("{}", e);
+                                continue; // Ask for the choice again if there was an error
+                            }
+                        }
+*/
+
                     }
                     Err(e) if e.to_string() == "Operation canceled" => {
                         continue;

@@ -97,28 +97,6 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
 
-                /*
-                match selected_option {
-                    Some(ref action) if action == "add db preset" => {
-                        add_db_preset()?;
-                        continue;
-                    }
-                    Some(ref action) if action == "update db preset" => {
-                        update_db_preset()?;
-                        continue;
-                    }
-                    Some(ref action) if action == "delete db preset" => {
-                        delete_db_preset()?;
-                        continue;
-                    }
-                    Some(ref action) if action == "view db preset" => {
-                        view_db_presets()?;
-                        continue;
-                    }
-                    Some(_) => print_insight("Unrecognized action, please try again."),
-                    None => print_insight("No action determined"),
-                }
-                */
             },
             Some(ref action) if action == "open ai presets" => loop {
                 print_insight("Configure OpenAI Presets");
@@ -163,41 +141,12 @@ pub fn open_settings() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
 
-                /*
-                match selected_option {
-                    Some(ref action) if action == "add open ai preset" => {
-                        add_open_ai_preset()?;
-                        continue;
-                    }
-                    Some(ref action) if action == "update open ai preset" => {
-                        update_open_ai_preset()?;
-                        continue;
-                    }
-                    Some(ref action) if action == "delete open ai preset" => {
-                        delete_open_ai_preset()?;
-                        continue;
-                    }
-                    Some(ref action) if action == "view open ai preset" => {
-                        view_open_ai_preset()?;
-                        continue;
-                    }
-                    Some(_) => print_insight("Unrecognized action, please try again."),
-                    None => print_insight("No action determined"),
-                }
-                */
             },
 
             _ => {
-                //println!("Invalid option. Please enter a number from 1 to 4.");
                 continue; // Ask for the choice again
-            } /*
-              Some(ref action) if action == "BACK" => {
-                  break;
-              }
-              */
-              //"done" => break,
-              //Some(_) => print_insight("Unrecognized action, please try again."),
-              //None => print_insight("No action determined"),
+            } 
+
         }
     }
 
@@ -221,43 +170,33 @@ pub fn manage_db_config_file<F: FnOnce(&mut DbConfig) -> Result<(), Box<dyn Erro
     let desktop_path = Path::new(&home_dir).join("Desktop");
     let mut path = desktop_path.join("csv_db");
 
-    //println!("Checking if path exists: {:?}", path);
     if !path.exists() {
         println!("Path does not exist, creating directory.");
         fs::create_dir_all(&path)?;
     }
     path.push("db_config.json");
-    //println!("Final path for config file: {:?}", path);
 
     let mut config = if path.exists() {
         let contents = fs::read_to_string(&path)?;
         if contents.is_empty() {
-            //println!("Config file is empty, initializing new Config.");
             DbConfig { db_presets: vec![] }
         } else {
             serde_json::from_str(&contents)?
         }
     } else {
-        //println!("Config file does not exist, creating new Config instance.");
         DbConfig { db_presets: vec![] }
     };
 
-    //println!("Performing operation on config.");
     op(&mut config)?;
 
-    //println!("Serializing config.");
     let serialized = serde_json::to_string(&config)?;
-    //println!("Serialized config: {}", serialized);
 
-    //println!("Writing config to file.");
     fs::write(path, serialized)?;
-    //println!("Config written to file successfully.");
 
     Ok(())
 }
 
 fn add_db_preset() -> Result<(), Box<dyn std::error::Error>> {
-    // Create an empty JSON template
     let empty_preset = DbPreset {
         name: String::new(),
         db_type: String::new(),
@@ -266,28 +205,19 @@ fn add_db_preset() -> Result<(), Box<dyn std::error::Error>> {
         password: String::new(),
         database: String::new(),
     };
-    // println!("Empty preset created: {:?}", empty_preset);
 
-    // Convert the empty preset to a JSON string
     let preset_json = serde_json::to_string_pretty(&empty_preset)?;
-    //println!("Empty preset as JSON: {}", preset_json);
 
-    // Let the user edit the JSON
     let edited_json = get_edited_user_json_input(preset_json);
-    //println!("Edited JSON received: {}", edited_json);
 
     if handle_cancel_flag(&edited_json) {
         return Ok(());
     }
 
-    // Parse the edited JSON back into a DbPreset
     let new_preset: DbPreset = serde_json::from_str(&edited_json)?;
-    //println!("New preset parsed from JSON: {:?}", new_preset);
 
-    // Add the new preset to the configuration file
     manage_db_config_file(|config| {
         config.db_presets.push(new_preset);
-        //println!("New preset added to config");
         Ok(())
     })
 }
@@ -399,18 +329,15 @@ pub fn manage_open_ai_config_file<F: FnOnce(&mut OpenAiConfig) -> Result<(), Box
     let desktop_path = Path::new(&home_dir).join("Desktop");
     let mut path = desktop_path.join("csv_db");
 
-    //println!("Checking if path exists: {:?}", path);
     if !path.exists() {
         println!("Path does not exist, creating directory.");
         fs::create_dir_all(&path)?;
     }
     path.push("open_ai_config.json");
-    //println!("Final path for config file: {:?}", path);
 
     let mut config = if path.exists() {
         let contents = fs::read_to_string(&path)?;
         if contents.is_empty() {
-            //println!("Config file is empty, initializing new Config.");
             OpenAiConfig {
                 open_ai_presets: vec![],
             }
@@ -418,22 +345,16 @@ pub fn manage_open_ai_config_file<F: FnOnce(&mut OpenAiConfig) -> Result<(), Box
             serde_json::from_str(&contents)?
         }
     } else {
-        //println!("Config file does not exist, creating new Config instance.");
         OpenAiConfig {
             open_ai_presets: vec![],
         }
     };
 
-    //println!("Performing operation on config.");
     op(&mut config)?;
 
-    //println!("Serializing config.");
     let serialized = serde_json::to_string(&config)?;
-    //println!("Serialized config: {}", serialized);
 
-    //println!("Writing config to file.");
     fs::write(path, serialized)?;
-    //println!("Config written to file successfully.");
 
     Ok(())
 }
@@ -464,22 +385,17 @@ fn add_open_ai_preset() -> Result<(), Box<dyn std::error::Error>> {
 
 fn update_open_ai_preset() -> Result<(), Box<dyn Error>> {
     manage_open_ai_config_file(|config| {
-        // Check if there is an existing preset to update
         if !config.open_ai_presets.is_empty() {
-            // Serialize the existing preset to JSON for editing
             let preset_json = serde_json::to_string_pretty(&config.open_ai_presets[0])?;
-            // Get edited JSON from the user
             let edited_json = get_edited_user_json_input(preset_json);
 
             if handle_cancel_flag(&edited_json) {
                 return Ok(());
             }
 
-            // Deserialize the edited JSON back into the OpenAiPreset struct
             config.open_ai_presets[0] = serde_json::from_str(&edited_json)?;
             Ok(())
         } else {
-            // If there are no presets, inform the user and return an error
             print_insight("No OpenAI preset found.");
             Err("No OpenAI preset found.".into())
         }
@@ -488,12 +404,10 @@ fn update_open_ai_preset() -> Result<(), Box<dyn Error>> {
 
 fn delete_open_ai_preset() -> Result<(), Box<dyn Error>> {
     manage_open_ai_config_file(|config| {
-        // Check if there is an existing preset to update
         if !config.open_ai_presets.is_empty() {
             config.open_ai_presets[0].api_key = String::new();
             Ok(())
         } else {
-            // If there are no presets, inform the user and return an error
             print_insight("No OpenAI preset found.");
             Err("No OpenAI preset found.".into())
         }
@@ -516,9 +430,8 @@ pub fn view_open_ai_preset() -> Result<(), Box<dyn std::error::Error>> {
     }) {
         Ok(_) => Ok(()),
         Err(_e) => {
-            // Handle errors specifically if needed, for now, just print a generic message
             print_insight("No OpenAI preset found.");
-            Ok(()) // You might want to return Err(e) if you want the caller to know the operation failed
+            Ok(()) 
         }
     }
 }
