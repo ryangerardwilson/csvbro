@@ -250,6 +250,7 @@ SYNTAX
         "PRINT ALL ROWS (JSON)",
         "PRINT ALL ROWS (TABULATED)",
         "PRINT ROWS WHERE",
+        "PRINT NUMERICAL ANALYSIS",
         "PRINT FREQ OF MULTIPLE COLUMN VALUES (LINEAR)",
         "PRINT FREQ OF MULTIPLE COLUMN VALUES (CASCADING)",
         "PRINT UNIQUE COLUMN VALUES",
@@ -658,6 +659,74 @@ Total rows printed: 4
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
+  @LILbro: Enter column names separated by commas: price, gst
+
+Analysis for column 'price':
+  Minimum: -0.8474576271186441
+  Maximum: 995.7627118644068
+  Range: 5519.49
+  Sum: 68325587.29
+  Mean: 441.36
+  Median: 392.37
+  Mode: 380.5084745762712
+  Standard Deviation: 207.10
+  Variance: 42890.76
+  Sum of Squared Deviations: 6639789909.14
+Analysis for column 'gst':
+  Minimum: -0.1525423728813559
+  Maximum: 99.7627118644068
+  Range: 993.51
+  Sum: 12298605.71
+  Mean: 79.44
+  Median: 70.63
+  Mode: 68.49152542372882
+  Standard Deviation: 37.28
+  Variance: 1389.66
+  Sum of Squared Deviations: 215129193.06
+
+### DEFINITIONS
+
+  - Minimum (Smallest Number): Imagine you’re looking for the smallest shell on the beach. A small value here means it's really tiny, maybe as small as a grain of sand!
+
+  - Maximum (Biggest Number): Now think of finding the biggest shell. A big value here means it’s huge, maybe even as big as your hand!
+
+  - Range (Difference between Biggest and Smallest): This is like measuring the space between two trees in the playground. A large range means the trees are really far apart. A small range means they are close together, so you don't have to walk far!
+
+  - Sum (All Numbers Added Together): This is like collecting stones. A large sum means you’ve gathered lots of stones, maybe enough to fill your pockets! A small sum means just a few stones, maybe only enough to hold in one hand.
+
+  - Mean (Average): Think about sharing cookies equally with friends. A large average means each friend gets many cookies, maybe a whole bunch! A small average means each friend gets maybe only one or a tiny piece.
+
+  - Median (Middle Number in a Sorted List): This is the middle step on a staircase. If it’s a high step (large median), it means you're up high, like on a big slide. If it’s a low step (small median), you're closer to the ground, like sitting in a sandbox.
+
+  - Mode (Most Frequent Number): Imagine which color balloon you see the most at a party. A large mode means that most kids chose a big balloon. A small mode might mean most kids picked a small balloon.
+
+  - Standard Deviation (How Spread Out the Numbers Are): This is like seeing how spread out friends are in a game of hide and seek. A large deviation means everyone is hiding far away from each other. A small deviation means everyone is hiding close by, maybe even in the same spot! Compare the standard deviation to the mean itself. For instance, if the SD is very large compared to the mean, it indicates high variability.
+
+  - Variance (Average of Squared Differences from the Mean): This is also about how spread out things are, like different sizes of pumpkins in a patch. A large variance means pumpkins range from tiny to huge. A small variance means most pumpkins are about the same size. Like standard deviation, variance can be useful when viewed relative to the mean. If variance is very high compared to the mean, it indicates high variability.
+
+  - Sum of Squared Deviations (Total of Each Value's Difference from the Mean, Squared): Think of it like the total jumps needed to reach different distances in hopscotch. A large total means some jumps were really big. A small total means the jumps were mostly the same, easy hops. The sum of squared deviations (SSD), or sum of squares, measures the total variability in a dataset. However, it isn't interpreted directly because its value depends on the number of data points, making comparisons challenging across different datasets. Instead, it is often used as an intermediate calculation for other metrics like variance or standard deviation. 
+"#,
+                    );
+                    continue;
+                }
+
+                let column_names =
+                    get_user_input_level_2("Enter column names separated by commas: ");
+
+                if handle_cancel_flag(&column_names) {
+                    continue;
+                }
+
+                let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+                println!();
+                csv_builder.print_column_numerical_analysis(columns);
+            }
+
+            Some(8) => {
+                if choice.to_lowercase() == "8d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
 Prints frequencies of unique values in the specified columns.
 |id |value |date      |interest |type  |
 ----------------------------------------
@@ -705,8 +774,8 @@ Frequency for column 'interest':
                 let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
                 csv_builder.print_freq(columns);
             }
-            Some(8) => {
-                if choice.to_lowercase() == "8d" {
+            Some(9) => {
+                if choice.to_lowercase() == "9d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -781,8 +850,8 @@ Frequency for column 'type':
                 csv_builder.print_freq_cascading(columns);
             }
 
-            Some(9) => {
-                if choice.to_lowercase() == "9d" {
+            Some(10) => {
+                if choice.to_lowercase() == "10d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -817,8 +886,8 @@ Unique values in 'value': 200, 1000, 20000, 1500, 2000, 300, 1100
                 csv_builder.print_unique(&column_name.trim());
             }
 
-            Some(10) => {
-                if choice.to_lowercase() == "10d" {
+            Some(11) => {
+                if choice.to_lowercase() == "11d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -867,8 +936,8 @@ Statistics for column 'interest':
             }
 
             // In your handle_inspect method
-            Some(11) => {
-                if choice.to_lowercase() == "11d" {
+            Some(12) => {
+                if choice.to_lowercase() == "12d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -934,8 +1003,8 @@ Count: 7
                     }
                 }
             }
-            Some(12) => {
-                if choice.to_lowercase() == "12d" {
+            Some(13) => {
+                if choice.to_lowercase() == "13d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1026,8 +1095,8 @@ Total rows: 10
                     csv_builder.print_dot_chart(x_axis_column, y_axis_column);
                 }
             }
-            Some(13) => {
-                if choice.to_lowercase() == "13d" {
+            Some(14) => {
+                if choice.to_lowercase() == "14d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1114,8 +1183,8 @@ Total rows: 10
                 }
             }
 
-            Some(14) => {
-                if choice.to_lowercase() == "14d" {
+            Some(15) => {
+                if choice.to_lowercase() == "15d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1207,8 +1276,8 @@ Total rows: 10
                 }
             }
 
-            Some(15) => {
-                if choice.to_lowercase() == "15d" {
+            Some(16) => {
+                if choice.to_lowercase() == "16d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1296,7 +1365,7 @@ Total rows: 10
             }
 
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 15.");
+                println!("Invalid option. Please enter a number from 1 to 16.");
                 continue; // Ask for the choice again
             }
         }
