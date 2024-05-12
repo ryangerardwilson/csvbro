@@ -1,18 +1,14 @@
 // src/user_experience.rs
+use crate::config::edit_config;
+use crate::csv_manager::{delete_csv_file, import, open_csv_file};
+use crate::db_connector::query;
 use crate::user_interaction::{get_user_input, get_user_input_level_2, print_insight, print_list};
 use rgwml::csv_utils::CsvBuilder;
-use crate::csv_manager::{chain_builder, delete_csv_file, import, open_csv_file};
-use crate::db_connector::query;
-use crate::config::edit_config;
 use std::env;
 use std::path::Path;
 use std::path::PathBuf;
 
-
-pub fn handle_special_flag_without_builder(
-    flag: &str,
-) -> bool {
-
+pub fn handle_special_flag_without_builder(flag: &str) -> bool {
     let home_dir = env::var("HOME").expect("Unable to determine user home directory");
     let desktop_path = Path::new(&home_dir).join("Desktop");
     let csv_db_path = desktop_path.join("csv_db");
@@ -20,10 +16,10 @@ pub fn handle_special_flag_without_builder(
     let csv_db_path_buf = PathBuf::from(csv_db_path.clone());
 
     match flag {
-        "@f" | "@flags "=> {
+        "@f" | "@flags " => {
             let flags = vec![
                 "@f/ @flags   : View all flags",
-                "@s           : Save", 
+                "@s           : Save",
                 "@sa          : Save as",
                 "@d / @delete : Delete files from csv_db",
                 "@config      : Edit config",
@@ -34,12 +30,10 @@ pub fn handle_special_flag_without_builder(
             true
         }
         "@d" => {
-
             delete_csv_file(&csv_db_path_buf);
             true
         }
         "@config" => {
-
             let _ = edit_config(&csv_db_path_buf);
             true
         }
@@ -47,7 +41,6 @@ pub fn handle_special_flag_without_builder(
         _ => false,
     }
 }
-
 
 pub fn handle_special_flag(
     flag: &str,
@@ -61,7 +54,7 @@ pub fn handle_special_flag(
     let desktop_path = Path::new(&home_dir).join("Desktop");
     let csv_db_path = desktop_path.join("csv_db");
 
-    let csv_db_path_buf = PathBuf::from(csv_db_path.clone());
+    //let csv_db_path_buf = PathBuf::from(csv_db_path.clone());
 
     match flag {
         "@s" => {
@@ -114,7 +107,7 @@ pub fn handle_special_flag(
 }
 
 pub async fn handle_special_flag_returning_new_builder(
-    flag: &str
+    flag: &str,
 ) -> Option<Result<((), CsvBuilder), Box<dyn std::error::Error>>> {
     let home_dir = match env::var("HOME") {
         Ok(dir) => dir,
@@ -144,7 +137,6 @@ pub async fn handle_special_flag_returning_new_builder(
             if let Err(e) = new_builder.save_as(file_path_str) {
                 //return Some(Err(Box::new(e)));
                 return Some(Err(e));
-
             }
         }
         "@o" | "@open" => {
@@ -177,7 +169,6 @@ pub async fn handle_special_flag_returning_new_builder(
 
     Some(Ok(((), new_builder)))
 }
-
 
 pub fn handle_query_special_flag(flag: &str, builder: &mut CsvBuilder) -> bool {
     let has_data = builder.has_data();

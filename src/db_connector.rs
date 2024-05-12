@@ -6,7 +6,8 @@ use crate::csv_pivoter::handle_pivot;
 use crate::csv_searcher::handle_search;
 use crate::csv_tinkerer::handle_tinker;
 use crate::user_experience::{
-    handle_back_flag, handle_cancel_flag, handle_query_retry_flag, handle_query_special_flag, handle_quit_flag,
+    handle_back_flag, handle_cancel_flag, handle_query_retry_flag, handle_query_special_flag,
+    handle_quit_flag,
 };
 use crate::user_interaction::{
     determine_action_as_number, determine_action_as_text, get_edited_user_sql_input,
@@ -156,12 +157,9 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
                             .unwrap();
 
                     // Check for the chunking directive
-                if handle_cancel_flag(&sql_query) {
-                query_execution_result = Ok(CsvBuilder::new());    
-                }
-
-
-                    else if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
+                    if handle_cancel_flag(&sql_query) {
+                        query_execution_result = Ok(CsvBuilder::new());
+                    } else if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
                         let chunk_size = caps.get(1).unwrap().as_str();
 
                         // Remove the chunk directive and trim extra characters
@@ -333,11 +331,9 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
                     let describe_directive_regex =
                         Regex::new(r"@bro_describe::(?:([^.\s]+)\.)?(\w+)").unwrap();
 
-                if handle_cancel_flag(&sql_query) {
-                query_execution_result = Ok(CsvBuilder::new());
-                }
-
-
+                    if handle_cancel_flag(&sql_query) {
+                        query_execution_result = Ok(CsvBuilder::new());
+                    }
                     // Check for the chunking directive
                     else if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
                         let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string

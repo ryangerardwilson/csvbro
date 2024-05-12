@@ -5,7 +5,8 @@ use crate::csv_pivoter::handle_pivot;
 use crate::csv_searcher::handle_search;
 use crate::csv_tinkerer::handle_tinker;
 use crate::user_experience::{
-    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag, handle_special_flag_returning_new_builder
+    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
+    handle_special_flag_returning_new_builder,
 };
 use crate::user_interaction::{
     determine_action_as_text, get_user_input, print_insight, print_insight_level_2, print_list,
@@ -365,82 +366,75 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
             continue;
         }
 
-        if handle_back_flag(&choice) {
+        if handle_back_flag(&choice) || &choice == "" {
             break;
         }
         let _ = handle_quit_flag(&choice);
 
+        //dbg!(&choice);
+        if let Some(result) = handle_special_flag_returning_new_builder(&choice).await {
+            //dbg!(&result);
+            match result {
+                Ok((_, mut new_builder)) => {
+                    // If successful, `new_builder` is the new CsvBuilder instance
+                    if new_builder.has_data() && new_builder.has_headers() {
+                        print_insight_level_2("Loading new CsvBuilder ...");
+                        new_builder.print_table();
+                        builder = new_builder;
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                Err(e) => {
+                    // If there's an error, handle it here
+                    println!("An error occurred: {}", e);
+                }
+            }
+        } else {
+            //dbg!(&choice);
 
-    // Call the function with the choice and mutable reference to the original builder
-let mut new_builder_loaded = false;
+            let selected_option = determine_action_as_text(&menu_options, &choice);
 
-if let Some(result) = handle_special_flag_returning_new_builder(&choice).await {
-    
-//dbg!(&result);
-    match result {
-        Ok((_, mut new_builder)) => {
-            // If successful, `new_builder` is the new CsvBuilder instance
-            print_insight_level_2("Loading new CsvBuilder ...");
-            new_builder.print_table();
-            builder = new_builder;
-            new_builder_loaded = true;
-            continue;
-        },
-        Err(e) => {
-            // If there's an error, handle it here
-            println!("An error occurred: {}", e);
+            match selected_option {
+                Some(ref action) if action == "TINKER" => {
+                    if let Err(e) = handle_tinker(&mut builder, file_path_option).await {
+                        println!("Error during tinker: {}", e);
+                        continue;
+                    }
+                }
+
+                Some(ref action) if action == "SEARCH" => {
+                    if let Err(e) = handle_search(&mut builder, file_path_option).await {
+                        println!("Error during search: {}", e);
+                        continue;
+                    }
+                }
+
+                Some(ref action) if action == "INSPECT" => {
+                    if let Err(e) = handle_inspect(&mut builder, file_path_option) {
+                        println!("Error during inspection: {}", e);
+                        continue;
+                    }
+                }
+
+                Some(ref action) if action == "PIVOT" => {
+                    if let Err(e) = handle_pivot(&mut builder, file_path_option).await {
+                        println!("Error during pivot operation: {}", e);
+                        continue;
+                    }
+                }
+
+                Some(ref action) if action == "JOIN" => {
+                    if let Err(e) = handle_join(&mut builder, file_path_option) {
+                        println!("Error during join operation: {}", e);
+                        continue;
+                    }
+                }
+                //"done" => break,
+                Some(_) => print_insight("Unrecognized action, please try again."),
+                None => print_insight("No action determined"),
+            }
         }
     }
-} else {
-//dbg!(&choice);
-
- let selected_option = determine_action_as_text(&menu_options, &choice);
-
-        match selected_option {
-            Some(ref action) if action == "TINKER" => {
-                if let Err(e) = handle_tinker(&mut builder, file_path_option).await {
-                    println!("Error during tinker: {}", e);
-                    continue;
-                }
-            }
-
-            Some(ref action) if action == "SEARCH" => {
-                if let Err(e) = handle_search(&mut builder, file_path_option).await {
-                    println!("Error during search: {}", e);
-                    continue;
-                }
-            }
-
-            Some(ref action) if action == "INSPECT" => {
-                if let Err(e) = handle_inspect(&mut builder, file_path_option) {
-                    println!("Error during inspection: {}", e);
-                    continue;
-                }
-            }
-
-            Some(ref action) if action == "PIVOT" => {
-                if let Err(e) = handle_pivot(&mut builder, file_path_option).await {
-                    println!("Error during pivot operation: {}", e);
-                    continue;
-                }
-            }
-
-            Some(ref action) if action == "JOIN" => {
-                if let Err(e) = handle_join(&mut builder, file_path_option) {
-                    println!("Error during join operation: {}", e);
-                    continue;
-                }
-            }
-            //"done" => break,
-            Some(_) => print_insight("Unrecognized action, please try again."),
-            None => print_insight("No action determined"),
-        }
-
-
-
-
-}
-
-       }
-
 }
