@@ -5,7 +5,7 @@ use crate::csv_pivoter::handle_pivot;
 use crate::csv_searcher::handle_search;
 use crate::csv_tinkerer::handle_tinker;
 use crate::user_experience::{
-    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
+    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag, handle_special_flag_returning_new_builder
 };
 use crate::user_interaction::{
     determine_action_as_text, get_user_input, print_insight, print_insight_level_2, print_list,
@@ -370,7 +370,31 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         }
         let _ = handle_quit_flag(&choice);
 
-        let selected_option = determine_action_as_text(&menu_options, &choice);
+
+    // Call the function with the choice and mutable reference to the original builder
+let mut new_builder_loaded = false;
+
+if let Some(result) = handle_special_flag_returning_new_builder(&choice).await {
+    
+//dbg!(&result);
+    match result {
+        Ok((_, mut new_builder)) => {
+            // If successful, `new_builder` is the new CsvBuilder instance
+            print_insight_level_2("Loading new CsvBuilder ...");
+            new_builder.print_table();
+            builder = new_builder;
+            new_builder_loaded = true;
+            continue;
+        },
+        Err(e) => {
+            // If there's an error, handle it here
+            println!("An error occurred: {}", e);
+        }
+    }
+} else {
+//dbg!(&choice);
+
+ let selected_option = determine_action_as_text(&menu_options, &choice);
 
         match selected_option {
             Some(ref action) if action == "TINKER" => {
@@ -411,5 +435,12 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
             Some(_) => print_insight("Unrecognized action, please try again."),
             None => print_insight("No action determined"),
         }
-    }
+
+
+
+
+}
+
+       }
+
 }

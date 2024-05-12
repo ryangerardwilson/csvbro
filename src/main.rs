@@ -13,7 +13,7 @@ mod utils;
 use crate::config::edit_config;
 use crate::csv_manager::{chain_builder, delete_csv_file, import, open_csv_file};
 use crate::db_connector::query;
-use crate::user_experience::handle_quit_flag;
+use crate::user_experience::{handle_quit_flag, handle_special_flag_without_builder};
 use crate::user_interaction::{
     determine_action_as_text, get_user_input, print_insight, print_list,
 };
@@ -134,9 +134,11 @@ async fn main() {
             print_list(&menu_options);
             let choice = get_user_input("Your move, bro: ");
             let _ = handle_quit_flag(&choice);
+            let special_flag_without_builder_invoked = handle_special_flag_without_builder(&choice);
 
             let selected_option = determine_action_as_text(&menu_options, &choice);
 
+            if !special_flag_without_builder_invoked {
             match selected_option {
                 Some(ref action) if action == "NEW" => {
                     //break
@@ -200,6 +202,8 @@ async fn main() {
                 _ => {
                     print_insight("Dude, that action's a no-go. Give it another whirl, alright?");
                 }
+
+            }
             }
         };
     }
