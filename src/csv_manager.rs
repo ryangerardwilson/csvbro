@@ -6,7 +6,7 @@ use crate::csv_searcher::handle_search;
 use crate::csv_tinkerer::handle_tinker;
 use crate::user_experience::{
     handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
-    handle_special_flag_returning_new_builder,
+    handle_special_flag_returning_new_builder, handle_special_flag_without_builder,
 };
 use crate::user_interaction::{
     determine_action_as_text, get_user_input, print_insight, print_insight_level_2, print_list,
@@ -363,6 +363,10 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         let choice = get_user_input("Enter your choice: ").to_lowercase();
 
         if handle_special_flag(&choice, &mut builder, file_path_option) {
+            continue;
+        }
+
+        if handle_special_flag_without_builder(&choice) {
             continue;
         }
 

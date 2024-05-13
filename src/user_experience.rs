@@ -18,15 +18,23 @@ pub fn handle_special_flag_without_builder(flag: &str) -> bool {
     match flag {
         "@f" | "@flags " => {
             let flags = vec![
-                "@f/ @flags   : View all flags",
-                "@s           : Save",
-                "@sa          : Save as",
-                "@d / @delete : Delete files from csv_db",
-                "@config      : Edit config",
+                "@c           : After action select/ in vim edit => Cancel action",
+                "@config      : Primary/ Secondary menu => Edit config",
+                "@d / @delete : Primary/ Secondary menu => Delete files from csv_db",
+                "@f/ @flags   : Primary/ Secondary menu => View all flags",
+                "@i / @import : After csv load => Import a new csv file",
+                "@n / @new    : After csv load => Instantiate a new blank csv file",
+                "@o / @open   : After csv load => Open a new csv file from csv_db",
+                "@query       : After csv load => Import a new csv via a db query",
+                "@r           : After csv load via query => Retry a query",
+                "@s           : After csv load => Save",
+                "@sa          : After csv load => Save as",
+                "@q           : Anywhere => Quit csvbro",
             ];
 
             print_insight("Serving your flags ...");
             print_list(&flags);
+            println!();
             true
         }
         "@d" => {

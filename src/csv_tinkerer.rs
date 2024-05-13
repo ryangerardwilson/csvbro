@@ -397,6 +397,7 @@ Note the implications of the limit_type value:
         "REORDER COLUMNS",
         "SET INDEX COLUMN",
         "CASCADE SORT",
+        "CLEAN DATA BY COLUMN PARSE",
     ];
 
     let original_csv_builder = CsvBuilder::from_copy(csv_builder);
@@ -2360,8 +2361,145 @@ SYNTAX
                 }
             }
 
+            Some(16) => {
+                if choice.to_lowercase() == "16d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+// Cleans data by parsing columns with preset rules. Rows that do not conform to any of the stipulated rules are discarded
+  @LILbro: Executing this JSON query:
+{
+    "mobile": ["HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER", "HAS_LENGTH:10"],
+    "price": [],
+    "paid_on": ["IS_DATETIME_PARSEABLE"],
+}
+
+### AVAILABLE RULES
+
+- "HAS_ONLY_NUMERICAL_VALUES"
+- "HAS_ONLY_POSITIVE_NUMERICAL_VALUES"
+- "HAS_LENGTH:10"
+- "HAS_MIN_LENGTH:7"
+- "HAS_MAX_LENGTH:12"
+- "HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"
+- "HAS_NO_EMPTY_STRINGS"
+- "IS_DATETIME_PARSEABLE"
+"#,
+                    );
+                    continue;
+                }
+
+                if let Some(headers) = csv_builder.get_headers() {
+                    let mut json_array_str = "{\n".to_string();
+
+                    // Loop through headers and append them as keys in the JSON array string, excluding auto-computed columns
+                    for (i, header) in headers.iter().enumerate() {
+                        if header != "id" && header != "c@" && header != "u@" {
+                            json_array_str.push_str(&format!("    \"{}\": []", header));
+                            if i < headers.len() - 1 {
+                                json_array_str.push_str(",\n");
+                            }
+                        }
+                    }
+
+                    // Close the first JSON object and start the syntax explanation
+                    json_array_str.push_str("\n}");
+
+                    let syntax_explanation = r#"
+
+SYNTAX
+======
+
+### Example
+
+{
+  "column1": ["HAS_ONLY_POSITIVE_NUMERICAL_VALUES", "HAS_NO_EMPTY_STRINGS"],
+  "column2": [],
+  "column3": ["HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"],
+  "column4": [],
+  "column5": [],
+  "column6": ["IS_DATETIME_PARSEABLE"],
+  "column7": ["IS_DATETIME_PARSEABLE"]
+}
+
+### AVAILABLE RULES
+- "HAS_ONLY_NUMERICAL_VALUES"
+- "HAS_ONLY_POSITIVE_NUMERICAL_VALUES"
+- "HAS_LENGTH:10"
+- "HAS_MIN_LENGTH:7"
+- "HAS_MAX_LENGTH:12"
+- "HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"
+- "HAS_NO_EMPTY_STRINGS"
+- "IS_DATETIME_PARSEABLE"
+
+"#;
+
+                    let full_syntax = json_array_str + syntax_explanation;
+
+                    // Get user input
+                    let rows_json_str = get_edited_user_json_input(full_syntax);
+                    //dbg!(&rows_json_str);
+                    if handle_cancel_flag(&rows_json_str) {
+                        continue;
+                    }
+
+                    // Parse the user input
+                    let rows_json: Value = match serde_json::from_str(&rows_json_str) {
+                        Ok(json) => json,
+                        Err(e) => {
+                            eprintln!("Error parsing JSON string: {}", e);
+                            return Err("An error occurred".to_string().into());
+                        }
+                    };
+
+                    // Collect rules from user input
+                    let mut rules = Vec::new();
+                    if let Some(obj) = rows_json.as_object() {
+                        for (key, value) in obj {
+                            if let Some(rules_array) = value.as_array() {
+                                let mut column_rules = Vec::new();
+                                for rule in rules_array {
+                                    if let Some(rule_str) = rule.as_str() {
+                                        if !rule_str.is_empty() {
+                                            column_rules.push(rule_str.to_string());
+                                        }
+                                    }
+                                }
+                                if !column_rules.is_empty() {
+                                    rules.push((key.clone(), column_rules));
+                                }
+                            }
+                        }
+                    }
+
+                    println!();
+                    // Invoke the cleanliness report function with the collected rules
+                    csv_builder
+                        .print_cleanliness_report_by_column_parse(rules.clone())
+                        .clean_by_column_parse(rules.clone());
+
+                    if csv_builder.has_data() {
+                        csv_builder.print_table();
+                        println!();
+                    }
+
+                    //    csv_builder.print_table();
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                }
+            }
+
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 15.");
+                println!("Invalid option. Please enter a number from 1 to 16.");
                 continue;
             }
         }

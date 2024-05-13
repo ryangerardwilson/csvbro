@@ -249,6 +249,7 @@ SYNTAX
         "PRINT ROWS (JSON)",
         "PRINT ALL ROWS (JSON)",
         "PRINT ALL ROWS (TABULATED)",
+        "PRINT CLEANLINESS REPORT",
         "PRINT ROWS WHERE",
         "PRINT NUMERICAL ANALYSIS",
         "PRINT FREQ OF MULTIPLE COLUMN VALUES (LINEAR)",
@@ -552,6 +553,122 @@ Total rows: 12
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
+// Prints the scope to cleans data by parsing columns with preset rules.
+  @LILbro: Executing this JSON query:
+{
+    "mobile": ["HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER", "HAS_LENGTH:10"],
+    "price": [],
+    "paid_on": ["IS_DATETIME_PARSEABLE"],
+}
+
+### AVAILABLE RULES
+
+- "HAS_ONLY_NUMERICAL_VALUES"
+- "HAS_ONLY_POSITIVE_NUMERICAL_VALUES"
+- "HAS_LENGTH:10"
+- "HAS_MIN_LENGTH:7"
+- "HAS_MAX_LENGTH:12"
+- "HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"
+- "HAS_NO_EMPTY_STRINGS"
+- "IS_DATETIME_PARSEABLE"
+"#,
+                    );
+                    continue;
+                }
+
+                if let Some(headers) = csv_builder.get_headers() {
+                    let mut json_array_str = "{\n".to_string();
+
+                    // Loop through headers and append them as keys in the JSON array string, excluding auto-computed columns
+                    for (i, header) in headers.iter().enumerate() {
+                        if header != "id" && header != "c@" && header != "u@" {
+                            json_array_str.push_str(&format!("    \"{}\": []", header));
+                            if i < headers.len() - 1 {
+                                json_array_str.push_str(",\n");
+                            }
+                        }
+                    }
+
+                    // Close the first JSON object and start the syntax explanation
+                    json_array_str.push_str("\n}");
+
+                    let syntax_explanation = r#"
+
+SYNTAX
+======
+
+### Example
+
+{
+  "column1": ["HAS_ONLY_POSITIVE_NUMERICAL_VALUES", "HAS_NO_EMPTY_STRINGS"],
+  "column2": [],
+  "column3": ["HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"],
+  "column4": [],
+  "column5": [],
+  "column6": ["IS_DATETIME_PARSEABLE"],
+  "column7": ["IS_DATETIME_PARSEABLE"]
+}
+
+### AVAILABLE RULES
+- "HAS_ONLY_NUMERICAL_VALUES"
+- "HAS_ONLY_POSITIVE_NUMERICAL_VALUES"
+- "HAS_LENGTH:10"
+- "HAS_MIN_LENGTH:7"
+- "HAS_MAX_LENGTH:12"
+- "HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"
+- "HAS_NO_EMPTY_STRINGS"
+- "IS_DATETIME_PARSEABLE"
+"#;
+
+                    let full_syntax = json_array_str + syntax_explanation;
+
+                    // Get user input
+                    let rows_json_str = get_edited_user_json_input(full_syntax);
+                    //dbg!(&rows_json_str);
+                    if handle_cancel_flag(&rows_json_str) {
+                        continue;
+                    }
+
+                    // Parse the user input
+                    let rows_json: Value = match serde_json::from_str(&rows_json_str) {
+                        Ok(json) => json,
+                        Err(e) => {
+                            eprintln!("Error parsing JSON string: {}", e);
+                            return Err("An error occurred".to_string().into());
+                        }
+                    };
+
+                    // Collect rules from user input
+                    let mut rules = Vec::new();
+                    if let Some(obj) = rows_json.as_object() {
+                        for (key, value) in obj {
+                            if let Some(rules_array) = value.as_array() {
+                                let mut column_rules = Vec::new();
+                                for rule in rules_array {
+                                    if let Some(rule_str) = rule.as_str() {
+                                        if !rule_str.is_empty() {
+                                            column_rules.push(rule_str.to_string());
+                                        }
+                                    }
+                                }
+                                if !column_rules.is_empty() {
+                                    rules.push((key.clone(), column_rules));
+                                }
+                            }
+                        }
+                    }
+
+                    println!();
+                    // Invoke the cleanliness report function with the collected rules
+                    csv_builder.print_cleanliness_report_by_column_parse(rules);
+                }
+            }
+
+            Some(7) => {
+                if choice.to_lowercase() == "7d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
 Prints all rows meeting specified conditions in JSON format.
 |id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
 ---------------------------------------------------------------------------
@@ -654,8 +771,8 @@ Total rows printed: 4
                     }
                 }
             }
-            Some(7) => {
-                if choice.to_lowercase() == "7d" {
+            Some(8) => {
+                if choice.to_lowercase() == "8d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -722,8 +839,8 @@ Analysis for column 'gst':
                 csv_builder.print_column_numerical_analysis(columns);
             }
 
-            Some(8) => {
-                if choice.to_lowercase() == "8d" {
+            Some(9) => {
+                if choice.to_lowercase() == "9d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -774,8 +891,8 @@ Frequency for column 'interest':
                 let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
                 csv_builder.print_freq(columns);
             }
-            Some(9) => {
-                if choice.to_lowercase() == "9d" {
+            Some(10) => {
+                if choice.to_lowercase() == "10d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -850,8 +967,8 @@ Frequency for column 'type':
                 csv_builder.print_freq_cascading(columns);
             }
 
-            Some(10) => {
-                if choice.to_lowercase() == "10d" {
+            Some(11) => {
+                if choice.to_lowercase() == "11d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -886,8 +1003,8 @@ Unique values in 'value': 200, 1000, 20000, 1500, 2000, 300, 1100
                 csv_builder.print_unique(&column_name.trim());
             }
 
-            Some(11) => {
-                if choice.to_lowercase() == "11d" {
+            Some(12) => {
+                if choice.to_lowercase() == "12d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -936,8 +1053,8 @@ Statistics for column 'interest':
             }
 
             // In your handle_inspect method
-            Some(12) => {
-                if choice.to_lowercase() == "12d" {
+            Some(13) => {
+                if choice.to_lowercase() == "13d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1003,8 +1120,8 @@ Count: 7
                     }
                 }
             }
-            Some(13) => {
-                if choice.to_lowercase() == "13d" {
+            Some(14) => {
+                if choice.to_lowercase() == "14d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1095,8 +1212,8 @@ Total rows: 10
                     csv_builder.print_dot_chart(x_axis_column, y_axis_column);
                 }
             }
-            Some(14) => {
-                if choice.to_lowercase() == "14d" {
+            Some(15) => {
+                if choice.to_lowercase() == "15d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1183,8 +1300,8 @@ Total rows: 10
                 }
             }
 
-            Some(15) => {
-                if choice.to_lowercase() == "15d" {
+            Some(16) => {
+                if choice.to_lowercase() == "16d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1276,8 +1393,8 @@ Total rows: 10
                 }
             }
 
-            Some(16) => {
-                if choice.to_lowercase() == "16d" {
+            Some(17) => {
+                if choice.to_lowercase() == "17d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
