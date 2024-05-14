@@ -11,7 +11,7 @@ use crate::user_experience::{
 };
 use crate::user_interaction::{
     determine_action_as_number, determine_action_as_text, get_edited_user_sql_input,
-    get_user_input, get_user_input_level_2, get_user_sql_input, print_list,
+    get_user_input, get_user_input_level_2, print_list,
 };
 use regex::Regex;
 use rgwml::csv_utils::CsvBuilder;
@@ -70,6 +70,18 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
         )) as Box<dyn Error>)
     }
 
+    let syntax = r#"
+
+DIRECTIVES SYNTAX
+=================
+@bro_show_all
+@bro_show_databases
+@bro_show_schemas::your_db_name
+@bro_show_tables::your_db_name
+@bro_chunk::number_of_rows_to_chunk_by
+@bro_describe::your_table_name
+        "#;
+
     let (db_type, preset_option) = match get_db_type(csv_db_path) {
         Ok(db) => db,
         Err(e) => {
@@ -87,7 +99,7 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
     let mut confirmation = String::new();
 
     // Use preset details if available, otherwise prompt for details
-    let (mut username, mut password, mut host, mut database) = if let Some(preset) = preset_option {
+    let (username, password, host, database) = if let Some(preset) = preset_option {
         (
             preset.username,
             preset.password,
@@ -104,16 +116,6 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
         match db_type {
             DbType::MsSql => {
                 // Existing connection logic for i2e1
-                if username.is_empty()
-                    || password.is_empty()
-                    || host.is_empty()
-                    || database.is_empty()
-                {
-                    username = get_user_input_level_2("Enter MSSQL username: ");
-                    password = get_user_input_level_2("Enter MSSQL password: ");
-                    host = get_user_input_level_2("Enter MSSQL server: ");
-                    database = get_user_input_level_2("Enter MSSQL database name: ");
-                }
 
                 if confirmation == "TINKER"
                     || confirmation == "SEARCH"
@@ -126,17 +128,22 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
                 } else {
                     let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
                         // Use vim_edit only if confirmation is "retry"
-                        let new_query = get_edited_user_sql_input(last_sql_query.clone());
+                        let last_sql_query_with_appended_syntax = last_sql_query.clone() + syntax;
+
+                        let new_query =
+                            get_edited_user_sql_input(last_sql_query_with_appended_syntax);
                         last_sql_query = new_query.clone();
                         new_query
                     } else {
                         // Get new query from user, except when confirmation is "inspect"
-                        let new_query = get_user_sql_input();
+
+                        let new_query = get_edited_user_sql_input(syntax.to_string());
                         last_sql_query = new_query.clone();
                         new_query
                     };
 
                     let start_time = Instant::now();
+                    let mut is_table_description = false;
                     let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
 
                     // Regex to parse the chunking directive
@@ -237,6 +244,8 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
                         )
                         .await;
 
+                        is_table_description = true;
+
                         query_execution_result = Ok(result?);
                     } else {
                         // Execute the query normally
@@ -273,7 +282,10 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
                         }
                     } else {
                         csv_builder = query_execution_result.unwrap();
-                        if csv_builder.has_data() && csv_builder.has_headers() {
+
+                        if is_table_description {
+                            csv_builder.print_table_all_rows();
+                        } else if csv_builder.has_data() && csv_builder.has_headers() {
                             csv_builder.print_table(); // Print the table on success
                         }
                         println!("Executiom Time: {:?}", elapsed_time);
@@ -285,17 +297,6 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
             DbType::MySql => {
                 // Existing connection logic for i2e1
 
-                if username.is_empty()
-                    || password.is_empty()
-                    || host.is_empty()
-                    || database.is_empty()
-                {
-                    username = get_user_input_level_2("Enter MYSQL username: ");
-                    password = get_user_input_level_2("Enter MYSQL password: ");
-                    host = get_user_input_level_2("Enter MYSQL server: ");
-                    database = get_user_input_level_2("Enter MYSQL database name: ");
-                }
-
                 if confirmation == "TINKER"
                     || confirmation == "SEARCH"
                     || confirmation == "INSPECT"
@@ -305,6 +306,7 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
                     csv_builder.print_table();
                     confirmation = String::new();
                 } else {
+                    /*
                     let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
                         // Use vim_edit only if confirmation is "retry"
                         let new_query = get_edited_user_sql_input(last_sql_query.clone());
@@ -316,7 +318,25 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
                         last_sql_query = new_query.clone();
                         new_query
                     };
+                    */
 
+                    let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
+                        // Use vim_edit only if confirmation is "retry"
+                        let last_sql_query_with_appended_syntax = last_sql_query.clone() + syntax;
+
+                        let new_query =
+                            get_edited_user_sql_input(last_sql_query_with_appended_syntax);
+                        last_sql_query = new_query.clone();
+                        new_query
+                    } else {
+                        // Get new query from user, except when confirmation is "inspect"
+
+                        let new_query = get_edited_user_sql_input(syntax.to_string());
+                        last_sql_query = new_query.clone();
+                        new_query
+                    };
+
+                    let mut is_table_description = false;
                     let start_time = Instant::now();
 
                     let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
@@ -399,6 +419,8 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
                         )
                         .await;
 
+                        is_table_description = true;
+
                         query_execution_result = Ok(result?);
                     } else {
                         // Execute the query normally
@@ -436,7 +458,9 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
                     } else {
                         csv_builder = query_execution_result.unwrap();
 
-                        if csv_builder.has_data() && csv_builder.has_headers() {
+                        if is_table_description {
+                            csv_builder.print_table_all_rows();
+                        } else if csv_builder.has_data() && csv_builder.has_headers() {
                             csv_builder.print_table(); // Print the table on success
                         }
 
