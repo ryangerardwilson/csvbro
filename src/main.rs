@@ -74,7 +74,7 @@ async fn main() {
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 0.9.3");
+        print_insight("csvbro 0.9.4");
         std::process::exit(0);
     }
 
@@ -84,8 +84,8 @@ async fn main() {
         Ok(())
     }
 
-    if let Err(e) = clear_temp_file().await {
-        eprintln!("Failed to clear temp file: {}", e);
+    if let Err(_e) = clear_temp_file().await {
+        //eprintln!("Failed to clear temp file: {}", e);
     }
 
     let (desktop_path, downloads_path, csv_db_path) = embed_and_set_up_in_directory_system();
