@@ -545,7 +545,7 @@ dependencies = [
 
 [[package]]
 name = "csvbro"
-version = "0.8.9"
+version = "0.9.1"
 dependencies = [
  "async-recursion",
  "calamine 0.23.1",
@@ -1996,7 +1996,7 @@ dependencies = [
 
 [[package]]
 name = "rgwml"
-version = "1.2.67"
+version = "1.2.68"
 dependencies = [
  "anyhow",
  "calamine 0.24.0",

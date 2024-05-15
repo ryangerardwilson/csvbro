@@ -76,7 +76,7 @@ DIRECTIVES SYNTAX
 =================
 @bro_show_all
 @bro_show_databases
-@bro_show_schemas::your_db_name
+@bro_show_schemas::your_db_name   // For mssql only
 @bro_show_tables::your_db_name
 @bro_chunk::number_of_rows_to_chunk_by
 @bro_describe::your_table_name
@@ -306,19 +306,6 @@ DIRECTIVES SYNTAX
                     csv_builder.print_table();
                     confirmation = String::new();
                 } else {
-                    /*
-                    let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
-                        // Use vim_edit only if confirmation is "retry"
-                        let new_query = get_edited_user_sql_input(last_sql_query.clone());
-                        last_sql_query = new_query.clone();
-                        new_query
-                    } else {
-                        // Get new query from user, except when confirmation is "inspect"
-                        let new_query = get_user_sql_input();
-                        last_sql_query = new_query.clone();
-                        new_query
-                    };
-                    */
 
                     let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
                         // Use vim_edit only if confirmation is "retry"
@@ -378,7 +365,7 @@ DIRECTIVES SYNTAX
                         )
                         .await;
                     } else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
-                        dbg!(&sql_query);
+                        //dbg!(&sql_query);
                         let _ = DbConnect::print_mysql_architecture(
                             &username, &password, &host, &database,
                         )
