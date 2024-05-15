@@ -25,6 +25,7 @@ use std::time::Instant;
 enum DbType {
     MsSql,
     MySql,
+    ClickHouse,
 }
 
 #[allow(unused_assignments)]
@@ -53,6 +54,7 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
                 let db_type = match preset.db_type.to_lowercase().as_str() {
                     "mssql" => DbType::MsSql,
                     "mysql" => DbType::MySql,
+                    "clickhouse" => DbType::ClickHouse,
                     _ => {
                         return Err(Box::new(std::io::Error::new(
                             std::io::ErrorKind::Other,
@@ -306,7 +308,6 @@ DIRECTIVES SYNTAX
                     csv_builder.print_table();
                     confirmation = String::new();
                 } else {
-
                     let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
                         // Use vim_edit only if confirmation is "retry"
                         let last_sql_query_with_appended_syntax = last_sql_query.clone() + syntax;
@@ -413,6 +414,165 @@ DIRECTIVES SYNTAX
                         // Execute the query normally
                         query_execution_result = CsvBuilder::from_mysql_query(
                             &username, &password, &host, &database, &sql_query,
+                        )
+                        .await;
+                    }
+
+                    let elapsed_time = start_time.elapsed();
+
+                    if let Err(e) = query_execution_result {
+                        println!("Failed to execute query: {}", e);
+
+                        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN"];
+
+                        print_list(&menu_options);
+                        let choice = get_user_input("Enter your choice: ").to_lowercase();
+                        confirmation = choice.clone();
+
+                        if handle_query_special_flag(&choice, &mut csv_builder) {
+                            //continue;
+                            break Ok(CsvBuilder::new());
+                        }
+
+                        if handle_back_flag(&choice) {
+                            //break;
+                            break Ok(CsvBuilder::new());
+                        }
+                        let _ = handle_quit_flag(&choice);
+
+                        if handle_query_retry_flag(&choice) {
+                            continue;
+                        }
+                    } else {
+                        csv_builder = query_execution_result.unwrap();
+
+                        if is_table_description {
+                            csv_builder.print_table_all_rows();
+                        } else if csv_builder.has_data() && csv_builder.has_headers() {
+                            csv_builder.print_table(); // Print the table on success
+                        }
+
+                        //csv_builder.print_table(); // Print the table on success
+                        println!("Executiom Time: {:?}", elapsed_time);
+                        confirmation = String::new(); // Reset confirmation for the next loop iteration
+                    }
+                }
+            }
+
+            DbType::ClickHouse => {
+                // Existing connection logic for i2e1
+
+                if confirmation == "TINKER"
+                    || confirmation == "SEARCH"
+                    || confirmation == "INSPECT"
+                    || confirmation == "PIVOT"
+                    || confirmation == "JOIN"
+                {
+                    csv_builder.print_table();
+                    confirmation = String::new();
+                } else {
+                    let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
+                        // Use vim_edit only if confirmation is "retry"
+                        let last_sql_query_with_appended_syntax = last_sql_query.clone() + syntax;
+
+                        let new_query =
+                            get_edited_user_sql_input(last_sql_query_with_appended_syntax);
+                        last_sql_query = new_query.clone();
+                        new_query
+                    } else {
+                        // Get new query from user, except when confirmation is "inspect"
+
+                        let new_query = get_edited_user_sql_input(syntax.to_string());
+                        last_sql_query = new_query.clone();
+                        new_query
+                    };
+
+                    let mut is_table_description = false;
+                    let start_time = Instant::now();
+
+                    let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
+
+                    // Regex to parse the chunking directive
+                    let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
+                    let show_architecture_directive_regex = Regex::new(r"^@bro_show_all").unwrap();
+                    let show_databases_directive_regex =
+                        Regex::new(r"^@bro_show_databases").unwrap();
+                    let show_tables_directive_regex =
+                        Regex::new(r"@bro_show_tables::([^\s]+)").unwrap();
+                    let describe_directive_regex =
+                        Regex::new(r"@bro_describe::(?:([^.\s]+)\.)?(\w+)").unwrap();
+
+                    if handle_cancel_flag(&sql_query) {
+                        query_execution_result = Ok(CsvBuilder::new());
+                    }
+                    // Check for the chunking directive
+                    else if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
+                        let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string
+
+                        // Remove the chunk directive and trim extra characters
+                        let base_query = chunk_directive_regex
+                            .replace(&sql_query, "")
+                            .trim()
+                            .trim_matches(|c: char| c == '{' || c == '}')
+                            .to_string();
+
+                        //dbg!(&base_query);
+
+                        // Execute the chunked query using the newly created method
+                        query_execution_result = CsvBuilder::from_chunked_clickhouse_query(
+                            &username,
+                            &password,
+                            &host,
+                            &base_query,
+                            chunk_size,
+                        )
+                        .await;
+                    } else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
+                        //dbg!(&sql_query);
+                        let _ =
+                            DbConnect::print_clickhouse_architecture(&username, &password, &host)
+                                .await;
+
+                        query_execution_result = Ok(CsvBuilder::new());
+                    } else if let Some(_) = show_databases_directive_regex.captures(&sql_query) {
+                        let _ = DbConnect::print_clickhouse_databases(&username, &password, &host)
+                            .await;
+
+                        query_execution_result = Ok(CsvBuilder::new());
+                    } else if let Some(caps) = show_tables_directive_regex.captures(&sql_query) {
+                        let in_focus_database = caps.get(1).unwrap().as_str();
+
+                        let _ = DbConnect::print_clickhouse_tables(
+                            &username,
+                            &password,
+                            &host,
+                            in_focus_database,
+                        )
+                        .await;
+
+                        query_execution_result = Ok(CsvBuilder::new());
+                    } else if let Some(caps) = describe_directive_regex.captures(&sql_query) {
+                        // Extract database and table name from the captures
+                        let specified_database =
+                            caps.get(1).map_or(database.as_str(), |m| m.as_str());
+                        let table_name = caps.get(2).unwrap().as_str();
+                        let result = CsvBuilder::get_clickhouse_table_description(
+                            &username,
+                            &password,
+                            &host,
+                            &specified_database,
+                            //schema,
+                            table_name,
+                        )
+                        .await;
+
+                        is_table_description = true;
+
+                        query_execution_result = Ok(result?);
+                    } else {
+                        // Execute the query normally
+                        query_execution_result = CsvBuilder::from_clickhouse_query(
+                            &username, &password, &host, &sql_query,
                         )
                         .await;
                     }

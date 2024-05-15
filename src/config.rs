@@ -47,7 +47,7 @@ SYNTAX
   "db_presets" : [
     {
       "name": "",
-      "db_type": "", // "mysql" or "mssql" are supported
+      "db_type": "", // "mysql", "mssql", and "clickhouse" are supported
       "host": "",
       "username": "",
       "password": "",
@@ -93,7 +93,7 @@ SYNTAX
   "db_presets" : [
     {
       "name": "",
-      "db_type": "", // "mysql" or "mssql" are supported
+      "db_type": "", // "mysql", "mssql", and "clickhouse" are supported
       "host": "",
       "username": "",
       "password": "",

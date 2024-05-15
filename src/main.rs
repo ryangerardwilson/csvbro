@@ -19,6 +19,7 @@ use crate::user_interaction::{
 };
 use rgwml::csv_utils::CsvBuilder;
 use std::env;
+use std::fs::remove_file;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::{self, Command};
@@ -73,8 +74,18 @@ async fn main() {
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 0.9.2");
+        print_insight("csvbro 0.9.3");
         std::process::exit(0);
+    }
+
+    async fn clear_temp_file() -> Result<(), std::io::Error> {
+        let temp_path = std::env::temp_dir().join("clickhouse_connect");
+        remove_file(&temp_path)?;
+        Ok(())
+    }
+
+    if let Err(e) = clear_temp_file().await {
+        eprintln!("Failed to clear temp file: {}", e);
     }
 
     let (desktop_path, downloads_path, csv_db_path) = embed_and_set_up_in_directory_system();
