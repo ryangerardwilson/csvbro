@@ -552,7 +552,7 @@ dependencies = [
  "chrono",
  "fuzzywuzzy",
  "regex",
- "rgwml",
+ "rgwml_heavy",
  "rustyline",
  "serde",
  "serde_json",
@@ -1995,7 +1995,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rgwml"
+name = "rgwml_heavy"
 version = "1.2.72"
 dependencies = [
  "anyhow",

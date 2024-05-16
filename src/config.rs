@@ -10,7 +10,7 @@ use std::path::PathBuf;
 pub struct Config {
     pub db_presets: Vec<DbPreset>,
     pub open_ai_key: String,
-    pub google_big_query_json_file_path: String,
+    pub google_big_query_presets: Vec<GoogleBigQueryPreset>,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -27,8 +27,8 @@ pub struct DbPreset {
 pub struct GoogleBigQueryPreset {
     pub name: String,
     pub json_file_path: String,
+    pub project_id: String,
 }
-
 
 pub fn edit_config(csv_db_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let config_path = csv_db_path.join("bro.config");
@@ -49,7 +49,8 @@ pub fn edit_config(csv_db_path: &PathBuf) -> Result<(), Box<dyn std::error::Erro
   "google_big_query_presets": [
     {
       "name": "",
-      "json_file_path": ""
+      "json_file_path": "",
+      "project_id": ""
     }
   ],
   "open_ai_key": ""
@@ -71,7 +72,8 @@ SYNTAX
   "google_big_query_presets": [
     {
       "name": "",
-      "json_file_path": ""
+      "json_file_path": "",
+      "project_id": ""
     }
   ],
   "open_ai_key": "",
@@ -123,7 +125,8 @@ SYNTAX
   "google_big_query_presets": [
     {
       "name": "",
-      "json_file_path": ""
+      "json_file_path": "",
+      "project_id": ""
     }
   ],
   "open_ai_key": ""

@@ -1,5 +1,5 @@
 // db_connector.rs
-use crate::config::{Config, DbPreset};
+use crate::config::{Config, DbPreset, GoogleBigQueryPreset};
 use crate::csv_inspector::handle_inspect;
 use crate::csv_joiner::handle_join;
 use crate::csv_pivoter::handle_pivot;
@@ -14,8 +14,8 @@ use crate::user_interaction::{
     get_user_input, get_user_input_level_2, print_list,
 };
 use regex::Regex;
-use rgwml::csv_utils::CsvBuilder;
-use rgwml::db_utils::DbConnect;
+use rgwml_heavy::csv_utils::CsvBuilder;
+use rgwml_heavy::db_utils::DbConnect;
 use serde_json::from_str;
 use std::error::Error;
 use std::fs::read_to_string;
@@ -26,10 +26,12 @@ enum DbType {
     MsSql,
     MySql,
     ClickHouse,
+    GoogleBigQuery,
 }
 
 #[allow(unused_assignments)]
 pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::error::Error>> {
+    /*
     fn get_db_type(
         csv_db_path: &PathBuf,
     ) -> Result<(DbType, Option<DbPreset>), Box<dyn std::error::Error>> {
@@ -71,6 +73,57 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
             "Invalid selection",
         )) as Box<dyn Error>)
     }
+    */
+
+    fn get_db_type(
+        csv_db_path: &PathBuf,
+    ) -> Result<(DbType, Option<DbPreset>, Option<GoogleBigQueryPreset>), Box<dyn std::error::Error>>
+    {
+        let config_path = csv_db_path.join("bro.config");
+        let file_contents = read_to_string(config_path)?;
+        let valid_json_part = file_contents
+            .split("SYNTAX")
+            .next()
+            .ok_or("Invalid configuration format")?;
+        let config: Config = from_str(valid_json_part)?;
+
+        let presets = config.db_presets;
+        let google_presets = config.google_big_query_presets;
+
+        let mut options: Vec<&str> = presets.iter().map(|preset| preset.name.as_str()).collect();
+        options.extend(google_presets.iter().map(|preset| preset.name.as_str()));
+
+        print_list(&options);
+        let choice = get_user_input_level_2("Choose a database: ").to_lowercase();
+        let selected_option = determine_action_as_number(&options, &choice);
+
+        if let Some(serial) = selected_option {
+            if serial > 0 && serial <= presets.len() {
+                let preset = &presets[serial - 1];
+                let db_type = match preset.db_type.to_lowercase().as_str() {
+                    "mssql" => DbType::MsSql,
+                    "mysql" => DbType::MySql,
+                    "clickhouse" => DbType::ClickHouse,
+                    "googlebigquery" => DbType::GoogleBigQuery,
+                    _ => {
+                        return Err(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::Other,
+                            "Unknown database type in preset",
+                        )) as Box<dyn Error>)
+                    }
+                };
+                return Ok((db_type, Some(preset.clone()), None));
+            } else if serial > presets.len() && serial <= presets.len() + google_presets.len() {
+                let google_preset = &google_presets[serial - presets.len() - 1];
+                return Ok((DbType::GoogleBigQuery, None, Some(google_preset.clone())));
+            }
+        }
+
+        Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Invalid selection",
+        )) as Box<dyn Error>)
+    }
 
     let syntax = r#"
 
@@ -96,7 +149,20 @@ DIRECTIVES SYNTAX
 @bro_describe::your_table_name
         "#;
 
-    let (db_type, preset_option) = match get_db_type(csv_db_path) {
+    /*
+        let (db_type, preset_option) = match get_db_type(csv_db_path) {
+            Ok(db) => db,
+            Err(e) => {
+                if e.to_string() == "return_to_main" {
+                    return Err("User chose to go back".into());
+                } else {
+                    return Err(e);
+                }
+            }
+        };
+    */
+
+    let (db_type, db_preset_option, google_preset_option) = match get_db_type(csv_db_path) {
         Ok(db) => db,
         Err(e) => {
             if e.to_string() == "return_to_main" {
@@ -107,11 +173,43 @@ DIRECTIVES SYNTAX
         }
     };
 
+    // Further handling of the presets based on the selected db_type
+    let (username, password, host, database, json_file_path, project_id) =
+        if let Some(preset) = db_preset_option {
+            (
+                preset.username,
+                preset.password,
+                preset.host,
+                preset.database,
+                String::new(),
+                String::new(),
+            )
+        } else if let Some(google_preset) = google_preset_option {
+            (
+                String::new(),
+                String::new(),
+                String::new(),
+                String::new(),
+                google_preset.json_file_path,
+                google_preset.project_id,
+            )
+        } else {
+            (
+                String::new(),
+                String::new(),
+                String::new(),
+                String::new(),
+                String::new(),
+                String::new(),
+            )
+        };
+
     //let mut csv_builder: CsvBuilder;
     let mut csv_builder: CsvBuilder = CsvBuilder::new();
     let mut last_sql_query = String::new();
     let mut confirmation = String::new();
 
+    /*
     // Use preset details if available, otherwise prompt for details
     let (username, password, host, database) = if let Some(preset) = preset_option {
         (
@@ -123,6 +221,7 @@ DIRECTIVES SYNTAX
     } else {
         (String::new(), String::new(), String::new(), String::new())
     };
+    */
 
     loop {
         let _query_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
@@ -161,8 +260,10 @@ DIRECTIVES SYNTAX
                     let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
 
                     // Regex to parse the chunking directive
-                    let chunk_union_directive_regex = Regex::new(r"@bro_chunk_union::(\d+)").unwrap();
-                    let chunk_bag_union_directive_regex = Regex::new(r"@bro_chunk_bag_union::(\d+)").unwrap();
+                    let chunk_union_directive_regex =
+                        Regex::new(r"@bro_chunk_union::(\d+)").unwrap();
+                    let chunk_bag_union_directive_regex =
+                        Regex::new(r"@bro_chunk_bag_union::(\d+)").unwrap();
 
                     let show_architecture_directive_regex = Regex::new(r"^@bro_show_all").unwrap();
                     let show_databases_directive_regex =
@@ -204,8 +305,8 @@ DIRECTIVES SYNTAX
                             chunk_size,
                         )
                         .await;
-                    } 
-else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query) {
+                    } else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query)
+                    {
                         let chunk_size = caps.get(1).unwrap().as_str();
 
                         // Remove the chunk directive and trim extra characters
@@ -227,11 +328,7 @@ else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query) {
                             chunk_size,
                         )
                         .await;
-                    } 
-
-
-
-                    else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
+                    } else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
                         let _ = DbConnect::print_mssql_architecture(
                             &username, &password, &host, &database,
                         )
@@ -371,9 +468,11 @@ else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query) {
                     let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
 
                     // Regex to parse the chunking directive
-                                        // Regex to parse the chunking directive
-                    let chunk_union_directive_regex = Regex::new(r"@bro_chunk_union::(\d+)").unwrap();
-                    let chunk_bag_union_directive_regex = Regex::new(r"@bro_chunk_bag_union::(\d+)").unwrap();
+                    // Regex to parse the chunking directive
+                    let chunk_union_directive_regex =
+                        Regex::new(r"@bro_chunk_union::(\d+)").unwrap();
+                    let chunk_bag_union_directive_regex =
+                        Regex::new(r"@bro_chunk_bag_union::(\d+)").unwrap();
 
                     let show_architecture_directive_regex = Regex::new(r"^@bro_show_all").unwrap();
                     let show_databases_directive_regex =
@@ -409,8 +508,8 @@ else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query) {
                             chunk_size,
                         )
                         .await;
-                    } 
-                    else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query) {
+                    } else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query)
+                    {
                         let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string
 
                         // Remove the chunk directive and trim extra characters
@@ -432,11 +531,7 @@ else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query) {
                             chunk_size,
                         )
                         .await;
-                    } 
-
-
-
-                    else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
+                    } else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
                         //dbg!(&sql_query);
                         let _ = DbConnect::print_mysql_architecture(
                             &username, &password, &host, &database,
@@ -566,11 +661,10 @@ else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query) {
                     // Regex to parse the chunking directive
                     //let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
 
-
-                    let chunk_union_directive_regex = Regex::new(r"@bro_chunk_union::(\d+)").unwrap();
-                    let chunk_bag_union_directive_regex = Regex::new(r"@bro_chunk_bag_union::(\d+)").unwrap();
-
-
+                    let chunk_union_directive_regex =
+                        Regex::new(r"@bro_chunk_union::(\d+)").unwrap();
+                    let chunk_bag_union_directive_regex =
+                        Regex::new(r"@bro_chunk_bag_union::(\d+)").unwrap();
 
                     let show_architecture_directive_regex = Regex::new(r"^@bro_show_all").unwrap();
                     let show_databases_directive_regex =
@@ -605,8 +699,8 @@ else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query) {
                             chunk_size,
                         )
                         .await;
-                    } 
-                    else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query) {
+                    } else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query)
+                    {
                         let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string
 
                         // Remove the chunk directive and trim extra characters
@@ -619,17 +713,16 @@ else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query) {
                         //dbg!(&base_query);
 
                         // Execute the chunked query using the newly created method
-                        query_execution_result = CsvBuilder::from_chunked_clickhouse_query_bag_union(
-                            &username,
-                            &password,
-                            &host,
-                            &base_query,
-                            chunk_size,
-                        )
-                        .await;
-                    }
-
-                    else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
+                        query_execution_result =
+                            CsvBuilder::from_chunked_clickhouse_query_bag_union(
+                                &username,
+                                &password,
+                                &host,
+                                &base_query,
+                                chunk_size,
+                            )
+                            .await;
+                    } else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
                         //dbg!(&sql_query);
                         let _ =
                             DbConnect::print_clickhouse_architecture(&username, &password, &host)
@@ -677,6 +770,194 @@ else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query) {
                             &username, &password, &host, &sql_query,
                         )
                         .await;
+                    }
+
+                    let elapsed_time = start_time.elapsed();
+
+                    if let Err(e) = query_execution_result {
+                        println!("Failed to execute query: {}", e);
+
+                        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN"];
+
+                        print_list(&menu_options);
+                        let choice = get_user_input("Enter your choice: ").to_lowercase();
+                        confirmation = choice.clone();
+
+                        if handle_query_special_flag(&choice, &mut csv_builder) {
+                            //continue;
+                            break Ok(CsvBuilder::new());
+                        }
+
+                        if handle_back_flag(&choice) {
+                            //break;
+                            break Ok(CsvBuilder::new());
+                        }
+                        let _ = handle_quit_flag(&choice);
+
+                        if handle_query_retry_flag(&choice) {
+                            continue;
+                        }
+                    } else {
+                        csv_builder = query_execution_result.unwrap();
+
+                        if is_table_description {
+                            csv_builder.print_table_all_rows();
+                        } else if csv_builder.has_data() && csv_builder.has_headers() {
+                            csv_builder.print_table(); // Print the table on success
+                        }
+
+                        //csv_builder.print_table(); // Print the table on success
+                        println!("Executiom Time: {:?}", elapsed_time);
+                        confirmation = String::new(); // Reset confirmation for the next loop iteration
+                    }
+                }
+            }
+
+            DbType::GoogleBigQuery => {
+                // Existing connection logic for i2e1
+
+                if confirmation == "TINKER"
+                    || confirmation == "SEARCH"
+                    || confirmation == "INSPECT"
+                    || confirmation == "PIVOT"
+                    || confirmation == "JOIN"
+                {
+                    csv_builder.print_table();
+                    confirmation = String::new();
+                } else {
+                    let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
+                        // Use vim_edit only if confirmation is "retry"
+                        let last_sql_query_with_appended_syntax = last_sql_query.clone() + syntax;
+
+                        let new_query =
+                            get_edited_user_sql_input(last_sql_query_with_appended_syntax);
+                        last_sql_query = new_query.clone();
+                        new_query
+                    } else {
+                        // Get new query from user, except when confirmation is "inspect"
+
+                        let new_query = get_edited_user_sql_input(syntax.to_string());
+                        last_sql_query = new_query.clone();
+                        new_query
+                    };
+
+                    let mut is_table_description = false;
+                    let start_time = Instant::now();
+
+                    let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
+
+                    // Regex to parse the chunking directive
+                    //let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
+
+                    let chunk_union_directive_regex =
+                        Regex::new(r"@bro_chunk_union::(\d+)").unwrap();
+                    let chunk_bag_union_directive_regex =
+                        Regex::new(r"@bro_chunk_bag_union::(\d+)").unwrap();
+
+                    let show_architecture_directive_regex = Regex::new(r"^@bro_show_all").unwrap();
+
+                    let show_databases_directive_regex =
+                        Regex::new(r"^@bro_show_databases").unwrap();
+                    let show_tables_directive_regex =
+                        Regex::new(r"@bro_show_tables::([^\s]+)").unwrap();
+                    let describe_directive_regex =
+                        Regex::new(r"@bro_describe::(?:([^.\s]+)\.)?(\w+)").unwrap();
+
+                    if handle_cancel_flag(&sql_query) {
+                        query_execution_result = Ok(CsvBuilder::new());
+                    }
+                    // Check for the chunking directive
+                    else if let Some(caps) = chunk_union_directive_regex.captures(&sql_query) {
+                        let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string
+
+                        // Remove the chunk directive and trim extra characters
+                        let base_query = chunk_union_directive_regex
+                            .replace(&sql_query, "")
+                            .trim()
+                            .trim_matches(|c: char| c == '{' || c == '}')
+                            .to_string();
+
+                        //dbg!(&base_query);
+
+                        // Execute the chunked query using the newly created method
+                        query_execution_result =
+                            CsvBuilder::from_chunked_google_big_query_query_union(
+                                &json_file_path,
+                                &base_query,
+                                chunk_size,
+                            )
+                            .await;
+                    } else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query)
+                    {
+                        let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string
+
+                        // Remove the chunk directive and trim extra characters
+                        let base_query = chunk_bag_union_directive_regex
+                            .replace(&sql_query, "")
+                            .trim()
+                            .trim_matches(|c: char| c == '{' || c == '}')
+                            .to_string();
+
+                        //dbg!(&base_query);
+
+                        // Execute the chunked query using the newly created method
+                        query_execution_result =
+                            CsvBuilder::from_chunked_google_big_query_query_bag_union(
+                                &json_file_path,
+                                &base_query,
+                                chunk_size,
+                            )
+                            .await;
+                    } else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
+                        //dbg!(&sql_query);
+
+                        let _ = DbConnect::print_google_big_query_architecture(
+                            &json_file_path,
+                            &project_id,
+                        )
+                        .await;
+
+                        query_execution_result = Ok(CsvBuilder::new());
+                    } else if let Some(_) = show_databases_directive_regex.captures(&sql_query) {
+                        let _ = DbConnect::print_google_big_query_datasets(
+                            &json_file_path,
+                            &project_id,
+                        )
+                        .await;
+
+                        query_execution_result = Ok(CsvBuilder::new());
+                    } else if let Some(caps) = show_tables_directive_regex.captures(&sql_query) {
+                        let dataset = caps.get(1).unwrap().as_str();
+
+                        let _ = DbConnect::print_google_big_query_tables(
+                            &json_file_path,
+                            &project_id,
+                            dataset,
+                        )
+                        .await;
+
+                        query_execution_result = Ok(CsvBuilder::new());
+                    } else if let Some(caps) = describe_directive_regex.captures(&sql_query) {
+                        // Extract database and table name from the captures
+                        let specified_dataset =
+                            caps.get(1).map_or(database.as_str(), |m| m.as_str());
+                        let table_name = caps.get(2).unwrap().as_str();
+                        let result = CsvBuilder::get_google_big_query_table_description(
+                            &json_file_path,
+                            &project_id,
+                            &specified_dataset,
+                            table_name,
+                        )
+                        .await;
+
+                        is_table_description = true;
+
+                        query_execution_result = Ok(result?);
+                    } else {
+                        // Execute the query normally
+                        query_execution_result =
+                            CsvBuilder::from_google_big_query_query(&json_file_path, &sql_query)
+                                .await;
                     }
 
                     let elapsed_time = start_time.elapsed();

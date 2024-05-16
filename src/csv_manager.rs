@@ -14,7 +14,7 @@ use crate::user_interaction::{
 use calamine::{open_workbook, Reader, Xls};
 use chrono::{DateTime, Local};
 use fuzzywuzzy::fuzz;
-use rgwml::csv_utils::CsvBuilder;
+use rgwml_heavy::csv_utils::CsvBuilder;
 use std::fs::{self};
 use std::io;
 use std::path::PathBuf;
