@@ -80,13 +80,18 @@ DIRECTIVES SYNTAX
 @bro_show_databases
 @bro_show_schemas::your_db_name   // For mssql only
 @bro_show_tables::your_db_name
-@bro_chunk::number_of_rows_to_chunk_by { SELECT * FROM your_table }
+@bro_chunk_union::number_of_rows_to_chunk_by { SELECT * FROM your_table }
 
     /* This query should be simple and should not include LIMIT, OFFSET, or 
      * ORDER BY clauses as these will be dynamically applied to manage data chunking. 
      * Ensure that the `sql_query` does not include any complex subqueries or joins 
      * that might interfere with this limit-offset pagination mechanism - 
      * "SELECT * FROM ({}) AS SubQuery LIMIT {} OFFSET {}" */
+
+@bro_chunk_bag_union::number_of_rows_to_chunk_by { SELECT * FROM your_table }
+
+    /* Same as above, except that duplicate rows are not removed as the chunks
+     * are received */
 
 @bro_describe::your_table_name
         "#;
@@ -156,7 +161,9 @@ DIRECTIVES SYNTAX
                     let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
 
                     // Regex to parse the chunking directive
-                    let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
+                    let chunk_union_directive_regex = Regex::new(r"@bro_chunk_union::(\d+)").unwrap();
+                    let chunk_bag_union_directive_regex = Regex::new(r"@bro_chunk_bag_union::(\d+)").unwrap();
+
                     let show_architecture_directive_regex = Regex::new(r"^@bro_show_all").unwrap();
                     let show_databases_directive_regex =
                         Regex::new(r"^@bro_show_databases").unwrap();
@@ -175,11 +182,11 @@ DIRECTIVES SYNTAX
                     // Check for the chunking directive
                     if handle_cancel_flag(&sql_query) {
                         query_execution_result = Ok(CsvBuilder::new());
-                    } else if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
+                    } else if let Some(caps) = chunk_union_directive_regex.captures(&sql_query) {
                         let chunk_size = caps.get(1).unwrap().as_str();
 
                         // Remove the chunk directive and trim extra characters
-                        let base_query = chunk_directive_regex
+                        let base_query = chunk_union_directive_regex
                             .replace(&sql_query, "")
                             .trim()
                             .trim_matches(|c: char| c == '{' || c == '}')
@@ -188,7 +195,7 @@ DIRECTIVES SYNTAX
                         //dbg!(&base_query);
 
                         // Execute the chunked query using the newly created method
-                        query_execution_result = CsvBuilder::from_chunked_mssql_query(
+                        query_execution_result = CsvBuilder::from_chunked_mssql_query_union(
                             &username,
                             &password,
                             &host,
@@ -197,7 +204,34 @@ DIRECTIVES SYNTAX
                             chunk_size,
                         )
                         .await;
-                    } else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
+                    } 
+else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query) {
+                        let chunk_size = caps.get(1).unwrap().as_str();
+
+                        // Remove the chunk directive and trim extra characters
+                        let base_query = chunk_bag_union_directive_regex
+                            .replace(&sql_query, "")
+                            .trim()
+                            .trim_matches(|c: char| c == '{' || c == '}')
+                            .to_string();
+
+                        //dbg!(&base_query);
+
+                        // Execute the chunked query using the newly created method
+                        query_execution_result = CsvBuilder::from_chunked_mssql_query_bag_union(
+                            &username,
+                            &password,
+                            &host,
+                            &database,
+                            &base_query,
+                            chunk_size,
+                        )
+                        .await;
+                    } 
+
+
+
+                    else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
                         let _ = DbConnect::print_mssql_architecture(
                             &username, &password, &host, &database,
                         )
@@ -337,7 +371,10 @@ DIRECTIVES SYNTAX
                     let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
 
                     // Regex to parse the chunking directive
-                    let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
+                                        // Regex to parse the chunking directive
+                    let chunk_union_directive_regex = Regex::new(r"@bro_chunk_union::(\d+)").unwrap();
+                    let chunk_bag_union_directive_regex = Regex::new(r"@bro_chunk_bag_union::(\d+)").unwrap();
+
                     let show_architecture_directive_regex = Regex::new(r"^@bro_show_all").unwrap();
                     let show_databases_directive_regex =
                         Regex::new(r"^@bro_show_databases").unwrap();
@@ -350,11 +387,11 @@ DIRECTIVES SYNTAX
                         query_execution_result = Ok(CsvBuilder::new());
                     }
                     // Check for the chunking directive
-                    else if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
+                    else if let Some(caps) = chunk_union_directive_regex.captures(&sql_query) {
                         let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string
 
                         // Remove the chunk directive and trim extra characters
-                        let base_query = chunk_directive_regex
+                        let base_query = chunk_union_directive_regex
                             .replace(&sql_query, "")
                             .trim()
                             .trim_matches(|c: char| c == '{' || c == '}')
@@ -363,7 +400,7 @@ DIRECTIVES SYNTAX
                         //dbg!(&base_query);
 
                         // Execute the chunked query using the newly created method
-                        query_execution_result = CsvBuilder::from_chunked_mysql_query(
+                        query_execution_result = CsvBuilder::from_chunked_mysql_query_union(
                             &username,
                             &password,
                             &host,
@@ -372,7 +409,34 @@ DIRECTIVES SYNTAX
                             chunk_size,
                         )
                         .await;
-                    } else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
+                    } 
+                    else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query) {
+                        let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string
+
+                        // Remove the chunk directive and trim extra characters
+                        let base_query = chunk_bag_union_directive_regex
+                            .replace(&sql_query, "")
+                            .trim()
+                            .trim_matches(|c: char| c == '{' || c == '}')
+                            .to_string();
+
+                        //dbg!(&base_query);
+
+                        // Execute the chunked query using the newly created method
+                        query_execution_result = CsvBuilder::from_chunked_mysql_query_bag_union(
+                            &username,
+                            &password,
+                            &host,
+                            &database,
+                            &base_query,
+                            chunk_size,
+                        )
+                        .await;
+                    } 
+
+
+
+                    else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
                         //dbg!(&sql_query);
                         let _ = DbConnect::print_mysql_architecture(
                             &username, &password, &host, &database,
@@ -500,7 +564,14 @@ DIRECTIVES SYNTAX
                     let query_execution_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
 
                     // Regex to parse the chunking directive
-                    let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
+                    //let chunk_directive_regex = Regex::new(r"@bro_chunk::(\d+)").unwrap();
+
+
+                    let chunk_union_directive_regex = Regex::new(r"@bro_chunk_union::(\d+)").unwrap();
+                    let chunk_bag_union_directive_regex = Regex::new(r"@bro_chunk_bag_union::(\d+)").unwrap();
+
+
+
                     let show_architecture_directive_regex = Regex::new(r"^@bro_show_all").unwrap();
                     let show_databases_directive_regex =
                         Regex::new(r"^@bro_show_databases").unwrap();
@@ -513,11 +584,11 @@ DIRECTIVES SYNTAX
                         query_execution_result = Ok(CsvBuilder::new());
                     }
                     // Check for the chunking directive
-                    else if let Some(caps) = chunk_directive_regex.captures(&sql_query) {
+                    else if let Some(caps) = chunk_union_directive_regex.captures(&sql_query) {
                         let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string
 
                         // Remove the chunk directive and trim extra characters
-                        let base_query = chunk_directive_regex
+                        let base_query = chunk_union_directive_regex
                             .replace(&sql_query, "")
                             .trim()
                             .trim_matches(|c: char| c == '{' || c == '}')
@@ -526,7 +597,7 @@ DIRECTIVES SYNTAX
                         //dbg!(&base_query);
 
                         // Execute the chunked query using the newly created method
-                        query_execution_result = CsvBuilder::from_chunked_clickhouse_query(
+                        query_execution_result = CsvBuilder::from_chunked_clickhouse_query_union(
                             &username,
                             &password,
                             &host,
@@ -534,7 +605,31 @@ DIRECTIVES SYNTAX
                             chunk_size,
                         )
                         .await;
-                    } else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
+                    } 
+                    else if let Some(caps) = chunk_bag_union_directive_regex.captures(&sql_query) {
+                        let chunk_size = caps.get(1).unwrap().as_str(); // Directly use the captured string
+
+                        // Remove the chunk directive and trim extra characters
+                        let base_query = chunk_bag_union_directive_regex
+                            .replace(&sql_query, "")
+                            .trim()
+                            .trim_matches(|c: char| c == '{' || c == '}')
+                            .to_string();
+
+                        //dbg!(&base_query);
+
+                        // Execute the chunked query using the newly created method
+                        query_execution_result = CsvBuilder::from_chunked_clickhouse_query_bag_union(
+                            &username,
+                            &password,
+                            &host,
+                            &base_query,
+                            chunk_size,
+                        )
+                        .await;
+                    }
+
+                    else if let Some(_) = show_architecture_directive_regex.captures(&sql_query) {
                         //dbg!(&sql_query);
                         let _ =
                             DbConnect::print_clickhouse_architecture(&username, &password, &host)
