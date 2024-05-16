@@ -80,7 +80,14 @@ DIRECTIVES SYNTAX
 @bro_show_databases
 @bro_show_schemas::your_db_name   // For mssql only
 @bro_show_tables::your_db_name
-@bro_chunk::number_of_rows_to_chunk_by
+@bro_chunk::number_of_rows_to_chunk_by { SELECT * FROM your_table }
+
+    /* This query should be simple and should not include LIMIT, OFFSET, or 
+     * ORDER BY clauses as these will be dynamically applied to manage data chunking. 
+     * Ensure that the `sql_query` does not include any complex subqueries or joins 
+     * that might interfere with this limit-offset pagination mechanism - 
+     * "SELECT * FROM ({}) AS SubQuery LIMIT {} OFFSET {}" */
+
 @bro_describe::your_table_name
         "#;
 
