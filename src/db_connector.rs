@@ -91,8 +91,9 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
         let google_presets = config.google_big_query_presets;
 
         let mut options: Vec<&str> = presets.iter().map(|preset| preset.name.as_str()).collect();
+        
         options.extend(google_presets.iter().map(|preset| preset.name.as_str()));
-
+        options.sort();
         print_list(&options);
         let choice = get_user_input_level_2("Choose a database: ").to_lowercase();
         let selected_option = determine_action_as_number(&options, &choice);
