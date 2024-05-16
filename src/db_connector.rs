@@ -31,7 +31,6 @@ enum DbType {
 
 #[allow(unused_assignments)]
 pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::error::Error>> {
-
     fn get_db_type(
         csv_db_path: &PathBuf,
     ) -> Result<(DbType, Option<DbPreset>, Option<GoogleBigQueryPreset>), Box<dyn std::error::Error>>
@@ -47,54 +46,64 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
         let presets = config.db_presets;
         let google_presets = config.google_big_query_presets;
 
-let mut options: Vec<(usize, &str)> = presets.iter().enumerate().map(|(i, preset)| (i, preset.name.as_str())).collect();
-options.extend(google_presets.iter().enumerate().map(|(i, preset)| (i + presets.len(), preset.name.as_str())));
+        let mut options: Vec<(usize, &str)> = presets
+            .iter()
+            .enumerate()
+            .map(|(i, preset)| (i, preset.name.as_str()))
+            .collect();
+        options.extend(
+            google_presets
+                .iter()
+                .enumerate()
+                .map(|(i, preset)| (i + presets.len(), preset.name.as_str())),
+        );
 
-// Sort the options alphabetically by the preset name
-options.sort_by(|a, b| a.1.cmp(b.1));
+        // Sort the options alphabetically by the preset name
+        options.sort_by(|a, b| a.1.cmp(b.1));
 
-// Print the sorted list of names
-print_list(&options.iter().map(|(_, name)| *name).collect::<Vec<_>>());
+        // Print the sorted list of names
+        print_list(&options.iter().map(|(_, name)| *name).collect::<Vec<_>>());
 
-let choice = get_user_input_level_2("Choose a database: ").to_lowercase();
-let selected_option = determine_action_as_number(&options.iter().map(|(_, name)| *name).collect::<Vec<_>>(), &choice);
+        let choice = get_user_input_level_2("Choose a database: ").to_lowercase();
+        let selected_option = determine_action_as_number(
+            &options.iter().map(|(_, name)| *name).collect::<Vec<_>>(),
+            &choice,
+        );
 
-//dbg!(&options, &choice, &selected_option);
+        //dbg!(&options, &choice, &selected_option);
 
-if let Some(serial) = selected_option {
-    if serial > 0 && serial <= options.len() {
-        let original_index = options[serial - 1].0;
-        
-        if original_index < presets.len() {
-            let preset = &presets[original_index];
-            let db_type = match preset.db_type.to_lowercase().as_str() {
-                "mssql" => DbType::MsSql,
-                "mysql" => DbType::MySql,
-                "clickhouse" => DbType::ClickHouse,
-                "googlebigquery" => DbType::GoogleBigQuery,
-                _ => {
-                    return Err(Box::new(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "Unknown database type in preset",
-                    )) as Box<dyn Error>)
+        if let Some(serial) = selected_option {
+            if serial > 0 && serial <= options.len() {
+                let original_index = options[serial - 1].0;
+
+                if original_index < presets.len() {
+                    let preset = &presets[original_index];
+                    let db_type = match preset.db_type.to_lowercase().as_str() {
+                        "mssql" => DbType::MsSql,
+                        "mysql" => DbType::MySql,
+                        "clickhouse" => DbType::ClickHouse,
+                        "googlebigquery" => DbType::GoogleBigQuery,
+                        _ => {
+                            return Err(Box::new(std::io::Error::new(
+                                std::io::ErrorKind::Other,
+                                "Unknown database type in preset",
+                            )) as Box<dyn Error>)
+                        }
+                    };
+                    return Ok((db_type, Some(preset.clone()), None));
+                } else {
+                    let google_preset_index = original_index - presets.len();
+                    let google_preset = &google_presets[google_preset_index];
+                    return Ok((DbType::GoogleBigQuery, None, Some(google_preset.clone())));
                 }
-            };
-            return Ok((db_type, Some(preset.clone()), None));
-        } else {
-            let google_preset_index = original_index - presets.len();
-            let google_preset = &google_presets[google_preset_index];
-            return Ok((DbType::GoogleBigQuery, None, Some(google_preset.clone())));
+            }
         }
-    }
-}
 
-// Handling the case where no valid option is selected
-Err(Box::new(std::io::Error::new(
-    std::io::ErrorKind::InvalidInput,
-    "Invalid selection",
-)) as Box<dyn Error>)
-
-
+        // Handling the case where no valid option is selected
+        Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "Invalid selection",
+        )) as Box<dyn Error>)
     }
 
     let syntax = r#"
@@ -120,7 +129,6 @@ DIRECTIVES SYNTAX
 
 @bro_describe::your_table_name
         "#;
-
 
     let (db_type, db_preset_option, google_preset_option) = match get_db_type(csv_db_path) {
         Ok(db) => db,
@@ -164,14 +172,12 @@ DIRECTIVES SYNTAX
             )
         };
 
-
     // dbg!(&username, &password, &host, &database, &json_file_path, &project_id);
 
     //let mut csv_builder: CsvBuilder;
     let mut csv_builder: CsvBuilder = CsvBuilder::new();
     let mut last_sql_query = String::new();
     let mut confirmation = String::new();
-
 
     loop {
         let _query_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
