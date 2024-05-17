@@ -8,6 +8,7 @@ use crate::user_interaction::{
     print_insight_level_2, print_list_level_2,
 };
 use rgwml_heavy::csv_utils::{CsvBuilder, Exp, ExpVal, Piv, Train};
+use rgwml_heavy::ai_utils::{fetch_and_print_openai_batches, cancel_openai_batch};
 use serde_json::from_str;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -2111,8 +2112,7 @@ Total rows: 3
                         let target_columns_refs: Vec<&str> =
                             target_columns.iter().map(String::as_str).collect();
                         println!();
-                        let _ = csv_builder
-                            .send_columns_for_openai_batch_analysis(
+                        let _ = csv_builder.send_data_for_openai_batch_analysis(
                                 target_columns_refs,
                                 analysis_query,
                                 api_key,
@@ -2213,7 +2213,7 @@ Total rows: 3
                 let config: Config = from_str(valid_json_part)?;
                 let api_key = &config.open_ai_key;
 
-                let result = csv_builder.fetch_and_print_openai_batches(api_key).await?;
+                let result = fetch_and_print_openai_batches(api_key).await?;
 
                 *csv_builder = result;
 
@@ -2318,9 +2318,9 @@ Total rows: 3
                     continue;
                 }
 
-                let _ = csv_builder.cancel_openai_batch(&api_key, &batch_id).await?;
+                let _ = cancel_openai_batch(&api_key, &batch_id).await?;
 
-                let _ = csv_builder.fetch_and_print_openai_batches(api_key).await?;
+                let _ = fetch_and_print_openai_batches(api_key).await?;
 
                 continue;
             }
