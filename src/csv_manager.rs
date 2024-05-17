@@ -50,15 +50,21 @@ pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
 
             // Since print_list expects a Vec<&str>, convert Vec<String> to Vec<&str>
             let mut file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
-            file_name_slices.push("BACK");
+            //file_name_slices.push("BACK");
             // Now, call print_list with this vector
             print_list(&file_name_slices);
 
             let choice = get_user_input("What's it gonna be?: ").to_lowercase();
 
             // Assuming 'back' is always the last option
-            let back_option_number = file_name_slices.len();
+            //let back_option_number = file_name_slices.len();
 
+            if handle_back_flag(&choice) || handle_cancel_flag(&choice) {
+                    return None;
+                }
+
+
+            /*
             // Check if the user's choice is a number and if it matches the serial number for 'back'
             if choice.parse::<usize>().ok() == Some(back_option_number) {
                 print_insight("Bailed on that. Heading back to the last menu, bro.");
@@ -66,9 +72,10 @@ pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
             } else {
                 // Handle other choices or input errors
             }
+            */
 
             // Fuzzy match logic for 'back'
-            let options = &["back"];
+            //let options = &["back"];
             let mut highest_score = 0;
             let mut best_match = "";
 
@@ -80,11 +87,13 @@ pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
                 }
             }
 
+            /*
             // Check if the best match is 'back' with a score above 60
             if best_match == "back" && highest_score > 60 {
                 print_insight("Bailed on that. Heading back to the last menu, bro.");
                 return None;
             }
+            */
 
             match choice.parse::<usize>() {
                 Ok(serial) if serial > 0 && serial <= files.len() => {
