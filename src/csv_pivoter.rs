@@ -273,7 +273,7 @@ SYNTAX
         Ok((new_column_name, expression_names, result_expression))
     }
 
-    fn get_append_open_ai_analysis_expression(
+    fn get_append_openai_analysis_expression(
     ) -> Result<(Vec<String>, HashMap<String, String>, String), Box<dyn Error>> {
         let syntax = r#"{
   "target_columns": [],
@@ -336,6 +336,81 @@ SYNTAX
 
         Ok((target_columns, analysis_query, model))
     }
+
+    fn get_append_openai_batch_analysis_expression(
+    ) -> Result<(String, Vec<String>, HashMap<String, String>, String), Box<dyn Error>> {
+        let syntax = r#"{ 
+  "batch_analysis_name": "",
+  "target_columns": [],
+  "analysis_query": {
+    "": "",
+    "": ""
+  },
+  "model": "gpt-3.5-turbo-0125"
+}
+
+SYNTAX
+======
+
+{
+  "target_columns": ["transcribed_text", "count_of_complaints"],
+  "analysis_query": {
+    "customer_query": "extract the gist of the query raised by customer in the conversation text",
+    "agent_response": "extract the gist of the response given by agent to customer in the conversation text"
+  },
+  "model": "gpt-3.5-turbo-0125" // Other compatible models inlcude "gpt-4-turbo-preview"
+}
+
+  "#;
+
+        let exp_json = get_edited_user_json_input((&syntax).to_string());
+
+        if handle_cancel_flag(&exp_json) {
+            return Err("Operation canceled".into());
+        }
+
+        //dbg!(&exp_json);
+
+        let parsed_json: Value = serde_json::from_str(&exp_json)?;
+
+        //dbg!(&parsed_json);
+
+
+        let batch_analysis_name = parsed_json["batch_analysis_name"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+
+
+        // Extract target columns
+        let target_columns = parsed_json["target_columns"]
+            .as_array()
+            .unwrap_or(&vec![])
+            .iter()
+            .filter_map(|v| v.as_str().map(|s| s.to_string()))
+            .collect::<Vec<String>>();
+
+        let model = parsed_json["model"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+
+        // Extract analysis_query and convert it to HashMap<String, String>
+        let analysis_query_json = &parsed_json["analysis_query"];
+        let mut analysis_query = HashMap::new();
+        if let Some(obj) = analysis_query_json.as_object() {
+            for (key, value) in obj {
+                if let Some(val_str) = value.as_str() {
+                    analysis_query.insert(key.clone(), val_str.to_string());
+                }
+            }
+        }
+
+        Ok((batch_analysis_name, target_columns, analysis_query, model))
+    }
+
+
+
 
     fn get_append_linear_regression_expression() -> Result<
         (String, Vec<Vec<String>>, Vec<f64>, Vec<f64>, Vec<String>),
@@ -1144,6 +1219,8 @@ Note the implication of params in the Json Query:
         "APPEND FUZZAI ANALYSIS COLUMN",
         "APPEND FUZZAI ANALYSIS COLUMN WHERE",
         "APPEND OPENAI ANALYSIS COLUMNS",
+        "SEND COLUMNS TO OPENAI FOR BATCH ANALYSIS",
+        "LIST PENDING OPENAI BATCHES",
         "APPEND LINEAR REGRESSION COLUMN",
         "PIVOT",
     ];
@@ -1868,7 +1945,7 @@ Total rows: 3
                     continue;
                 }
 
-                match get_append_open_ai_analysis_expression() {
+                match get_append_openai_analysis_expression() {
                     Ok((target_columns, analysis_query, model)) => {
                         // Check if the target columns are empty
                         if target_columns.is_empty() {
@@ -1942,6 +2019,232 @@ Total rows: 3
 
             Some(8) => {
                 if choice.to_lowercase() == "8d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Creates category flags upon leveraging OpenAI's json mode enabled models.
+
+IMPORTANT: IN THE EVENT THIS FEATURE DOES NOT RETURN RESULTS AS EXPECTED BELOW, YOU MAY NEED TO TRY AGAIN 1-2 MORE TIMES, AS OPEN AI API IS KNOWN TO BE "GLITCHY" NOW AND THEN. IF ISSUES PERSIST, TRY USING THE "gpt-4-0125-preview" MODEL OR A NEWER JSON-MODE COMPATIBLE MODEL, INSTEAD - AND CHECKING THE VALIDITY OF YOUR API KEY.
+
+|id |item |description |
+------------------------
+|1  |books|health      |
+|2  |shoes|health      |
+|3  |pizza|fun         |
+Total rows: 3
+
+  @LILbro: Executing this JSON query:
+{
+  "target_columns": ["item", "description"],
+  "analysis_query": {
+    "helps_lose_weight": "a boolean value of either 1 or 0, on whether the expense has a high corelation to the user losing weight"
+  },
+  "model": "gpt-3.5-turbo-0125"
+}
+
+{
+  "input": {
+    "description": "health",
+    "item": "books"
+  },
+  "output": {
+    "helps_lose_weight": "0"
+  }
+}
+{
+  "input": {
+    "description": "health",
+    "item": "shoes"
+  },
+  "output": {
+    "helps_lose_weight": "0"
+  }
+}
+{
+  "input": {
+    "description": "fun",
+    "item": "pizza"
+  },
+  "output": {
+    "helps_lose_weight": "0"
+  }
+}
+
+|id |item |description |helps_lose_weight |
+-------------------------------------------
+|1  |books|health      |0                 |
+|2  |shoes|health      |0                 |
+|3  |pizza|fun         |0                 |
+Total rows: 3
+"#,
+                    );
+                    continue;
+                }
+
+                match get_append_openai_batch_analysis_expression() {
+                    Ok((batch_analysis_name, target_columns, analysis_query, model)) => {
+                        // Check if the target columns are empty
+                        if target_columns.is_empty() {
+                            print_insight_level_2("No target columns provided. Operation aborted.");
+                            continue; // Skip the rest of the process
+                        }
+
+                        //dbg!(&file_path_option);
+
+                        let home_dir =
+                            env::var("HOME").expect("Unable to determine user home directory");
+                        let desktop_path = Path::new(&home_dir).join("Desktop");
+                        let csv_db_path = desktop_path.join("csv_db");
+
+                        //dbg!(&csv_db_path);
+
+                        let config_path = PathBuf::from(csv_db_path).join("bro.config");
+
+                        let file_contents = read_to_string(config_path)?;
+                        let valid_json_part = file_contents
+                            .split("SYNTAX")
+                            .next()
+                            .ok_or("Invalid configuration format")?;
+                        let config: Config = from_str(valid_json_part)?;
+                        let api_key = &config.open_ai_key;
+
+                        // Use the api_key for your needs
+                        //println!("API Key: {}", api_key);
+
+                        // Convert target_columns to Vec<&str>
+                        let target_columns_refs: Vec<&str> =
+                            target_columns.iter().map(String::as_str).collect();
+                        println!();
+                        let _ = csv_builder
+                            .send_columns_for_openai_batch_analysis(
+                                target_columns_refs,
+                                analysis_query,
+                                api_key,
+                                &model,
+                                &batch_analysis_name
+                            )
+                            .await;
+                        continue;
+                    }
+                    Err(e) if e.to_string() == "Operation canceled" => {
+                        continue;
+                    }
+
+                    Err(e) => {
+                        println!("Error getting expressions: {}", e);
+                        continue; // Return to the menu to let the user try again or choose another option
+                    }
+                }
+            }
+
+            Some(9) => {
+                if choice.to_lowercase() == "9d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Creates category flags upon leveraging OpenAI's json mode enabled models.
+
+IMPORTANT: IN THE EVENT THIS FEATURE DOES NOT RETURN RESULTS AS EXPECTED BELOW, YOU MAY NEED TO TRY AGAIN 1-2 MORE TIMES, AS OPEN AI API IS KNOWN TO BE "GLITCHY" NOW AND THEN. IF ISSUES PERSIST, TRY USING THE "gpt-4-0125-preview" MODEL OR A NEWER JSON-MODE COMPATIBLE MODEL, INSTEAD - AND CHECKING THE VALIDITY OF YOUR API KEY.
+
+|id |item |description |
+------------------------
+|1  |books|health      |
+|2  |shoes|health      |
+|3  |pizza|fun         |
+Total rows: 3
+
+  @LILbro: Executing this JSON query:
+{
+  "target_columns": ["item", "description"],
+  "analysis_query": {
+    "helps_lose_weight": "a boolean value of either 1 or 0, on whether the expense has a high corelation to the user losing weight"
+  },
+  "model": "gpt-3.5-turbo-0125"
+}
+
+{
+  "input": {
+    "description": "health",
+    "item": "books"
+  },
+  "output": {
+    "helps_lose_weight": "0"
+  }
+}
+{
+  "input": {
+    "description": "health",
+    "item": "shoes"
+  },
+  "output": {
+    "helps_lose_weight": "0"
+  }
+}
+{
+  "input": {
+    "description": "fun",
+    "item": "pizza"
+  },
+  "output": {
+    "helps_lose_weight": "0"
+  }
+}
+
+|id |item |description |helps_lose_weight |
+-------------------------------------------
+|1  |books|health      |0                 |
+|2  |shoes|health      |0                 |
+|3  |pizza|fun         |0                 |
+Total rows: 3
+"#,
+                    );
+                    continue;
+                }
+
+                        let home_dir =
+                            env::var("HOME").expect("Unable to determine user home directory");
+                        let desktop_path = Path::new(&home_dir).join("Desktop");
+                        let csv_db_path = desktop_path.join("csv_db");
+
+                        //dbg!(&csv_db_path);
+
+                        let config_path = PathBuf::from(csv_db_path).join("bro.config");
+
+                        let file_contents = read_to_string(config_path)?;
+                        let valid_json_part = file_contents
+                            .split("SYNTAX")
+                            .next()
+                            .ok_or("Invalid configuration format")?;
+                        let config: Config = from_str(valid_json_part)?;
+                        let api_key = &config.open_ai_key;
+
+let result = csv_builder.fetch_and_print_openai_batches(api_key).await?;
+
+                        *csv_builder = result;
+
+                        match apply_filter_changes_menu(
+                            csv_builder,
+                            &prev_iteration_builder,
+                            &original_csv_builder,
+                        ) {
+                            Ok(_) => (),
+                            Err(e) => {
+                                println!("{}", e);
+                                continue; // Ask for the choice again if there was an error
+                            }
+                        }
+
+
+                       //continue;
+                }
+
+
+
+
+
+
+            Some(10) => {
+                if choice.to_lowercase() == "10d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2115,8 +2418,8 @@ Total rows: 5
                 }
             }
 
-            Some(9) => {
-                if choice.to_lowercase() == "9d" {
+            Some(11) => {
+                if choice.to_lowercase() == "11d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2270,7 +2573,7 @@ Note the implication of params in the Json Query:
             }
 
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 9.");
+                println!("Invalid option. Please enter a number from 1 to 11.");
                 continue; // Ask for the choice again
             }
         }
