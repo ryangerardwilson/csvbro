@@ -1996,7 +1996,7 @@ dependencies = [
 
 [[package]]
 name = "rgwml_heavy"
-version = "1.2.72"
+version = "1.2.73"
 dependencies = [
  "anyhow",
  "calamine 0.24.0",

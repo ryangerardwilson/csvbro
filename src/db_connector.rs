@@ -65,6 +65,16 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
         print_list(&options.iter().map(|(_, name)| *name).collect::<Vec<_>>());
 
         let choice = get_user_input_level_2("Choose a database: ").to_lowercase();
+
+        if handle_back_flag(&choice) {
+            //break;
+            // Handling the case where no valid option is selected
+            return Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "return_to_main",
+            )) as Box<dyn Error>);
+        }
+
         let selected_option = determine_action_as_number(
             &options.iter().map(|(_, name)| *name).collect::<Vec<_>>(),
             &choice,
