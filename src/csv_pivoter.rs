@@ -274,9 +274,9 @@ SYNTAX
     }
 
     fn get_append_open_ai_analysis_expression(
-    ) -> Result<(String, HashMap<String, String>, String), Box<dyn Error>> {
+    ) -> Result<(Vec<String>, HashMap<String, String>, String), Box<dyn Error>> {
         let syntax = r#"{
-  "target_column_name": "",
+  "target_columns": [],
   "analysis_query": {
     "": "",
     "": ""
@@ -288,7 +288,7 @@ SYNTAX
 ======
 
 {
-  "target_column_name": "transcribed_text",
+  "target_columns": ["transcribed_text", "count_of_complaints"],
   "analysis_query": {
     "customer_query": "extract the gist of the query raised by customer in the conversation text",
     "agent_response": "extract the gist of the response given by agent to customer in the conversation text"
@@ -310,10 +310,13 @@ SYNTAX
 
         //dbg!(&parsed_json);
 
-        let target_column_name = parsed_json["target_column_name"]
-            .as_str()
-            .unwrap_or_default()
-            .to_string();
+        // Extract target columns
+        let target_columns = parsed_json["target_columns"]
+            .as_array()
+            .unwrap_or(&vec![])
+            .iter()
+            .filter_map(|v| v.as_str().map(|s| s.to_string()))
+            .collect::<Vec<String>>();
 
         let model = parsed_json["model"]
             .as_str()
@@ -331,7 +334,7 @@ SYNTAX
             }
         }
 
-        Ok((target_column_name, analysis_query, model))
+        Ok((target_columns, analysis_query, model))
     }
 
     fn get_append_linear_regression_expression() -> Result<
@@ -1810,45 +1813,66 @@ Creates category flags upon leveraging OpenAI's json mode enabled models.
 
 IMPORTANT: IN THE EVENT THIS FEATURE DOES NOT RETURN RESULTS AS EXPECTED BELOW, YOU MAY NEED TO TRY AGAIN 1-2 MORE TIMES, AS OPEN AI API IS KNOWN TO BE "GLITCHY" NOW AND THEN. IF ISSUES PERSIST, TRY USING THE "gpt-4-0125-preview" MODEL OR A NEWER JSON-MODE COMPATIBLE MODEL, INSTEAD - AND CHECKING THE VALIDITY OF YOUR API KEY.
 
-|id |item    |value |type  |item_type     |
--------------------------------------------
-|1  |books   |1000  |small |books_small   |
-|2  |snacks  |200   |small |snacks_small  |
-|3  |cab fare|300   |small |cab fare_small|
-|4  |rent    |20000 |big   |rent_big      |
-|5  |movies  |1500  |medium|movies_medium |
-Total rows: 5
+|id |item |description |
+------------------------
+|1  |books|health      |
+|2  |shoes|health      |
+|3  |pizza|fun         |
+Total rows: 3
 
   @LILbro: Executing this JSON query:
 {
-  "target_column_name": "item",
+  "target_columns": ["item", "description"],
   "analysis_query": {
-    "food_expense": "Evaluates as true if the item is likely a food or dining related expense, else evaluates as false",
-    "study_expense": "Evaluates as true if the item is likely a study or academic related expense, else evaluates as false"
+    "helps_lose_weight": "a boolean value of either 1 or 0, on whether the expense has a high corelation to the user losing weight"
   },
   "model": "gpt-3.5-turbo-0125"
 }
 
-|id |item    |value |type  |item_type     |food_expense |study_expense |
-------------------------------------------------------------------------
-|1  |books   |1000  |small |books_small   |false        |true          |
-|2  |snacks  |200   |small |snacks_small  |true         |false         |
-|3  |cab fare|300   |small |cab fare_small|false        |false         |
-|4  |rent    |20000 |big   |rent_big      |false        |false         |
-|5  |movies  |1500  |medium|movies_medium |false        |false         |
-Total rows: 5
+{
+  "input": {
+    "description": "health",
+    "item": "books"
+  },
+  "output": {
+    "helps_lose_weight": "0"
+  }
+}
+{
+  "input": {
+    "description": "health",
+    "item": "shoes"
+  },
+  "output": {
+    "helps_lose_weight": "0"
+  }
+}
+{
+  "input": {
+    "description": "fun",
+    "item": "pizza"
+  },
+  "output": {
+    "helps_lose_weight": "0"
+  }
+}
+
+|id |item |description |helps_lose_weight |
+-------------------------------------------
+|1  |books|health      |0                 |
+|2  |shoes|health      |0                 |
+|3  |pizza|fun         |0                 |
+Total rows: 3
 "#,
                     );
                     continue;
                 }
 
                 match get_append_open_ai_analysis_expression() {
-                    Ok((target_column_name, analysis_query, model)) => {
-                        // Check if the new column name is empty
-                        if target_column_name.trim().is_empty() {
-                            print_insight_level_2(
-                                "No target column name provided. Operation aborted.",
-                            );
+                    Ok((target_columns, analysis_query, model)) => {
+                        // Check if the target columns are empty
+                        if target_columns.is_empty() {
+                            print_insight_level_2("No target columns provided. Operation aborted.");
                             continue; // Skip the rest of the process
                         }
 
@@ -1872,11 +1896,15 @@ Total rows: 5
                         let api_key = &config.open_ai_key;
 
                         // Use the api_key for your needs
-                        println!("API Key: {}", api_key);
+                        //println!("API Key: {}", api_key);
 
+                        // Convert target_columns to Vec<&str>
+                        let target_columns_refs: Vec<&str> =
+                            target_columns.iter().map(String::as_str).collect();
+                        println!();
                         let result = csv_builder
                             .append_derived_openai_analysis_columns(
-                                &target_column_name,
+                                target_columns_refs,
                                 analysis_query,
                                 api_key,
                                 &model,
