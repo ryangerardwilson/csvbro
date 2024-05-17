@@ -375,12 +375,10 @@ SYNTAX
 
         //dbg!(&parsed_json);
 
-
         let batch_analysis_name = parsed_json["batch_analysis_name"]
             .as_str()
             .unwrap_or_default()
             .to_string();
-
 
         // Extract target columns
         let target_columns = parsed_json["target_columns"]
@@ -408,9 +406,6 @@ SYNTAX
 
         Ok((batch_analysis_name, target_columns, analysis_query, model))
     }
-
-
-
 
     fn get_append_linear_regression_expression() -> Result<
         (String, Vec<Vec<String>>, Vec<f64>, Vec<f64>, Vec<String>),
@@ -1221,6 +1216,7 @@ Note the implication of params in the Json Query:
         "APPEND OPENAI ANALYSIS COLUMNS",
         "SEND COLUMNS TO OPENAI FOR BATCH ANALYSIS",
         "LIST PENDING OPENAI BATCHES",
+        "CANCEL OPENAI BATCH",
         "APPEND LINEAR REGRESSION COLUMN",
         "PIVOT",
     ];
@@ -2121,7 +2117,7 @@ Total rows: 3
                                 analysis_query,
                                 api_key,
                                 &model,
-                                &batch_analysis_name
+                                &batch_analysis_name,
                             )
                             .await;
                         continue;
@@ -2201,50 +2197,136 @@ Total rows: 3
                     continue;
                 }
 
-                        let home_dir =
-                            env::var("HOME").expect("Unable to determine user home directory");
-                        let desktop_path = Path::new(&home_dir).join("Desktop");
-                        let csv_db_path = desktop_path.join("csv_db");
+                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+                let desktop_path = Path::new(&home_dir).join("Desktop");
+                let csv_db_path = desktop_path.join("csv_db");
 
-                        //dbg!(&csv_db_path);
+                //dbg!(&csv_db_path);
 
-                        let config_path = PathBuf::from(csv_db_path).join("bro.config");
+                let config_path = PathBuf::from(csv_db_path).join("bro.config");
 
-                        let file_contents = read_to_string(config_path)?;
-                        let valid_json_part = file_contents
-                            .split("SYNTAX")
-                            .next()
-                            .ok_or("Invalid configuration format")?;
-                        let config: Config = from_str(valid_json_part)?;
-                        let api_key = &config.open_ai_key;
+                let file_contents = read_to_string(config_path)?;
+                let valid_json_part = file_contents
+                    .split("SYNTAX")
+                    .next()
+                    .ok_or("Invalid configuration format")?;
+                let config: Config = from_str(valid_json_part)?;
+                let api_key = &config.open_ai_key;
 
-let result = csv_builder.fetch_and_print_openai_batches(api_key).await?;
+                let result = csv_builder.fetch_and_print_openai_batches(api_key).await?;
 
-                        *csv_builder = result;
+                *csv_builder = result;
 
-                        match apply_filter_changes_menu(
-                            csv_builder,
-                            &prev_iteration_builder,
-                            &original_csv_builder,
-                        ) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("{}", e);
-                                continue; // Ask for the choice again if there was an error
-                            }
-                        }
-
-
-                       //continue;
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
                 }
 
-
-
-
-
+                //continue;
+            }
 
             Some(10) => {
                 if choice.to_lowercase() == "10d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Creates category flags upon leveraging OpenAI's json mode enabled models.
+
+IMPORTANT: IN THE EVENT THIS FEATURE DOES NOT RETURN RESULTS AS EXPECTED BELOW, YOU MAY NEED TO TRY AGAIN 1-2 MORE TIMES, AS OPEN AI API IS KNOWN TO BE "GLITCHY" NOW AND THEN. IF ISSUES PERSIST, TRY USING THE "gpt-4-0125-preview" MODEL OR A NEWER JSON-MODE COMPATIBLE MODEL, INSTEAD - AND CHECKING THE VALIDITY OF YOUR API KEY.
+
+|id |item |description |
+------------------------
+|1  |books|health      |
+|2  |shoes|health      |
+|3  |pizza|fun         |
+Total rows: 3
+
+  @LILbro: Executing this JSON query:
+{
+  "target_columns": ["item", "description"],
+  "analysis_query": {
+    "helps_lose_weight": "a boolean value of either 1 or 0, on whether the expense has a high corelation to the user losing weight"
+  },
+  "model": "gpt-3.5-turbo-0125"
+}
+
+{
+  "input": {
+    "description": "health",
+    "item": "books"
+  },
+  "output": {
+    "helps_lose_weight": "0"
+  }
+}
+{
+  "input": {
+    "description": "health",
+    "item": "shoes"
+  },
+  "output": {
+    "helps_lose_weight": "0"
+  }
+}
+{
+  "input": {
+    "description": "fun",
+    "item": "pizza"
+  },
+  "output": {
+    "helps_lose_weight": "0"
+  }
+}
+
+|id |item |description |helps_lose_weight |
+-------------------------------------------
+|1  |books|health      |0                 |
+|2  |shoes|health      |0                 |
+|3  |pizza|fun         |0                 |
+Total rows: 3
+"#,
+                    );
+                    continue;
+                }
+
+                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+                let desktop_path = Path::new(&home_dir).join("Desktop");
+                let csv_db_path = desktop_path.join("csv_db");
+
+                //dbg!(&csv_db_path);
+
+                let config_path = PathBuf::from(csv_db_path).join("bro.config");
+
+                let file_contents = read_to_string(config_path)?;
+                let valid_json_part = file_contents
+                    .split("SYNTAX")
+                    .next()
+                    .ok_or("Invalid configuration format")?;
+                let config: Config = from_str(valid_json_part)?;
+                let api_key = &config.open_ai_key;
+
+                let batch_id = get_user_input_level_2("Enter batch id to cancel: ");
+
+                if handle_cancel_flag(&batch_id) {
+                    continue;
+                }
+
+                let _ = csv_builder.cancel_openai_batch(&api_key, &batch_id).await?;
+
+                let _ = csv_builder.fetch_and_print_openai_batches(api_key).await?;
+
+                continue;
+            }
+
+            Some(11) => {
+                if choice.to_lowercase() == "11d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2418,8 +2500,8 @@ Total rows: 5
                 }
             }
 
-            Some(11) => {
-                if choice.to_lowercase() == "11d" {
+            Some(12) => {
+                if choice.to_lowercase() == "12d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2573,7 +2655,7 @@ Note the implication of params in the Json Query:
             }
 
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 11.");
+                println!("Invalid option. Please enter a number from 1 to 12.");
                 continue; // Ask for the choice again
             }
         }
