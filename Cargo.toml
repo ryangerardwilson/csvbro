@@ -1,6 +1,6 @@
 [package]
 name = "csvbro"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2021"
 authors = ["Ryan Gerard Wilson"]
 license = "MIT"
@@ -11,7 +11,7 @@ tokio = { version = "1", features = ["full"] }
 calamine = "0.23.1"
 chrono = "0.4.31"
 fuzzywuzzy = "0.0.2"
-rgwml_heavy = { path = "/home/rgw/Apps/rgwml_heavy" }
+rgwml = { path = "/home/rgw/Apps/rgwml" }
 rustyline = "13.0.0"
 vim_edit = "0.1.1"
 serde_json = "1.0.111"

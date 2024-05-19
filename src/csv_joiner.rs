@@ -6,7 +6,7 @@ use crate::user_interaction::{
     determine_action_as_number, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
 use fuzzywuzzy::fuzz;
-use rgwml_heavy::csv_utils::CsvBuilder;
+use rgwml::csv_utils::CsvBuilder;
 use std::env;
 use std::fs;
 use std::io;

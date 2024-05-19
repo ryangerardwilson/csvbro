@@ -16,7 +16,7 @@ use crate::user_experience::{handle_quit_flag, handle_special_flag_without_build
 use crate::user_interaction::{
     determine_action_as_text, get_user_input, print_insight, print_list,
 };
-use rgwml_heavy::csv_utils::CsvBuilder;
+use rgwml::csv_utils::CsvBuilder;
 use std::env;
 use std::fs::remove_file;
 use std::path::Path;
@@ -73,7 +73,7 @@ async fn main() {
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 1.0.2");
+        print_insight("csvbro 1.0.3");
         std::process::exit(0);
     }
 

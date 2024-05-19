@@ -7,8 +7,8 @@ use crate::user_interaction::{
     determine_action_as_number, get_edited_user_json_input, get_user_input_level_2,
     print_insight_level_2, print_list_level_2,
 };
-use rgwml_heavy::csv_utils::{CsvBuilder, Exp, ExpVal, Piv, Train};
-use rgwml_heavy::ai_utils::{fetch_and_print_openai_batches, cancel_openai_batch};
+use rgwml::ai_utils::{cancel_openai_batch, fetch_and_print_openai_batches};
+use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal, Piv, Train};
 use serde_json::from_str;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -1214,10 +1214,11 @@ Note the implication of params in the Json Query:
         "APPEND CATEGORY COLUMNS BY SPLITTING DATE/TIMESTAMP COLUMN",
         "APPEND FUZZAI ANALYSIS COLUMN",
         "APPEND FUZZAI ANALYSIS COLUMN WHERE",
-        "APPEND OPENAI ANALYSIS COLUMNS",
-        "SEND COLUMNS TO OPENAI FOR BATCH ANALYSIS",
-        "LIST PENDING OPENAI BATCHES",
-        "CANCEL OPENAI BATCH",
+        "OPENAI /SYNC APPEND ANALYSIS COLUMNS",
+        "OPENAI/ SEND COLUMNS FOR ASYNC BATCH ANALYSIS",
+        "OPENAI/ LIST BATCHES",
+        "OPENAI/ CANCEL BATCH",
+        "OPENAI/ APPEND BATCH ANALYSIS COLUMNS",
         "APPEND LINEAR REGRESSION COLUMN",
         "PIVOT",
     ];
@@ -2112,7 +2113,8 @@ Total rows: 3
                         let target_columns_refs: Vec<&str> =
                             target_columns.iter().map(String::as_str).collect();
                         println!();
-                        let _ = csv_builder.send_data_for_openai_batch_analysis(
+                        let _ = csv_builder
+                            .send_data_for_openai_batch_analysis(
                                 target_columns_refs,
                                 analysis_query,
                                 api_key,
@@ -2330,6 +2332,114 @@ Total rows: 3
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
+Creates category flags upon leveraging OpenAI's json mode enabled models.
+
+IMPORTANT: IN THE EVENT THIS FEATURE DOES NOT RETURN RESULTS AS EXPECTED BELOW, YOU MAY NEED TO TRY AGAIN 1-2 MORE TIMES, AS OPEN AI API IS KNOWN TO BE "GLITCHY" NOW AND THEN. IF ISSUES PERSIST, TRY USING THE "gpt-4-0125-preview" MODEL OR A NEWER JSON-MODE COMPATIBLE MODEL, INSTEAD - AND CHECKING THE VALIDITY OF YOUR API KEY.
+
+|id |item |description |
+------------------------
+|1  |books|health      |
+|2  |shoes|health      |
+|3  |pizza|fun         |
+Total rows: 3
+
+  @LILbro: Executing this JSON query:
+{
+  "target_columns": ["item", "description"],
+  "analysis_query": {
+    "helps_lose_weight": "a boolean value of either 1 or 0, on whether the expense has a high corelation to the user losing weight"
+  },
+  "model": "gpt-3.5-turbo-0125"
+}
+
+{
+  "input": {
+    "description": "health",
+    "item": "books"
+  },
+  "output": {
+    "helps_lose_weight": "0"
+  }
+}
+{
+  "input": {
+    "description": "health",
+    "item": "shoes"
+  },
+  "output": {
+    "helps_lose_weight": "0"
+  }
+}
+{
+  "input": {
+    "description": "fun",
+    "item": "pizza"
+  },
+  "output": {
+    "helps_lose_weight": "0"
+  }
+}
+
+|id |item |description |helps_lose_weight |
+-------------------------------------------
+|1  |books|health      |0                 |
+|2  |shoes|health      |0                 |
+|3  |pizza|fun         |0                 |
+Total rows: 3
+"#,
+                    );
+                    continue;
+                }
+
+                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+                let desktop_path = Path::new(&home_dir).join("Desktop");
+                let csv_db_path = desktop_path.join("csv_db");
+
+                //dbg!(&csv_db_path);
+
+                let config_path = PathBuf::from(csv_db_path).join("bro.config");
+
+                let file_contents = read_to_string(config_path)?;
+                let valid_json_part = file_contents
+                    .split("SYNTAX")
+                    .next()
+                    .ok_or("Invalid configuration format")?;
+                let config: Config = from_str(valid_json_part)?;
+                let api_key = &config.open_ai_key;
+
+                let output_file_id =
+                    get_user_input_level_2("Enter OpenAI output_file_id to append: ");
+
+                if handle_cancel_flag(&output_file_id) {
+                    continue;
+                }
+
+                csv_builder
+                    .append_openai_batch_analysis_columns(&api_key, &output_file_id)
+                    .await
+                    .print_table();
+                println!();
+
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+
+                //continue;
+            }
+
+            Some(12) => {
+                if choice.to_lowercase() == "12d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
 Studies your training data, and makes multi-dimensional linear regression predictions against numerical and text format column values (leveraging the Levenshtein distance as a normalizer for comparisons involving text, and traditional linear regression computation for numerical values).
 
 IMPORTANT: THE NUMBER OF TRAINING EXAMPLES SHOULD BE AT LEAST 2X THE NUMBER OF UNIQUE TRAINING OUTPUTS. IN THE BELOW EXAMPLE, THERE ARE TWO UNIQUE TRAINING OUTPUTS (10 AND 90), AND TEN TRAINING EXAMPLES.
@@ -2500,8 +2610,8 @@ Total rows: 5
                 }
             }
 
-            Some(12) => {
-                if choice.to_lowercase() == "12d" {
+            Some(13) => {
+                if choice.to_lowercase() == "13d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2655,7 +2765,7 @@ Note the implication of params in the Json Query:
             }
 
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 12.");
+                println!("Invalid option. Please enter a number from 1 to 13.");
                 continue; // Ask for the choice again
             }
         }

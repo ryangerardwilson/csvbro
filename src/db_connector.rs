@@ -14,8 +14,8 @@ use crate::user_interaction::{
     get_user_input, get_user_input_level_2, print_list,
 };
 use regex::Regex;
-use rgwml_heavy::csv_utils::CsvBuilder;
-use rgwml_heavy::db_utils::DbConnect;
+use rgwml::csv_utils::CsvBuilder;
+use rgwml::db_utils::DbConnect;
 use serde_json::from_str;
 use std::error::Error;
 use std::fs::read_to_string;

@@ -3,7 +3,7 @@ use crate::config::edit_config;
 use crate::csv_manager::{delete_csv_file, import, open_csv_file};
 use crate::db_connector::query;
 use crate::user_interaction::{get_user_input, get_user_input_level_2, print_insight, print_list};
-use rgwml_heavy::csv_utils::CsvBuilder;
+use rgwml::csv_utils::CsvBuilder;
 use std::env;
 use std::path::Path;
 use std::path::PathBuf;

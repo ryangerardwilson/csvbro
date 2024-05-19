@@ -6,7 +6,7 @@ use crate::user_interaction::{
     determine_action_as_number, get_edited_user_json_input, get_user_input_level_2,
     print_insight_level_2, print_list_level_2,
 };
-use rgwml_heavy::csv_utils::{CsvBuilder, Exp, ExpVal};
+use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal};
 use serde_json::Value;
 
 // Assuming CsvBuilder, Exp, and ExpVal are updated as per your implementation
