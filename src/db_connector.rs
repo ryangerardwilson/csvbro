@@ -1,5 +1,6 @@
 // db_connector.rs
 use crate::config::{Config, DbPreset, GoogleBigQueryPreset};
+use crate::csv_grouper::handle_group;
 use crate::csv_inspector::handle_inspect;
 use crate::csv_joiner::handle_join;
 use crate::csv_pivoter::handle_pivot;
@@ -201,6 +202,7 @@ DIRECTIVES SYNTAX
                     || confirmation == "INSPECT"
                     || confirmation == "PIVOT"
                     || confirmation == "JOIN"
+                    || confirmation == "GROUP"
                 {
                     csv_builder.print_table();
                     confirmation = String::new();
@@ -408,6 +410,7 @@ DIRECTIVES SYNTAX
                     || confirmation == "INSPECT"
                     || confirmation == "PIVOT"
                     || confirmation == "JOIN"
+                    || confirmation == "GROUP"
                 {
                     csv_builder.print_table();
                     confirmation = String::new();
@@ -599,6 +602,7 @@ DIRECTIVES SYNTAX
                     || confirmation == "INSPECT"
                     || confirmation == "PIVOT"
                     || confirmation == "JOIN"
+                    || confirmation == "GROUP"
                 {
                     csv_builder.print_table();
                     confirmation = String::new();
@@ -787,6 +791,7 @@ DIRECTIVES SYNTAX
                     || confirmation == "INSPECT"
                     || confirmation == "PIVOT"
                     || confirmation == "JOIN"
+                    || confirmation == "GROUP"
                 {
                     csv_builder.print_table();
                     confirmation = String::new();
@@ -931,7 +936,8 @@ DIRECTIVES SYNTAX
                     if let Err(e) = query_execution_result {
                         println!("Failed to execute query: {}", e);
 
-                        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN"];
+                        let menu_options =
+                            vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN", "GROUP"];
 
                         print_list(&menu_options);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -970,7 +976,7 @@ DIRECTIVES SYNTAX
 
         println!();
 
-        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN"];
+        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN", "GROUP"];
 
         print_list(&menu_options);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -1026,6 +1032,13 @@ DIRECTIVES SYNTAX
             Some(ref action) if action == "JOIN" => {
                 if let Err(e) = handle_join(&mut csv_builder, None) {
                     println!("Error during join operation: {}", e);
+                    continue;
+                }
+            }
+
+            Some(ref action) if action == "GROUP" => {
+                if let Err(e) = handle_group(&mut csv_builder, None).await {
+                    println!("Error during group operation: {}", e);
                     continue;
                 }
             }

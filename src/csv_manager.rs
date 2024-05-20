@@ -1,4 +1,5 @@
 // csv_manager.rs
+use crate::csv_grouper::handle_group;
 use crate::csv_inspector::handle_inspect;
 use crate::csv_joiner::handle_join;
 use crate::csv_pivoter::handle_pivot;
@@ -62,39 +63,6 @@ pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
             if handle_back_flag(&choice) || handle_cancel_flag(&choice) {
                 return None;
             }
-
-            /*
-            // Check if the user's choice is a number and if it matches the serial number for 'back'
-            if choice.parse::<usize>().ok() == Some(back_option_number) {
-                print_insight("Bailed on that. Heading back to the last menu, bro.");
-                return None; // Assuming this is within a function that can return None for some control flow
-            } else {
-                // Handle other choices or input errors
-            }
-            */
-
-            // Fuzzy match logic for 'back'
-            //let options = &["back"];
-            /*
-            let mut highest_score = 0;
-            let mut best_match = "";
-
-            for &option in options {
-                let score = fuzz::ratio(&choice, option);
-                if score > highest_score {
-                    highest_score = score;
-                    best_match = option;
-                }
-            }
-            */
-
-            /*
-            // Check if the best match is 'back' with a score above 60
-            if best_match == "back" && highest_score > 60 {
-                print_insight("Bailed on that. Heading back to the last menu, bro.");
-                return None;
-            }
-            */
 
             match choice.parse::<usize>() {
                 Ok(serial) if serial > 0 && serial <= files.len() => {
@@ -367,7 +335,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         //let has_data = builder.has_data();
         print_insight("Choose an action:");
 
-        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN"];
+        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN", "GROUP"];
 
         print_list(&menu_options);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -445,6 +413,14 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                         continue;
                     }
                 }
+
+                Some(ref action) if action == "GROUP" => {
+                    if let Err(e) = handle_group(&mut builder, file_path_option).await {
+                        println!("Error during join operation: {}", e);
+                        continue;
+                    }
+                }
+
                 //"done" => break,
                 Some(_) => print_insight("Unrecognized action, please try again."),
                 None => print_insight("No action determined"),

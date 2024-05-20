@@ -8,5 +8,6 @@ pub mod csv_pivoter;
 pub mod csv_joiner;
 pub mod csv_searcher;
 pub mod csv_tinkerer;
+pub mod csv_grouper;
 pub mod db_connector;
 

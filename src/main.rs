@@ -1,4 +1,5 @@
 mod config;
+mod csv_grouper;
 mod csv_inspector;
 mod csv_joiner;
 mod csv_manager;
@@ -73,7 +74,7 @@ async fn main() {
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 1.0.5");
+        print_insight("csvbro 1.0.6");
         std::process::exit(0);
     }
 
