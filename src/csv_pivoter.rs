@@ -294,7 +294,7 @@ SYNTAX
     "customer_query": "extract the gist of the query raised by customer in the conversation text",
     "agent_response": "extract the gist of the response given by agent to customer in the conversation text"
   },
-  "model": "gpt-3.5-turbo-0125" // Other compatible models inlcude "gpt-4-turbo-preview"
+  "model": "gpt-3.5-turbo-0125" // Other compatible models inlcude "gpt-4o" and "gpt-4-turbo-preview"
 }
 
   "#;
@@ -359,7 +359,7 @@ SYNTAX
     "customer_query": "extract the gist of the query raised by customer in the conversation text",
     "agent_response": "extract the gist of the response given by agent to customer in the conversation text"
   },
-  "model": "gpt-3.5-turbo-0125" // Other compatible models inlcude "gpt-4-turbo-preview"
+  "model": "gpt-3.5-turbo-0125" // Other compatible models inlcude "gpt-4o" and "gpt-4-turbo-preview"
 }
 
   "#;
@@ -2216,7 +2216,7 @@ Total rows: 3
                 let api_key = &config.open_ai_key;
 
                 let result = fetch_and_print_openai_batches(api_key).await?;
-
+                println!();
                 *csv_builder = result;
 
                 match apply_filter_changes_menu(
