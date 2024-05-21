@@ -1884,7 +1884,7 @@ Note the implications of the params in the JSON query:
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
-Creates category flags upon leveraging OpenAI's json mode enabled models.
+Synchonously creates category flags upon leveraging OpenAI's json mode enabled models.
 
 IMPORTANT: IN THE EVENT THIS FEATURE DOES NOT RETURN RESULTS AS EXPECTED BELOW, YOU MAY NEED TO TRY AGAIN 1-2 MORE TIMES, AS OPEN AI API IS KNOWN TO BE "GLITCHY" NOW AND THEN. IF ISSUES PERSIST, TRY USING THE "gpt-4-0125-preview" MODEL OR A NEWER JSON-MODE COMPATIBLE MODEL, INSTEAD - AND CHECKING THE VALIDITY OF YOUR API KEY.
 
@@ -2020,60 +2020,27 @@ Total rows: 3
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
-Creates category flags upon leveraging OpenAI's json mode enabled models.
+Sends your data to OpenAI for batch processing to asynchronously create category flags upon leveraging its json mode enabled models.
 
-IMPORTANT: IN THE EVENT THIS FEATURE DOES NOT RETURN RESULTS AS EXPECTED BELOW, YOU MAY NEED TO TRY AGAIN 1-2 MORE TIMES, AS OPEN AI API IS KNOWN TO BE "GLITCHY" NOW AND THEN. IF ISSUES PERSIST, TRY USING THE "gpt-4-0125-preview" MODEL OR A NEWER JSON-MODE COMPATIBLE MODEL, INSTEAD - AND CHECKING THE VALIDITY OF YOUR API KEY.
-
-|id |item |description |
-------------------------
-|1  |books|health      |
-|2  |shoes|health      |
-|3  |pizza|fun         |
+|id |item      |calorie_count |
+-------------------------------
+|1  |pizza     |500           |
+|2  |milk shake|300           |
+|3  |potatoe   |100           |
 Total rows: 3
 
   @LILbro: Executing this JSON query:
-{
-  "target_columns": ["item", "description"],
+{ 
+  "batch_analysis_name": "nutrient_predictions",
+  "target_columns": ["item", "calories_count"],
   "analysis_query": {
-    "helps_lose_weight": "a boolean value of either 1 or 0, on whether the expense has a high corelation to the user losing weight"
+    "has_cholestrol": "Return a boolean 1 if the data items are likely to contain cholestrol, else return the boolean 0",
+    "is_satiating": "Return a boolean 1 if the data items are likely to satiate apetite, else return the boolean 0"
   },
   "model": "gpt-3.5-turbo-0125"
 }
 
-{
-  "input": {
-    "description": "health",
-    "item": "books"
-  },
-  "output": {
-    "helps_lose_weight": "0"
-  }
-}
-{
-  "input": {
-    "description": "health",
-    "item": "shoes"
-  },
-  "output": {
-    "helps_lose_weight": "0"
-  }
-}
-{
-  "input": {
-    "description": "fun",
-    "item": "pizza"
-  },
-  "output": {
-    "helps_lose_weight": "0"
-  }
-}
-
-|id |item |description |helps_lose_weight |
--------------------------------------------
-|1  |books|health      |0                 |
-|2  |shoes|health      |0                 |
-|3  |pizza|fun         |0                 |
-Total rows: 3
+  @LILBro: Batch nutrient_predictions_2 sent to OpenAI for analysis. You can check its status via the OPENAI/ LIST BATCHES feature
 "#,
                     );
                     continue;
@@ -2122,6 +2089,9 @@ Total rows: 3
                                 &batch_analysis_name,
                             )
                             .await;
+                        let insight = format!("Batch {} sent to OpenAI for analysis. You can check its status via the OPENAI/ LIST BATCHES feature", &batch_analysis_name);
+                        print_insight_level_2(&insight);
+                        println!();
                         continue;
                     }
                     Err(e) if e.to_string() == "Operation canceled" => {
@@ -2140,60 +2110,41 @@ Total rows: 3
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
-Creates category flags upon leveraging OpenAI's json mode enabled models.
+Lists the status of your 12 most recent OpenAI Batch analysis requests. 
 
-IMPORTANT: IN THE EVENT THIS FEATURE DOES NOT RETURN RESULTS AS EXPECTED BELOW, YOU MAY NEED TO TRY AGAIN 1-2 MORE TIMES, AS OPEN AI API IS KNOWN TO BE "GLITCHY" NOW AND THEN. IF ISSUES PERSIST, TRY USING THE "gpt-4-0125-preview" MODEL OR A NEWER JSON-MODE COMPATIBLE MODEL, INSTEAD - AND CHECKING THE VALIDITY OF YOUR API KEY.
-
-|id |item |description |
-------------------------
-|1  |books|health      |
-|2  |shoes|health      |
-|3  |pizza|fun         |
-Total rows: 3
-
-  @LILbro: Executing this JSON query:
+Row 1:
 {
-  "target_columns": ["item", "description"],
-  "analysis_query": {
-    "helps_lose_weight": "a boolean value of either 1 or 0, on whether the expense has a high corelation to the user losing weight"
-  },
-  "model": "gpt-3.5-turbo-0125"
+  "id": "1",
+  "batch_id": "batch_AWR7uxpFMv7HMcZHguhK7q0p",
+  "description": "nutrient_predictions",
+  "status": "in_progress",
+  "completed": "0",
+  "failed": "0",
+  "total": "3",
+  "error": "No error",
+  "output_file_id": "No ID",
+}
+Row 2:
+{
+  "id": "2",
+  "batch_id": "batch_VahcQLnLDiKmxF3lpWEFk5g1",
+  "description": "nutrient_predictions_2",
+  "status": "in_progress",
+  "completed": "0",
+  "failed": "0",
+  "total": "3",
+  "error": "No error",
+  "output_file_id": "No ID",
 }
 
-{
-  "input": {
-    "description": "health",
-    "item": "books"
-  },
-  "output": {
-    "helps_lose_weight": "0"
-  }
-}
-{
-  "input": {
-    "description": "health",
-    "item": "shoes"
-  },
-  "output": {
-    "helps_lose_weight": "0"
-  }
-}
-{
-  "input": {
-    "description": "fun",
-    "item": "pizza"
-  },
-  "output": {
-    "helps_lose_weight": "0"
-  }
-}
+Total rows: 2
 
-|id |item |description |helps_lose_weight |
--------------------------------------------
-|1  |books|health      |0                 |
-|2  |shoes|health      |0                 |
-|3  |pizza|fun         |0                 |
-Total rows: 3
+|id |description           |status     |completed |failed |total |error                                   |
+-----------------------------------------------------------------------------------------------------------
+|1  |nutrient_predictions  |in_progress|0         |0      |3     |No error                                |
+|2  |nutrient_predictions_2|in_progress|0         |0      |3     |No error                                |
+Total rows: 2
+
 "#,
                     );
                     continue;
@@ -2215,23 +2166,10 @@ Total rows: 3
                 let config: Config = from_str(valid_json_part)?;
                 let api_key = &config.open_ai_key;
 
-                let result = fetch_and_print_openai_batches(api_key).await?;
+                let _result = fetch_and_print_openai_batches(api_key).await?;
                 println!();
-                *csv_builder = result;
 
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-
-                //continue;
+                continue;
             }
 
             Some(10) => {
@@ -2239,60 +2177,43 @@ Total rows: 3
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
-Creates category flags upon leveraging OpenAI's json mode enabled models.
+Easily cancel any of your batch analysis requests to OpenAI.
 
-IMPORTANT: IN THE EVENT THIS FEATURE DOES NOT RETURN RESULTS AS EXPECTED BELOW, YOU MAY NEED TO TRY AGAIN 1-2 MORE TIMES, AS OPEN AI API IS KNOWN TO BE "GLITCHY" NOW AND THEN. IF ISSUES PERSIST, TRY USING THE "gpt-4-0125-preview" MODEL OR A NEWER JSON-MODE COMPATIBLE MODEL, INSTEAD - AND CHECKING THE VALIDITY OF YOUR API KEY.
+  @LILbro: Enter batch id to cancel: batch_AWR7uxpFMv7HMcZHguhK7q0p
 
-|id |item |description |
-------------------------
-|1  |books|health      |
-|2  |shoes|health      |
-|3  |pizza|fun         |
-Total rows: 3
-
-  @LILbro: Executing this JSON query:
+Row 1:
 {
-  "target_columns": ["item", "description"],
-  "analysis_query": {
-    "helps_lose_weight": "a boolean value of either 1 or 0, on whether the expense has a high corelation to the user losing weight"
-  },
-  "model": "gpt-3.5-turbo-0125"
+  "id": "1",
+  "batch_id": "batch_AWR7uxpFMv7HMcZHguhK7q0p",
+  "description": "nutrient_predictions",
+  "status": "cencelling",
+  "completed": "0",
+  "failed": "0",
+  "total": "3",
+  "error": "No error",
+  "output_file_id": "No ID",
+}
+Row 2:
+{
+  "id": "2",
+  "batch_id": "batch_VahcQLnLDiKmxF3lpWEFk5g1",
+  "description": "nutrient_predictions_2",
+  "status": "in_progress",
+  "completed": "0",
+  "failed": "0",
+  "total": "3",
+  "error": "No error",
+  "output_file_id": "No ID",
 }
 
-{
-  "input": {
-    "description": "health",
-    "item": "books"
-  },
-  "output": {
-    "helps_lose_weight": "0"
-  }
-}
-{
-  "input": {
-    "description": "health",
-    "item": "shoes"
-  },
-  "output": {
-    "helps_lose_weight": "0"
-  }
-}
-{
-  "input": {
-    "description": "fun",
-    "item": "pizza"
-  },
-  "output": {
-    "helps_lose_weight": "0"
-  }
-}
+Total rows: 2
 
-|id |item |description |helps_lose_weight |
--------------------------------------------
-|1  |books|health      |0                 |
-|2  |shoes|health      |0                 |
-|3  |pizza|fun         |0                 |
-Total rows: 3
+|id |description           |status     |completed |failed |total |error                                   |
+-----------------------------------------------------------------------------------------------------------
+|1  |nutrient_predictions  |cancelling |0         |0      |3     |No error                                |
+|2  |nutrient_predictions_2|in_progress|0         |0      |3     |No error                                |
+Total rows: 2
+
 "#,
                     );
                     continue;
@@ -2323,7 +2244,7 @@ Total rows: 3
                 let _ = cancel_openai_batch(&api_key, &batch_id).await?;
 
                 let _ = fetch_and_print_openai_batches(api_key).await?;
-
+                println!();
                 continue;
             }
 
@@ -2332,59 +2253,22 @@ Total rows: 3
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
-Creates category flags upon leveraging OpenAI's json mode enabled models.
+Retrieves your OpenAI batch analysis results, and appends them as columns. If you made your batch analysis request to OpenAI with CSVBRO, this feature will seamlessly append the keys of your analysis query as column names, and their corresponding responses from OpenAI as the row values, in the same order as the file data that was originally sent to OpenAI. 
 
-IMPORTANT: IN THE EVENT THIS FEATURE DOES NOT RETURN RESULTS AS EXPECTED BELOW, YOU MAY NEED TO TRY AGAIN 1-2 MORE TIMES, AS OPEN AI API IS KNOWN TO BE "GLITCHY" NOW AND THEN. IF ISSUES PERSIST, TRY USING THE "gpt-4-0125-preview" MODEL OR A NEWER JSON-MODE COMPATIBLE MODEL, INSTEAD - AND CHECKING THE VALIDITY OF YOUR API KEY.
-
-|id |item |description |
-------------------------
-|1  |books|health      |
-|2  |shoes|health      |
-|3  |pizza|fun         |
+|id |item      |calorie_count |
+-------------------------------
+|1  |pizza     |500           |
+|2  |milk shake|300           |
+|3  |potatoe   |100           |
 Total rows: 3
 
-  @LILbro: Executing this JSON query:
-{
-  "target_columns": ["item", "description"],
-  "analysis_query": {
-    "helps_lose_weight": "a boolean value of either 1 or 0, on whether the expense has a high corelation to the user losing weight"
-  },
-  "model": "gpt-3.5-turbo-0125"
-}
+  @LILbro: Enter OpenAI output_file_id to append: file-f9lup5m9V0fcnaX5ub4E9jpb
 
-{
-  "input": {
-    "description": "health",
-    "item": "books"
-  },
-  "output": {
-    "helps_lose_weight": "0"
-  }
-}
-{
-  "input": {
-    "description": "health",
-    "item": "shoes"
-  },
-  "output": {
-    "helps_lose_weight": "0"
-  }
-}
-{
-  "input": {
-    "description": "fun",
-    "item": "pizza"
-  },
-  "output": {
-    "helps_lose_weight": "0"
-  }
-}
-
-|id |item |description |helps_lose_weight |
--------------------------------------------
-|1  |books|health      |0                 |
-|2  |shoes|health      |0                 |
-|3  |pizza|fun         |0                 |
+|id |item      |calorie_count |has_cholestrol |is_satiating |
+-------------------------------------------------------------
+|1  |pizza     |500           |0              |0            |
+|2  |milk shake|300           |0              |0            |
+|3  |potatoe   |100           |0              |1            |
 Total rows: 3
 "#,
                     );
