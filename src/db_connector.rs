@@ -1,11 +1,11 @@
 // db_connector.rs
 use crate::config::{Config, DbPreset, GoogleBigQueryPreset};
-use crate::csv_transformer::handle_transform;
+use crate::csv_appender::handle_append;
 use crate::csv_inspector::handle_inspect;
 use crate::csv_joiner::handle_join;
-use crate::csv_appender::handle_append;
 use crate::csv_searcher::handle_search;
 use crate::csv_tinkerer::handle_tinker;
+use crate::csv_transformer::handle_transform;
 use crate::user_experience::{
     handle_back_flag, handle_cancel_flag, handle_query_retry_flag, handle_query_special_flag,
     handle_quit_flag,
@@ -364,8 +364,8 @@ DIRECTIVES SYNTAX
                         println!("Failed to execute query: {}", e);
 
                         //let menu_options =
-                          //  vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
-print_list(&special_confirmations);
+                        //  vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
+                        print_list(&special_confirmations);
                         //print_list(&menu_options);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
                         confirmation = choice.clone();
@@ -400,7 +400,7 @@ print_list(&special_confirmations);
 
             DbType::MySql => {
                 // Existing connection logic for i2e1
-if special_confirmations.contains(&confirmation.as_str()) {
+                if special_confirmations.contains(&confirmation.as_str()) {
                     csv_builder.print_table();
                     confirmation = String::new();
                 } else {
@@ -548,8 +548,8 @@ if special_confirmations.contains(&confirmation.as_str()) {
                         println!("Failed to execute query: {}", e);
 
                         //let menu_options =
-                         //   vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
-print_list(&special_confirmations);
+                        //   vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
+                        print_list(&special_confirmations);
                         //print_list(&menu_options);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
                         confirmation = choice.clone();
@@ -586,8 +586,8 @@ print_list(&special_confirmations);
 
             DbType::ClickHouse => {
                 // Existing connection logic for i2e1
-if special_confirmations.contains(&confirmation.as_str()) {
-                       csv_builder.print_table();
+                if special_confirmations.contains(&confirmation.as_str()) {
+                    csv_builder.print_table();
                     confirmation = String::new();
                 } else {
                     let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
@@ -731,8 +731,8 @@ if special_confirmations.contains(&confirmation.as_str()) {
                         println!("Failed to execute query: {}", e);
 
                         //let menu_options =
-                          //  vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
-print_list(&special_confirmations);
+                        //  vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
+                        print_list(&special_confirmations);
                         //print_list(&menu_options);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
                         confirmation = choice.clone();
@@ -769,7 +769,7 @@ print_list(&special_confirmations);
 
             DbType::GoogleBigQuery => {
                 // Existing connection logic for i2e1
-if special_confirmations.contains(&confirmation.as_str()) {
+                if special_confirmations.contains(&confirmation.as_str()) {
                     csv_builder.print_table();
                     confirmation = String::new();
                 } else {
@@ -914,7 +914,7 @@ if special_confirmations.contains(&confirmation.as_str()) {
                         println!("Failed to execute query: {}", e);
 
                         //let menu_options =
-                          //  vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
+                        //  vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
 
                         print_list(&special_confirmations);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();

@@ -58,7 +58,6 @@ pub async fn handle_transform(
         }
     }
 
-
     fn get_pivot_input() -> Result<Piv, Box<dyn std::error::Error>> {
         let pivot_syntax = r#"{
     "index_at": "",
@@ -151,13 +150,7 @@ Note the implication of params in the Json Query:
         })
     }
 
-
-
-    let menu_options = vec![
-        "GROUP",
-        "GROUPED SPLIT",
-        "PIVOT"
-    ];
+    let menu_options = vec!["GROUP", "GROUPED SPLIT", "PIVOT"];
 
     let original_csv_builder = CsvBuilder::from_copy(csv_builder);
 
@@ -435,7 +428,6 @@ Total rows: 4
                 */
             }
 
-
             Some(3) => {
                 if choice.to_lowercase() == "3d" {
                     print_insight_level_2(
@@ -565,7 +557,6 @@ Note the implication of params in the Json Query:
                     Err(e) => println!("Error getting pivot details: {}", e),
                 }
             }
-                    
 
             _ => {
                 println!("Invalid option. Please enter a number from 1 to 3.");

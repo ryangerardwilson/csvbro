@@ -1,10 +1,10 @@
 // csv_manager.rs
-use crate::csv_transformer::handle_transform;
+use crate::csv_appender::handle_append;
 use crate::csv_inspector::handle_inspect;
 use crate::csv_joiner::handle_join;
-use crate::csv_appender::handle_append;
 use crate::csv_searcher::handle_search;
 use crate::csv_tinkerer::handle_tinker;
+use crate::csv_transformer::handle_transform;
 use crate::user_experience::{
     handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
     handle_special_flag_returning_new_builder, handle_special_flag_without_builder,

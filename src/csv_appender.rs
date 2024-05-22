@@ -1116,7 +1116,6 @@ Note the implications of the params in the JSON query:
         ))
     }
 
-
     let menu_options = vec![
         "APPEND DERIVED BOOLEAN COLUMN",
         "APPEND DERIVED CATEGORY COLUMN",
@@ -2402,7 +2401,6 @@ Total rows: 5
                     }
                 }
             }
-
 
             _ => {
                 println!("Invalid option. Please enter a number from 1 to 12.");
