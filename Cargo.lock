@@ -104,17 +104,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-recursion"
-version = "1.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fd55a5ba1179988837d24ab4c7cc8ed6efdeff578ede0416b4225a5fca35bd0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.52",
-]
-
-[[package]]
 name = "async-trait"
 version = "0.1.77"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -547,7 +536,6 @@ dependencies = [
 name = "csvbro"
 version = "1.0.9"
 dependencies = [
- "async-recursion",
  "calamine 0.23.1",
  "chrono",
  "fuzzywuzzy",
@@ -2073,7 +2061,7 @@ dependencies = [
 
 [[package]]
 name = "rgwml"
-version = "1.2.87"
+version = "1.2.88"
 dependencies = [
  "anyhow",
  "calamine 0.24.0",

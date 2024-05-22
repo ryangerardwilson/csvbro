@@ -1,8 +1,8 @@
 // csv_manager.rs
-use crate::csv_grouper::handle_group;
+use crate::csv_transformer::handle_transform;
 use crate::csv_inspector::handle_inspect;
 use crate::csv_joiner::handle_join;
-use crate::csv_pivoter::handle_pivot;
+use crate::csv_appender::handle_append;
 use crate::csv_searcher::handle_search;
 use crate::csv_tinkerer::handle_tinker;
 use crate::user_experience::{
@@ -335,7 +335,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         //let has_data = builder.has_data();
         print_insight("Choose an action:");
 
-        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
+        let menu_options = vec!["SEARCH", "INSPECT", "TINKER", "TRANSFORM", "APPEND", "JOIN"];
 
         print_list(&menu_options);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -400,8 +400,8 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     }
                 }
 
-                Some(ref action) if action == "PIVOT" => {
-                    if let Err(e) = handle_pivot(&mut builder, file_path_option).await {
+                Some(ref action) if action == "APPEND" => {
+                    if let Err(e) = handle_append(&mut builder, file_path_option).await {
                         println!("Error during pivot operation: {}", e);
                         continue;
                     }
@@ -414,8 +414,8 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     }
                 }
 
-                Some(ref action) if action == "GROUP" => {
-                    if let Err(e) = handle_group(&mut builder, file_path_option).await {
+                Some(ref action) if action == "TRANSFORM" => {
+                    if let Err(e) = handle_transform(&mut builder, file_path_option).await {
                         println!("Error during join operation: {}", e);
                         continue;
                     }

@@ -1,9 +1,9 @@
 // db_connector.rs
 use crate::config::{Config, DbPreset, GoogleBigQueryPreset};
-use crate::csv_grouper::handle_group;
+use crate::csv_transformer::handle_transform;
 use crate::csv_inspector::handle_inspect;
 use crate::csv_joiner::handle_join;
-use crate::csv_pivoter::handle_pivot;
+use crate::csv_appender::handle_append;
 use crate::csv_searcher::handle_search;
 use crate::csv_tinkerer::handle_tinker;
 use crate::user_experience::{
@@ -190,20 +190,15 @@ DIRECTIVES SYNTAX
     let mut last_sql_query = String::new();
     let mut confirmation = String::new();
 
+    let special_confirmations = vec!["SEARCH", "INSPECT", "TINKER", "TRANSFORM", "APPEND", "JOIN"];
+
     loop {
         let _query_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
 
         match db_type {
             DbType::MsSql => {
                 // Existing connection logic for i2e1
-
-                if confirmation == "TINKER"
-                    || confirmation == "SEARCH"
-                    || confirmation == "INSPECT"
-                    || confirmation == "PIVOT"
-                    || confirmation == "JOIN"
-                    || confirmation == "GROUP"
-                {
+                if special_confirmations.contains(&confirmation.as_str()) {
                     csv_builder.print_table();
                     confirmation = String::new();
                 } else {
@@ -368,10 +363,10 @@ DIRECTIVES SYNTAX
                     if let Err(e) = query_execution_result {
                         println!("Failed to execute query: {}", e);
 
-                        let menu_options =
-                            vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
-
-                        print_list(&menu_options);
+                        //let menu_options =
+                          //  vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
+print_list(&special_confirmations);
+                        //print_list(&menu_options);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
                         confirmation = choice.clone();
 
@@ -405,14 +400,7 @@ DIRECTIVES SYNTAX
 
             DbType::MySql => {
                 // Existing connection logic for i2e1
-
-                if confirmation == "TINKER"
-                    || confirmation == "SEARCH"
-                    || confirmation == "INSPECT"
-                    || confirmation == "PIVOT"
-                    || confirmation == "JOIN"
-                    || confirmation == "GROUP"
-                {
+if special_confirmations.contains(&confirmation.as_str()) {
                     csv_builder.print_table();
                     confirmation = String::new();
                 } else {
@@ -559,10 +547,10 @@ DIRECTIVES SYNTAX
                     if let Err(e) = query_execution_result {
                         println!("Failed to execute query: {}", e);
 
-                        let menu_options =
-                            vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
-
-                        print_list(&menu_options);
+                        //let menu_options =
+                         //   vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
+print_list(&special_confirmations);
+                        //print_list(&menu_options);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
                         confirmation = choice.clone();
 
@@ -598,15 +586,8 @@ DIRECTIVES SYNTAX
 
             DbType::ClickHouse => {
                 // Existing connection logic for i2e1
-
-                if confirmation == "TINKER"
-                    || confirmation == "SEARCH"
-                    || confirmation == "INSPECT"
-                    || confirmation == "PIVOT"
-                    || confirmation == "JOIN"
-                    || confirmation == "GROUP"
-                {
-                    csv_builder.print_table();
+if special_confirmations.contains(&confirmation.as_str()) {
+                       csv_builder.print_table();
                     confirmation = String::new();
                 } else {
                     let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
@@ -749,10 +730,10 @@ DIRECTIVES SYNTAX
                     if let Err(e) = query_execution_result {
                         println!("Failed to execute query: {}", e);
 
-                        let menu_options =
-                            vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
-
-                        print_list(&menu_options);
+                        //let menu_options =
+                          //  vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
+print_list(&special_confirmations);
+                        //print_list(&menu_options);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
                         confirmation = choice.clone();
 
@@ -788,14 +769,7 @@ DIRECTIVES SYNTAX
 
             DbType::GoogleBigQuery => {
                 // Existing connection logic for i2e1
-
-                if confirmation == "TINKER"
-                    || confirmation == "SEARCH"
-                    || confirmation == "INSPECT"
-                    || confirmation == "PIVOT"
-                    || confirmation == "JOIN"
-                    || confirmation == "GROUP"
-                {
+if special_confirmations.contains(&confirmation.as_str()) {
                     csv_builder.print_table();
                     confirmation = String::new();
                 } else {
@@ -939,10 +913,10 @@ DIRECTIVES SYNTAX
                     if let Err(e) = query_execution_result {
                         println!("Failed to execute query: {}", e);
 
-                        let menu_options =
-                            vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
+                        //let menu_options =
+                          //  vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
 
-                        print_list(&menu_options);
+                        print_list(&special_confirmations);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
                         confirmation = choice.clone();
 
@@ -979,9 +953,9 @@ DIRECTIVES SYNTAX
 
         println!();
 
-        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
+        //let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
 
-        print_list(&menu_options);
+        print_list(&special_confirmations);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
 
         if handle_query_special_flag(&choice, &mut csv_builder) {
@@ -1000,7 +974,7 @@ DIRECTIVES SYNTAX
             continue;
         }
 
-        let selected_option = determine_action_as_text(&menu_options, &choice);
+        let selected_option = determine_action_as_text(&special_confirmations, &choice);
         confirmation = selected_option.clone().expect("REASON");
 
         match selected_option {
@@ -1025,8 +999,8 @@ DIRECTIVES SYNTAX
                 }
             }
 
-            Some(ref action) if action == "PIVOT" => {
-                if let Err(e) = handle_pivot(&mut csv_builder, None).await {
+            Some(ref action) if action == "APPEND" => {
+                if let Err(e) = handle_append(&mut csv_builder, None).await {
                     println!("Error during pivot operation: {}", e);
                     continue;
                 }
@@ -1039,8 +1013,8 @@ DIRECTIVES SYNTAX
                 }
             }
 
-            Some(ref action) if action == "GROUP" => {
-                if let Err(e) = handle_group(&mut csv_builder, None).await {
+            Some(ref action) if action == "TRANSFORM" => {
+                if let Err(e) = handle_transform(&mut csv_builder, None).await {
                     println!("Error during group operation: {}", e);
                     continue;
                 }
