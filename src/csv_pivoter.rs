@@ -14,7 +14,6 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::env;
 use std::error::Error;
-use std::fs;
 use std::fs::read_to_string;
 use std::path::Path;
 use std::path::PathBuf;
@@ -1117,35 +1116,45 @@ Note the implications of the params in the JSON query:
         ))
     }
 
-    fn get_pivot_input() -> Result<(Piv, String), Box<dyn Error>> {
+    fn get_pivot_input() -> Result<Piv, Box<dyn Error>> {
         let pivot_syntax = r#"{
     "index_at": "",
     "values_from": "",
     "operation": "",
     "seggregate_by": [
         {"column": "", "type": ""}
-    ],
-    "save_as": ""
+    ]
 }
 
 SYNTAX
 ======
 
+Unlike a broad grouping, a pivot is grouping that emphasizes aggregating numerical values, and segregating those aggregates.
+
 {
-    "index_at": "Date",
+    "index_at": "Date",      // Name of the column to index/ group by
     "values_from": "Sales",
-    "operation": "MEDIAN", // Also "COUNT", "COUNT_UNIQUE", "SUM", "MEAN", "BOOL_PERCENT" (assuming column values of 0 or 1 in 'values_from', calculates the % of 1 values for the segment)
+    "operation": "MEDIAN", // Also "COUNT", "COUNT_UNIQUE", "NUMERICAL_MIN", "NUMERICAL_MAX", "NUMERICAL_SUM", "NUMERICAL_MEAN", "NUMERICAL_MEDIAN", "NUMERICAL_STANDARD_DEVIATION", "BOOL_PERCENT" (assuming column values of 0 or 1 in 'values_from', calculates the % of 1 values for the segment)
     "seggregate_by": [  // Leave as empty [] if seggregation is not required
         {"column": "Category", "type": "AS_CATEGORY"},
         {"column": "IsPromotion", "type": "AS_BOOLEAN"}
     ],
-    "save_as": "analysis1" // Leave as "" if you dont want to save it
 }
 
 Note the implication of params in the Json Query:
 1. "index_at": This parameter determines the primary key column of the pivot table, or the field by which the data will be grouped vertically (row labels). It's the main dimension of analysis. This can be either a text or a number, depending on the data you are grouping by. For example, if you are grouping sales data by region, index_at could be the name of the region (text). If you are grouping by year, it could be the year (number).
 2. "values_from": Specifies the column(s) from which to retrieve the values that will be summarized or aggregated in the pivot table. This would be a column with numerical data since you are usually performing operations like sums, averages, counts, etc.
-3. "operation": Defines the type of aggregation or summarization to perform on the values_from data across the grouped index_at categories. Operations include "COUNT", "COUNT_UNIQUE", "SUM", "MEAN", "BOOL_PERCENT" (assuming column values of 0 or 1 in 'values_from', calculates the % of 1 values for the segment)
+3. "operation": Defines the type of aggregation or summarization to perform on the values_from data across the grouped index_at categories. These include:
+
+ - `COUNT_UNIQUE` - Counts the unique values in the column.
+ - `NUMERICAL_MAX` - Finds the maximum numerical value in the column.
+ - `NUMERICAL_MIN` - Finds the minimum numerical value in the column.
+ - `NUMERICAL_SUM` - Calculates the sum of numerical values in the column.
+ - `NUMERICAL_MEAN` - Calculates the mean (average) of numerical values in the column, rounded to two decimal places.
+ - `NUMERICAL_MEDIAN` - Calculates the median of numerical values in the column, rounded to two decimal places.
+ - `NUMERICAL_STANDARD_DEVIATION` - Calculates the standard deviation of numerical values in the column, rounded to two decimal places.
+ - `BOOL_PERCENT` - Calculates the percentage of `1`s in the column, assuming the values are either `1` or `0`, rounded to two decimal places.
+
 4. "seggregate_by": This parameter allows for additional segmentation of data within the primary grouping defined by index_at. Each segment within seggregate_by can further divide the data based on the specified column and the type of segmentation (like categorical grouping or binning numerical data into ranges).
 - 4.1. Column: Can be both text or number, similar to index_at, depending on what additional dimension you want to segment the data by.
 - 4.2. Type: Is text, indicating how the segmentation should be applied. The column specified can have a type of "AS_CATEGORY", or "AS_BOOLEAN"
@@ -1191,20 +1200,12 @@ Note the implication of params in the Json Query:
                     .collect()
             });
 
-        let save_as_path = parsed_json["save_as"]
-            .as_str()
-            .unwrap_or_default()
-            .to_string();
-
-        Ok((
-            Piv {
-                index_at,
-                values_from,
-                operation,
-                seggregate_by,
-            },
-            save_as_path,
-        ))
+        Ok(Piv {
+            index_at,
+            values_from,
+            operation,
+            seggregate_by,
+        })
     }
 
     let menu_options = vec![
@@ -2499,7 +2500,7 @@ Total rows: 5
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
-Creates a pivot table indexed at a category label (accruing from the unique values in a category column).
+Unlike a broad grouping, a pivot is grouping that emphasizes aggregating numerical values, and segregating those aggregates. This feature creates a pivot table indexed/ grouped at a category label (accruing from the unique values in a category column).
 
 Example 1:
 ----------
@@ -2577,7 +2578,17 @@ Temporary file deleted successfully.
 Note the implication of params in the Json Query:
 1. "index_at": This parameter determines the primary key column of the pivot table, or the field by which the data will be grouped vertically (row labels). It's the main dimension of analysis. This can be either a text or a number, depending on the data you are grouping by. For example, if you are grouping sales data by region, index_at could be the name of the region (text). If you are grouping by year, it could be the year (number).
 2. "values_from": Specifies the column(s) from which to retrieve the values that will be summarized or aggregated in the pivot table. This would be a column with numerical data since you are usually performing operations like sums, averages, counts, etc.
-3. "operation": Defines the type of aggregation or summarization to perform on the values_from data across the grouped index_at categories. Operations include "COUNT", "COUNT_UNIQUE", "SUM", "MEAN", "BOOL_PERCENT" (assuming column values of 0 or 1 in 'values_from', calculates the % of 1 values for the segment)
+3. "operation": Defines the type of aggregation or summarization to perform on the values_from data across the grouped index_at categories. These include:
+
+ - `COUNT_UNIQUE` - Counts the unique values in the column.
+ - `NUMERICAL_MAX` - Finds the maximum numerical value in the column.
+ - `NUMERICAL_MIN` - Finds the minimum numerical value in the column.
+ - `NUMERICAL_SUM` - Calculates the sum of numerical values in the column.
+ - `NUMERICAL_MEAN` - Calculates the mean (average) of numerical values in the column, rounded to two decimal places.
+ - `NUMERICAL_MEDIAN` - Calculates the median of numerical values in the column, rounded to two decimal places.
+ - `NUMERICAL_STANDARD_DEVIATION` - Calculates the standard deviation of numerical values in the column, rounded to two decimal places.
+ - `BOOL_PERCENT` - Calculates the percentage of `1`s in the column, assuming the values are either `1` or `0`, rounded to two decimal places.
+
 4. "seggregate_by": This parameter allows for additional segmentation of data within the primary grouping defined by index_at. Each segment within seggregate_by can further divide the data based on the specified column and the type of segmentation (like categorical grouping or binning numerical data into ranges).
 - 4.1. Column: Can be both text or number, similar to index_at, depending on what additional dimension you want to segment the data by.
 - 4.2. Type: Is text, indicating how the segmentation should be applied. The column specified can have a type of "AS_CATEGORY", or "AS_BOOLEAN"
@@ -2590,53 +2601,19 @@ Note the implication of params in the Json Query:
 
                 // This matches the case in your project's workflow for the pivot operation
                 match get_pivot_input() {
-                    Ok((piv, save_as_path)) => {
-                        // Get the user's home directory or panic if not found
-                        let home_dir =
-                            env::var("HOME").expect("Unable to determine user home directory");
-                        let desktop_path = Path::new(&home_dir).join("Desktop");
-                        let csv_db_path = desktop_path.join("csv_db");
-                        let default_csv_path = desktop_path.join("csv_db/temp_pivot_file.csv");
-
-                        // Determine the final path based on whether `save_as_path` is provided
-                        let final_path = if save_as_path.is_empty() {
-                            default_csv_path.clone()
-                        } else {
-                            csv_db_path.join(&save_as_path)
-                        };
-
-                        // Ensure the final path is valid Unicode
-                        let final_path_str = final_path
-                            .to_str()
-                            .expect("Path contains invalid Unicode characters");
-
-                        // Determine the full file name, appending `.csv` if necessary
-                        let full_file_name = if final_path_str.ends_with(".csv") {
-                            final_path_str.to_string()
-                        } else {
-                            format!("{}.csv", final_path_str)
-                        };
-
-                        csv_builder.print_table().pivot_as(&full_file_name, piv);
+                    Ok(piv) => {
+                        csv_builder.pivot_as(piv).print_table();
                         println!();
 
-                        // If 'save_as_path' is not empty, use it to create and print from the CsvBuilder object
-                        if !save_as_path.is_empty() {
-                            let _ = CsvBuilder::from_csv(&full_file_name).print_table_all_rows();
-                            //.save_as(&full_file_name);
-                            println!();
-                            print_insight_level_2(&format!("CSV file saved at {}", full_file_name));
-                        } else {
-                            // If 'save_as_path' is empty, assume the pivot operation used the default temp path
-                            // Create a CsvBuilder object from the temp file and print
-                            CsvBuilder::from_csv(default_csv_path.to_str().unwrap())
-                                .print_table_all_rows();
-
-                            // Delete the temporary file after printing
-                            if let Err(e) = fs::remove_file(default_csv_path) {
-                                println!("Failed to delete temporary file: {}", e);
-                            } else {
-                                println!("Temporary file deleted successfully.");
+                        match apply_filter_changes_menu(
+                            csv_builder,
+                            &prev_iteration_builder,
+                            &original_csv_builder,
+                        ) {
+                            Ok(_) => (),
+                            Err(e) => {
+                                println!("{}", e);
+                                continue; // Ask for the choice again if there was an error
                             }
                         }
                     }

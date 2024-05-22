@@ -335,7 +335,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         //let has_data = builder.has_data();
         print_insight("Choose an action:");
 
-        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN", "GROUP"];
+        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
 
         print_list(&menu_options);
         let choice = get_user_input("Enter your choice: ").to_lowercase();

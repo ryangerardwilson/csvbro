@@ -368,7 +368,8 @@ DIRECTIVES SYNTAX
                     if let Err(e) = query_execution_result {
                         println!("Failed to execute query: {}", e);
 
-                        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN"];
+                        let menu_options =
+                            vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
 
                         print_list(&menu_options);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -558,7 +559,8 @@ DIRECTIVES SYNTAX
                     if let Err(e) = query_execution_result {
                         println!("Failed to execute query: {}", e);
 
-                        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN"];
+                        let menu_options =
+                            vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
 
                         print_list(&menu_options);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -747,7 +749,8 @@ DIRECTIVES SYNTAX
                     if let Err(e) = query_execution_result {
                         println!("Failed to execute query: {}", e);
 
-                        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN"];
+                        let menu_options =
+                            vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
 
                         print_list(&menu_options);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -937,7 +940,7 @@ DIRECTIVES SYNTAX
                         println!("Failed to execute query: {}", e);
 
                         let menu_options =
-                            vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN", "GROUP"];
+                            vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
 
                         print_list(&menu_options);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -976,7 +979,7 @@ DIRECTIVES SYNTAX
 
         println!();
 
-        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "PIVOT", "JOIN", "GROUP"];
+        let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
 
         print_list(&menu_options);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
