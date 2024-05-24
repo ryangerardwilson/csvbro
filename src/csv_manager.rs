@@ -2,6 +2,7 @@
 use crate::csv_appender::handle_append;
 use crate::csv_inspector::handle_inspect;
 use crate::csv_joiner::handle_join;
+use crate::csv_predicter::handle_predict;
 use crate::csv_searcher::handle_search;
 use crate::csv_tinkerer::handle_tinker;
 use crate::csv_transformer::handle_transform;
@@ -335,7 +336,15 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         //let has_data = builder.has_data();
         print_insight("Choose an action:");
 
-        let menu_options = vec!["SEARCH", "INSPECT", "TINKER", "TRANSFORM", "APPEND", "JOIN"];
+        let menu_options = vec![
+            "SEARCH",
+            "INSPECT",
+            "TINKER",
+            "TRANSFORM",
+            "APPEND",
+            "JOIN",
+            "PREDICT",
+        ];
 
         print_list(&menu_options);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -416,7 +425,14 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
 
                 Some(ref action) if action == "TRANSFORM" => {
                     if let Err(e) = handle_transform(&mut builder, file_path_option).await {
-                        println!("Error during join operation: {}", e);
+                        println!("Error during transform operation: {}", e);
+                        continue;
+                    }
+                }
+
+                Some(ref action) if action == "PREDICT" => {
+                    if let Err(e) = handle_predict(&mut builder, file_path_option).await {
+                        println!("Error during predict operation: {}", e);
                         continue;
                     }
                 }

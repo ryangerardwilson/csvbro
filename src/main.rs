@@ -3,6 +3,7 @@ mod csv_appender;
 mod csv_inspector;
 mod csv_joiner;
 mod csv_manager;
+mod csv_predicter;
 mod csv_searcher;
 mod csv_tinkerer;
 mod csv_transformer;

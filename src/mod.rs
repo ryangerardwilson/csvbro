@@ -9,5 +9,6 @@ pub mod csv_joiner;
 pub mod csv_searcher;
 pub mod csv_tinkerer;
 pub mod csv_transformer;
+pub mod csv_predicter;
 pub mod db_connector;
 

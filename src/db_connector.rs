@@ -3,6 +3,7 @@ use crate::config::{Config, DbPreset, GoogleBigQueryPreset};
 use crate::csv_appender::handle_append;
 use crate::csv_inspector::handle_inspect;
 use crate::csv_joiner::handle_join;
+use crate::csv_predicter::handle_predict;
 use crate::csv_searcher::handle_search;
 use crate::csv_tinkerer::handle_tinker;
 use crate::csv_transformer::handle_transform;
@@ -190,7 +191,15 @@ DIRECTIVES SYNTAX
     let mut last_sql_query = String::new();
     let mut confirmation = String::new();
 
-    let special_confirmations = vec!["SEARCH", "INSPECT", "TINKER", "TRANSFORM", "APPEND", "JOIN"];
+    let special_confirmations = vec![
+        "SEARCH",
+        "INSPECT",
+        "TINKER",
+        "TRANSFORM",
+        "APPEND",
+        "JOIN",
+        "PREDICT",
+    ];
 
     loop {
         let _query_result: Result<CsvBuilder, Box<dyn std::error::Error>>;
@@ -1015,6 +1024,13 @@ DIRECTIVES SYNTAX
 
             Some(ref action) if action == "TRANSFORM" => {
                 if let Err(e) = handle_transform(&mut csv_builder, None).await {
+                    println!("Error during group operation: {}", e);
+                    continue;
+                }
+            }
+
+            Some(ref action) if action == "PREDICT" => {
+                if let Err(e) = handle_predict(&mut csv_builder, None).await {
                     println!("Error during group operation: {}", e);
                     continue;
                 }
