@@ -8,6 +8,7 @@ use crate::user_interaction::{
 };
 use rgwml::csv_utils::CsvBuilder;
 use rgwml::xgb_utils::{XgbConfig, XgbConnect};
+use serde_json::to_string_pretty;
 use serde_json::Value;
 use std::env;
 use std::path::Path;
@@ -34,7 +35,7 @@ pub async fn handle_predict(
 
         match selected_option {
             Some(1) => {
-                print_insight_level_2("Continuing with grouped data");
+                print_insight_level_2("Continuing with prediction appended data");
                 csv_builder.print_table();
                 println!();
                 // Implement the logic for continuing with filtered data
@@ -61,12 +62,13 @@ pub async fn handle_predict(
     }
 
     fn get_xgb_model_input(
-    ) -> Result<(String, String, String, XgbConfig), Box<dyn std::error::Error>> {
+    ) -> Result<(String, String, String, String, XgbConfig), Box<dyn std::error::Error>> {
         let xgb_model_input_syntax = r#"{
     "param_columns": "",
     "target_column": "",
+    "prediction_column_name": "",
     "save_model_as": "",
-    "xgb_config": [
+    "xgb_config": {
         "objective": "",
         "max_depth": "",
         "learning_rate": "",
@@ -86,8 +88,8 @@ pub async fn handle_predict(
         "early_stopping_rounds": "",
         "device": "",
         "cv": "",
-        "interaction_constraints": "",
-    ]
+        "interaction_constraints": ""
+    }
 }
 
 SYNTAX
@@ -108,6 +110,10 @@ SYNTAX
             .unwrap_or_default()
             .to_string();
         let target_column = parsed_json["target_column"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let prediction_column_name = parsed_json["prediction_column_name"]
             .as_str()
             .unwrap_or_default()
             .to_string();
@@ -195,7 +201,13 @@ SYNTAX
                 .to_string(),
         };
 
-        Ok((param_columns, target_column, save_model_as, config))
+        Ok((
+            param_columns,
+            target_column,
+            prediction_column_name,
+            save_model_as,
+            config,
+        ))
     }
 
     let menu_options = vec![
@@ -274,13 +286,107 @@ Appends a XGB_TYPE model column labelling rows as TRAIN, VALIDATE, or TEST, as p
 
 Creates an XGB Model.
 
+|XGB_TYPE |target |feature1 |feature2 |feature3 |
+-------------------------------------------------
+|TRAIN    |1      |5.1      |3.5      |1.4      |
+|TRAIN    |0      |4.9      |3.0      |1.4      |
+|TRAIN    |1      |4.7      |3.2      |1.3      |
+|TRAIN    |0      |4.6      |3.1      |1.5      |
+|TRAIN    |1      |5.8      |3.8      |1.6      |
+<<+26 rows>>
+|TEST     |0      |5.2      |3.4      |1.4      |
+|TEST     |1      |5.8      |3.1      |1.7      |
+|TEST     |0      |5.0      |3.2      |1.5      |
+|TEST     |1      |5.9      |3.3      |1.7      |
+|TEST     |0      |5.3      |3.0      |1.4      |
+Total rows: 36
+
+  @LILbro: Executing this JSON query:
+{
+    "param_columns": "feature1, feature2, feature3",
+    "target_column": "target",
+    "prediction_column_name": "target_PREDICTION",
+    "save_model_as": "test_binary_classification",
+    "xgb_config": {
+        "objective": "binary:logistic",
+        "max_depth": "",
+        "learning_rate": "",
+        "n_estimators": "",
+        "gamma": "",
+        "min_child_weight": "",
+        "subsample": "",
+        "colsample_bytree": "",
+        "reg_lambda": "",
+        "reg_alpha": "",
+        "scale_pos_weight": "",
+        "max_delta_step": "",
+        "booster": "",
+        "tree_method": "",
+        "grow_policy": "",
+        "eval_metric": "",
+        "early_stopping_rounds": "",
+        "device": "",
+        "cv": "",
+        "interaction_constraints": ""
+    }
+}
+
+|XGB_TYPE |target |feature1 |feature2 |feature3 |target_PREDICTION |
+--------------------------------------------------------------------
+|TRAIN    |1      |5.1      |3.5      |1.4      |                  |
+|TRAIN    |0      |4.9      |3.0      |1.4      |                  |
+|TRAIN    |1      |4.7      |3.2      |1.3      |                  |
+|TRAIN    |0      |4.6      |3.1      |1.5      |                  |
+|TRAIN    |1      |5.8      |3.8      |1.6      |                  |
+<<+26 rows>>
+|TEST     |0      |5.2      |3.4      |1.4      |1                 |
+|TEST     |1      |5.8      |3.1      |1.7      |0                 |
+|TEST     |0      |5.0      |3.2      |1.5      |0                 |
+|TEST     |1      |5.9      |3.3      |1.7      |1                 |
+|TEST     |0      |5.3      |3.0      |1.4      |0                 |
+Total rows: 36
+
+  @LILBro: Yo, here's the lowdown on the data training:
+{
+  "0": {
+    "f1-score": 0.5454545454545454,
+    "precision": 0.5,
+    "recall": 0.6,
+    "support": 5.0
+  },
+  "1": {
+    "f1-score": 0.4444444444444444,
+    "precision": 0.5,
+    "recall": 0.4,
+    "support": 5.0
+  },
+  "accuracy": 0.5,
+  "macro avg": {
+    "f1-score": 0.4949494949494949,
+    "precision": 0.5,
+    "recall": 0.5,
+    "support": 10.0
+  },
+  "weighted avg": {
+    "f1-score": 0.494949494949495,
+    "precision": 0.5,
+    "recall": 0.5,
+    "support": 10.0
+  }
+}
 "#,
                     );
                     continue;
                 }
 
                 match get_xgb_model_input() {
-                    Ok((param_column_names, target_column_name, model_name_str, xgb_config)) => {
+                    Ok((
+                        param_column_names,
+                        target_column_name,
+                        prediction_column_name,
+                        model_name_str,
+                        xgb_config,
+                    )) => {
                         let home_dir =
                             env::var("HOME").expect("Unable to determine user home directory");
                         let desktop_path = Path::new(&home_dir).join("Desktop");
@@ -288,16 +394,42 @@ Creates an XGB Model.
                         let model_dir = csv_db_path.join("xgb_models");
                         let model_dir_str = model_dir.to_str().unwrap();
 
+                        /*
                         csv_builder
                             .create_xgb_model(
                                 &param_column_names,
                                 &target_column_name,
+                                &prediction_column_name,
                                 &model_dir_str,
                                 &model_name_str,
                                 xgb_config,
                             )
                             .await
                             .print_table();
+                        println!();
+                        */
+
+                        let (updated_csv_builder, report_json) = csv_builder
+                            .create_xgb_model(
+                                &param_column_names,
+                                &target_column_name,
+                                &prediction_column_name,
+                                &model_dir_str,
+                                &model_name_str,
+                                xgb_config,
+                            )
+                            .await;
+
+                        // Print the updated table
+                        updated_csv_builder.print_table();
+                        println!();
+
+                        print_insight_level_2("Yo, here's the lowdown on the model's performance:");
+                        println!();
+                        // Pretty-print the JSON report
+                        if let Ok(pretty_report) = to_string_pretty(&report_json) {
+                            println!("{}", pretty_report);
+                        }
                         println!();
 
                         match apply_filter_changes_menu(
