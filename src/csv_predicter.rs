@@ -346,131 +346,138 @@ SYNTAX
         }
     }
 
-pub fn get_xgb_details(csv_db_path: &PathBuf) -> io::Result<(PathBuf, String)> {
-    fn list_xgb_files(path: &PathBuf) -> io::Result<Vec<PathBuf>> {
-        let mut files = Vec::new();
-        for entry in fs::read_dir(path)? {
-            let entry = entry?;
-            let path = entry.path();
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("json") {
-                files.push(path);
+    pub fn get_xgb_details(csv_db_path: &PathBuf) -> io::Result<(PathBuf, String)> {
+        fn list_xgb_files(path: &PathBuf) -> io::Result<Vec<PathBuf>> {
+            let mut files = Vec::new();
+            for entry in fs::read_dir(path)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("json") {
+                    files.push(path);
+                }
             }
+            Ok(files)
         }
-        Ok(files)
-    }
 
-    fn parse_ranges(range_str: &str) -> Vec<usize> {
-        range_str
-            .split(',')
-            .flat_map(|part| {
-                let part = part.trim();
-                if part.contains('-') {
-                    let bounds: Vec<&str> = part.split('-').map(str::trim).collect();
-                    if bounds.len() == 2 {
-                        let start = bounds[0].parse::<usize>().unwrap_or(0);
-                        let end = bounds[1].parse::<usize>().unwrap_or(0);
-                        (start..=end).collect::<Vec<usize>>()
+        fn parse_ranges(range_str: &str) -> Vec<usize> {
+            range_str
+                .split(',')
+                .flat_map(|part| {
+                    let part = part.trim();
+                    if part.contains('-') {
+                        let bounds: Vec<&str> = part.split('-').map(str::trim).collect();
+                        if bounds.len() == 2 {
+                            let start = bounds[0].parse::<usize>().unwrap_or(0);
+                            let end = bounds[1].parse::<usize>().unwrap_or(0);
+                            (start..=end).collect::<Vec<usize>>()
+                        } else {
+                            vec![]
+                        }
                     } else {
-                        vec![]
+                        vec![part.parse::<usize>().unwrap_or(0)]
                     }
-                } else {
-                    vec![part.parse::<usize>().unwrap_or(0)]
-                }
+                })
+                .collect()
+        }
+
+        let models_path = csv_db_path.join("xgb_models");
+        let xgb_models_path_str = models_path.to_str().unwrap();
+
+        let mut xgb_models_builder =
+            XgbConnect::get_all_xgb_models(xgb_models_path_str).expect("Failed to load XGB models");
+
+        xgb_models_builder
+            .add_column_header("id")
+            .order_columns(vec!["id", "..."])
+            .cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())])
+            .resequence_id_column("id")
+            .print_table_all_rows();
+        println!();
+
+        let binding = Vec::new();
+        let data = xgb_models_builder.get_data().unwrap_or(&binding);
+        let id_to_file_map: HashMap<usize, &str> = data
+            .iter()
+            .map(|row| {
+                let id = row[0].parse::<usize>().unwrap_or(0);
+                let file_name = &row[1];
+                (id, file_name.as_str())
             })
-            .collect()
-    }
+            .collect();
 
-    let models_path = csv_db_path.join("xgb_models");
-    let xgb_models_path_str = models_path.to_str().unwrap();
+        loop {
+            match list_xgb_files(&models_path) {
+                Ok(files) => {
+                    if files.is_empty() {
+                        println!("No files in sight, bro.");
+                        return Err(io::Error::new(io::ErrorKind::NotFound, "No files found"));
+                    }
 
-    let mut xgb_models_builder =
-        XgbConnect::get_all_xgb_models(xgb_models_path_str).expect("Failed to load XGB models");
-
-    xgb_models_builder
-        .add_column_header("id")
-        .order_columns(vec!["id", "..."])
-        .cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())])
-        .resequence_id_column("id")
-        .print_table_all_rows();
-    println!();
-
-    let binding = Vec::new();
-    let data = xgb_models_builder.get_data().unwrap_or(&binding);
-    let id_to_file_map: HashMap<usize, &str> = data
-        .iter()
-        .map(|row| {
-            let id = row[0].parse::<usize>().unwrap_or(0);
-            let file_name = &row[1];
-            (id, file_name.as_str())
-        })
-        .collect();
-
-    loop {
-        match list_xgb_files(&models_path) {
-            Ok(files) => {
-                if files.is_empty() {
-                    println!("No files in sight, bro.");
-                    return Err(io::Error::new(io::ErrorKind::NotFound, "No files found"));
-                }
-
-                let choice = get_user_input_level_2(
+                    let choice = get_user_input_level_2(
                     "Enter the IDs of the models to retrieve details for, separated by commas: ",
                 )
                 .trim()
                 .to_lowercase();
 
-                if handle_back_flag(&choice) || handle_cancel_flag(&choice) {
-                    return Err(io::Error::new(io::ErrorKind::Interrupted, "Operation canceled by user"));
-                }
+                    if handle_back_flag(&choice) || handle_cancel_flag(&choice) {
+                        return Err(io::Error::new(
+                            io::ErrorKind::Interrupted,
+                            "Operation canceled by user",
+                        ));
+                    }
 
-                let indices = parse_ranges(&choice);
+                    let indices = parse_ranges(&choice);
 
-                for index in indices {
-                    if let Some(file_name) = id_to_file_map.get(&index) {
-                        let file_path = files.iter().find(|&file| {
-                            file.file_name()
-                                .and_then(|n| n.to_str())
-                                .map_or(false, |n| n == *file_name)
-                        });
+                    for index in indices {
+                        if let Some(file_name) = id_to_file_map.get(&index) {
+                            let file_path = files.iter().find(|&file| {
+                                file.file_name()
+                                    .and_then(|n| n.to_str())
+                                    .map_or(false, |n| n == *file_name)
+                            });
 
-                        if let Some(file_path) = file_path {
-                            if file_path.is_file() {
-                                // Using the helper function to get the "params" column value
-                                let params = xgb_models_builder
-                                    .where_(
-        vec![
-            ("Exp1", Exp {
-                column: "id".to_string(),
-                operator: "==".to_string(),
-                compare_with: ExpVal::STR(index.to_string()),
-                compare_as: "TEXT".to_string() // Also: "NUMBERS", "TIMESTAMPS"
-            }),
-        ],
-        "Exp1"
-
-
+                            if let Some(file_path) = file_path {
+                                if file_path.is_file() {
+                                    // Using the helper function to get the "params" column value
+                                    let params = xgb_models_builder
+                                        .where_(
+                                            vec![(
+                                                "Exp1",
+                                                Exp {
+                                                    column: "id".to_string(),
+                                                    operator: "==".to_string(),
+                                                    compare_with: ExpVal::STR(index.to_string()),
+                                                    compare_as: "TEXT".to_string(), // Also: "NUMBERS", "TIMESTAMPS"
+                                                },
+                                            )],
+                                            "Exp1",
                                         )
-                                    .get("parameters");
-                                return Ok((file_path.to_path_buf(), params));
+                                        .get("parameters");
+                                    return Ok((file_path.to_path_buf(), params));
+                                }
+                            } else {
+                                print_insight_level_2("File not found for the provided ID.");
                             }
                         } else {
-                            print_insight_level_2("File not found for the provided ID.");
+                            print_insight_level_2("Invalid ID provided.");
                         }
-                    } else {
-                        print_insight_level_2("Invalid ID provided.");
                     }
-                }
 
-                return Err(io::Error::new(io::ErrorKind::NotFound, "No valid file found for the provided IDs"));
-            }
-            Err(_) => {
-                print_insight_level_2("Failed to read the directory.");
-                return Err(io::Error::new(io::ErrorKind::Other, "Failed to read the directory"));
+                    return Err(io::Error::new(
+                        io::ErrorKind::NotFound,
+                        "No valid file found for the provided IDs",
+                    ));
+                }
+                Err(_) => {
+                    print_insight_level_2("Failed to read the directory.");
+                    return Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        "Failed to read the directory",
+                    ));
+                }
             }
         }
     }
-}
-
 
     let menu_options = vec![
         "APPEND XGB_TYPE LABEL COLUMN BY RATIO",
@@ -896,8 +903,6 @@ Delete one or more of your XGB Models.
                 */
             }
 
-
-
             Some(5) => {
                 if choice.to_lowercase() == "5d" {
                     print_insight_level_2(
@@ -914,76 +919,50 @@ Appends a predictions column leveraging an XGB Model.
                 let desktop_path = Path::new(&home_dir).join("Desktop");
                 let csv_db_path = desktop_path.join("csv_db");
 
+                // Call the get_xgb_details function
+                match get_xgb_details(&csv_db_path) {
+                    Ok((path, params)) => {
+                        let prediction_column_name =
+                            get_user_input_level_2("Name your predictions column: ");
 
-    // Call the get_xgb_details function
-    match get_xgb_details(&csv_db_path) {
-        Ok((path, params)) => {
+                        if handle_cancel_flag(&prediction_column_name) {
+                            continue;
+                        }
 
-                let prediction_column_name =
-                    get_user_input_level_2("Name your predictions column: ");
+                        let path_str = path.to_str().unwrap();
 
-                if handle_cancel_flag(&prediction_column_name) {
-                    continue;
-                }
+                        dbg!(&params, &prediction_column_name, &path_str);
+                        csv_builder
+                            .append_xgb_model_predictions_column(
+                                &params,
+                                &prediction_column_name,
+                                path_str,
+                            )
+                            .await;
 
-                let path_str = path.to_str().unwrap();
+                        csv_builder.print_table();
+                        println!();
 
+                        match apply_filter_changes_menu(
+                            csv_builder,
+                            &prev_iteration_builder,
+                            &original_csv_builder,
+                        ) {
+                            Ok(_) => (),
+                            Err(e) => {
+                                println!("{}", e);
+                                continue; // Ask for the choice again if there was an error
+                            }
+                        }
 
-                dbg!(&params, &prediction_column_name, &path_str);
-                csv_builder.append_xgb_model_predictions_column(&params, &prediction_column_name, path_str).await;
-
-
-                csv_builder.print_table();
-                println!();
-
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
+                        //println!("File Path: {:?}", path);
+                        //println!("Params: {}", params);
+                    }
                     Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
+                        eprintln!("An error occurred: {}", e);
                     }
                 }
-
-
-
-
-
-
-
-
-
-            //println!("File Path: {:?}", path);
-            //println!("Params: {}", params);
-        }
-        Err(e) => {
-            eprintln!("An error occurred: {}", e);
-        }
-    }
-
-
-
-
-
-
-
-
-
             }
-
-
-
-
-
-
-
-
-
-
-
 
             _ => {
                 println!("Invalid option. Please enter a number from 1 to 5.");
