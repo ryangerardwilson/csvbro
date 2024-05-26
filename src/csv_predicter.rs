@@ -98,7 +98,34 @@ pub async fn handle_predict(
 
 SYNTAX
 ======
-
+{
+    "param_columns": "",
+    "target_column": "",
+    "prediction_column_name": "", // Leave blank for binary classification, use "reg:squarederror" for linear regression
+    "save_model_as": "",
+    "xgb_config": {
+        "objective": "", 
+        "max_depth": "",
+        "learning_rate": "",
+        "n_estimators": "",
+        "gamma": "",
+        "min_child_weight": "",
+        "subsample": "",
+        "colsample_bytree": "",
+        "reg_lambda": "",
+        "reg_alpha": "",
+        "scale_pos_weight": "",
+        "max_delta_step": "",
+        "booster": "",
+        "tree_method": "",
+        "grow_policy": "",
+        "eval_metric": "",
+        "early_stopping_rounds": "",
+        "device": "",
+        "cv": "",
+        "interaction_constraints": ""
+    }       
+}
 "#;
 
         let user_input = get_edited_user_json_input(xgb_model_input_syntax.to_string());
@@ -931,7 +958,7 @@ Appends a predictions column leveraging an XGB Model.
 
                         let path_str = path.to_str().unwrap();
 
-                        dbg!(&params, &prediction_column_name, &path_str);
+                        //dbg!(&params, &prediction_column_name, &path_str);
                         csv_builder
                             .append_xgb_model_predictions_column(
                                 &params,
