@@ -10,8 +10,12 @@ use rgwml::csv_utils::CsvBuilder;
 use rgwml::xgb_utils::{XgbConfig, XgbConnect};
 use serde_json::to_string_pretty;
 use serde_json::Value;
+use std::collections::HashMap;
 use std::env;
+use std::fs;
+use std::io;
 use std::path::Path;
+use std::path::PathBuf;
 
 pub async fn handle_predict(
     csv_builder: &mut CsvBuilder,
@@ -210,6 +214,234 @@ SYNTAX
         ))
     }
 
+    /*
+    pub fn delete_xgb_file(csv_db_path: &PathBuf, xgb_models_builder: CsvBuilder) {
+        fn list_csv_files(path: &PathBuf) -> io::Result<Vec<PathBuf>> {
+            let mut files = Vec::new();
+            for entry in fs::read_dir(path)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("json") {
+                    files.push(path);
+                }
+            }
+            Ok(files)
+        }
+
+        fn parse_ranges(range_str: &str) -> Vec<usize> {
+            range_str
+                .split(',')
+                .flat_map(|part| {
+                    let part = part.trim(); // Trim each part after splitting by comma
+                    if part.contains('-') {
+                        let bounds: Vec<&str> = part.split('-').map(str::trim).collect(); // Trim parts of the range
+                        if bounds.len() == 2 {
+                            let start = bounds[0].parse::<usize>().unwrap_or(0);
+                            let end = bounds[1].parse::<usize>().unwrap_or(0);
+                            (start..=end).collect::<Vec<usize>>()
+                        } else {
+                            vec![] // Return an empty vector if the range format is incorrect
+                        }
+                    } else {
+                        vec![part.parse::<usize>().unwrap_or(0)]
+                    }
+                })
+                .collect()
+        }
+
+        let models_path = csv_db_path.join("xgb_models");
+        //let model_dir_str = model_dir.to_str().unwrap();
+
+
+        loop {
+            match list_csv_files(&models_path) {
+                Ok(mut files) => {
+                    if files.is_empty() {
+                        println!("No files in sight, bro.");
+                        return;
+                    }
+
+                    files.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+
+                    let file_names: Vec<String> = files
+                        .iter()
+                        .filter_map(|file| file.file_name()?.to_str().map(String::from))
+                        .collect();
+
+                    let file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
+                    print_list(&file_name_slices);
+
+                    let choice = get_user_input_level_2("Enter the serial numbers, or ranges (for example, 4-10) of the files to delete, separated by commas: ")
+                        .trim().to_lowercase();
+
+                    if handle_back_flag(&choice) || handle_cancel_flag(&choice) {
+                        return;
+                    }
+
+                    let mut indices = parse_ranges(&choice);
+                    indices.sort();
+                    indices.reverse();
+
+                    for index in indices {
+                        if index > 0 && index <= files.len() {
+                            let file_path = &files[index - 1];
+                            if file_path.is_file() {
+                                if let Some(file_name) = file_path.file_name().and_then(|n| n.to_str())
+                                {
+                                    print_insight_level_2(&format!("Deleting {}", file_name));
+                                    if let Err(e) = fs::remove_file(file_path) {
+                                        print_insight_level_2(&format!("Failed to delete file: {}", e));
+                                    } else {
+                                        print_insight_level_2("File deleted successfully.");
+                                    }
+                                }
+                            }
+                        } else {
+                            print_insight_level_2("Invalid serial number provided.");
+                        }
+                    }
+                }
+                Err(_) => {
+                    print_insight_level_2("Failed to read the directory.");
+                    return;
+                }
+            }
+        }
+    }
+    */
+
+    pub fn delete_xgb_file(csv_db_path: &PathBuf) {
+        fn list_csv_files(path: &PathBuf) -> io::Result<Vec<PathBuf>> {
+            let mut files = Vec::new();
+            for entry in fs::read_dir(path)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("json") {
+                    files.push(path);
+                }
+            }
+            Ok(files)
+        }
+
+        fn parse_ranges(range_str: &str) -> Vec<usize> {
+            range_str
+                .split(',')
+                .flat_map(|part| {
+                    let part = part.trim();
+                    if part.contains('-') {
+                        let bounds: Vec<&str> = part.split('-').map(str::trim).collect();
+                        if bounds.len() == 2 {
+                            let start = bounds[0].parse::<usize>().unwrap_or(0);
+                            let end = bounds[1].parse::<usize>().unwrap_or(0);
+                            (start..=end).collect::<Vec<usize>>()
+                        } else {
+                            vec![]
+                        }
+                    } else {
+                        vec![part.parse::<usize>().unwrap_or(0)]
+                    }
+                })
+                .collect()
+        }
+
+        let models_path = csv_db_path.join("xgb_models");
+        let xgb_models_path_str = models_path.to_str().unwrap();
+
+        let mut xgb_models_builder =
+            XgbConnect::get_all_xgb_models(xgb_models_path_str).expect("Failed to load XGB models");
+
+        //let models_path = csv_db_path.join("xgb_models");
+        xgb_models_builder
+            .add_column_header("id")
+            .order_columns(vec!["id", "..."])
+            .cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())])
+            .resequence_id_column("id")
+            .print_table_all_rows();
+        println!();
+
+        // Extract IDs and corresponding file names from xgb_models_builder
+        let binding = Vec::new();
+        let data = xgb_models_builder.get_data().unwrap_or(&binding);
+        let id_to_file_map: HashMap<usize, &str> = data
+            .iter()
+            .map(|row| {
+                let id = row[0].parse::<usize>().unwrap_or(0);
+                let file_name = &row[1];
+                (id, file_name.as_str())
+            })
+            .collect();
+
+        loop {
+            match list_csv_files(&models_path) {
+                Ok(files) => {
+                    if files.is_empty() {
+                        println!("No files in sight, bro.");
+                        return;
+                    }
+
+                    let choice = get_user_input_level_2(
+                        "Enter the IDs of the models to delete, separated by commas: ",
+                    )
+                    .trim()
+                    .to_lowercase();
+
+                    if handle_back_flag(&choice) || handle_cancel_flag(&choice) {
+                        return;
+                    }
+
+                    let mut indices = parse_ranges(&choice);
+                    indices.sort();
+                    indices.reverse();
+
+                    for index in indices {
+                        if let Some(file_name) = id_to_file_map.get(&index) {
+                            let file_path = files.iter().find(|&file| {
+                                file.file_name()
+                                    .and_then(|n| n.to_str())
+                                    .map_or(false, |n| n == *file_name)
+                            });
+
+                            if let Some(file_path) = file_path {
+                                if file_path.is_file() {
+                                    print_insight_level_2(&format!("Deleting {}", file_name));
+                                    if let Err(e) = fs::remove_file(file_path) {
+                                        print_insight_level_2(&format!(
+                                            "Failed to delete file: {}",
+                                            e
+                                        ));
+                                    } else {
+                                        print_insight_level_2("File deleted successfully.");
+                                    }
+                                }
+                            } else {
+                                print_insight_level_2("File not found for the provided ID.");
+                            }
+                        } else {
+                            print_insight_level_2("Invalid ID provided.");
+                        }
+                    }
+
+                    let mut xgb_models_builder_2 =
+                        XgbConnect::get_all_xgb_models(xgb_models_path_str)
+                            .expect("Failed to load XGB models");
+
+                    //let models_path = csv_db_path.join("xgb_models");
+                    xgb_models_builder_2
+                        .add_column_header("id")
+                        .order_columns(vec!["id", "..."])
+                        .cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())])
+                        .resequence_id_column("id")
+                        .print_table_all_rows();
+                    println!();
+                }
+                Err(_) => {
+                    print_insight_level_2("Failed to read the directory.");
+                    return;
+                }
+            }
+        }
+    }
+
     let menu_options = vec![
         "APPEND XGB_TYPE LABEL COLUMN BY RATIO",
         "CREATE XGB MODEL",
@@ -285,6 +517,9 @@ Appends a XGB_TYPE model column labelling rows as TRAIN, VALIDATE, or TEST, as p
                         r#"DOCUMENTATION
 
 Creates an XGB Model.
+
+# 1. Binary Classification Example
+-------------------------------
 
 |XGB_TYPE |target |feature1 |feature2 |feature3 |
 -------------------------------------------------
@@ -374,6 +609,76 @@ Total rows: 36
     "support": 10.0
   }
 }
+
+# 2. Linear Regression Example
+------------------------------
+
+|XGB_TYPE |no_of_tickets |last_60_days_tickets |churn_day |
+-----------------------------------------------------------
+|TRAIN    |5             |2                    |180       |
+|TRAIN    |6             |3                    |170       |
+|TRAIN    |4             |1                    |190       |
+|TRAIN    |5             |1                    |185       |
+|TRAIN    |10            |6                    |90        |
+<<+10 rows>>
+|TEST     |6             |2                    |173       |
+|TEST     |13            |6                    |68        |
+|TEST     |12            |8                    |69        |
+|TEST     |22            |9                    |66        |
+|TEST     |32            |9                    |46        |
+Total rows: 20
+
+  @LILbro: Executing this JSON query:
+{
+    "param_columns": "no_of_tickets, last_60_days_tickets",
+    "target_column": "churn_day",
+    "prediction_column_name": "churn_day_predictions",
+    "save_model_as": "test_regression_model",
+    "xgb_config": {
+        "objective": "reg:squarederror",
+        "max_depth": "",
+        "learning_rate": "",
+        "n_estimators": "",
+        "gamma": "",
+        "min_child_weight": "",
+        "subsample": "",
+        "colsample_bytree": "",
+        "reg_lambda": "",
+        "reg_alpha": "",
+        "scale_pos_weight": "",
+        "max_delta_step": "",
+        "booster": "",
+        "tree_method": "",
+        "grow_policy": "",
+        "eval_metric": "",
+        "early_stopping_rounds": "",
+        "device": "",
+        "cv": "",
+        "interaction_constraints": ""
+    }
+}
+
+|XGB_TYPE |no_of_tickets |last_60_days_tickets |churn_day |churn_day_predictions |
+----------------------------------------------------------------------------------
+|TRAIN    |5             |2                    |180       |                      |
+|TRAIN    |6             |3                    |170       |                      |
+|TRAIN    |4             |1                    |190       |                      |
+|TRAIN    |5             |1                    |185       |                      |
+|TRAIN    |10            |6                    |90        |                      |
+<<+10 rows>>
+|TEST     |6             |2                    |173       |174.32512             |
+|TEST     |13            |6                    |68        |78.522125             |
+|TEST     |12            |8                    |69        |70.37183              |
+|TEST     |22            |9                    |66        |73.713264             |
+|TEST     |32            |9                    |46        |56.3846               |
+Total rows: 20
+
+  @LILBro: Yo, here's the lowdown on the model's performance:
+
+{
+  "mean_squared_error": 54.14302449585349,
+  "r2_score": 0.9820593048686468
+}
 "#,
                     );
                     continue;
@@ -459,6 +764,16 @@ Total rows: 36
 
 Lists out all XGB Models.
 
+|id |model                          |last_modified      |parameters                        |
+--------------------------------------------------------------------------------------------
+|1  |reg_model.json                 |2024-05-24 05:46:57|no_of_tickets,last_60_days_tickets|
+|2  |bin_class_model.json           |2024-05-24 05:46:57|feature1,feature2,feature3        |
+|3  |test_model.json                |2024-05-24 06:39:43|no_of_tickets,last_60_days_tickets|
+|4  |test_bin_class_model.json      |2024-05-24 08:29:45|feature1,feature2,feature3        |
+|5  |test_reg_model.json            |2024-05-24 08:29:46|no_of_tickets,last_60_days_tickets|
+|6  |test_binary_classification.json|2024-05-25 13:30:23|feature1,feature2,feature3        |
+|7  |test_regression_model.json     |2024-05-26 00:37:23|no_of_tickets,last_60_days_tickets|
+Total rows: 7
 "#,
                     );
                     continue;
@@ -467,14 +782,22 @@ Lists out all XGB Models.
                 let home_dir = env::var("HOME").expect("Unable to determine user home directory");
                 let desktop_path = Path::new(&home_dir).join("Desktop");
                 let csv_db_path = desktop_path.join("csv_db");
-                let csv_db_path_str = csv_db_path.to_str().unwrap();
+                let xgb_models_path = csv_db_path.join("xgb_models");
+                let xgb_models_path_str = xgb_models_path.to_str().unwrap();
 
-                *csv_builder = XgbConnect::get_all_xgb_models(csv_db_path_str)
+                let mut xgb_models_builder = XgbConnect::get_all_xgb_models(xgb_models_path_str)
                     .expect("Failed to load XGB models");
 
-                csv_builder.print_table();
+                xgb_models_builder
+                    .add_column_header("id")
+                    .order_columns(vec!["id", "..."])
+                    .cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())])
+                    .resequence_id_column("id")
+                    .print_table_all_rows();
+
                 println!();
 
+                /*
                 match apply_filter_changes_menu(
                     csv_builder,
                     &prev_iteration_builder,
@@ -486,6 +809,61 @@ Lists out all XGB Models.
                         continue; // Ask for the choice again if there was an error
                     }
                 }
+                */
+            }
+
+            Some(4) => {
+                if choice.to_lowercase() == "4d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Delete one or more of your XGB Models.
+
+"#,
+                    );
+                    continue;
+                }
+
+                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+                let desktop_path = Path::new(&home_dir).join("Desktop");
+                let csv_db_path = desktop_path.join("csv_db");
+                /*
+                let xgb_models_path = csv_db_path.join("xgb_models");
+                let xgb_models_path_str = xgb_models_path.to_str().unwrap();
+
+                let mut xgb_models_builder = XgbConnect::get_all_xgb_models(xgb_models_path_str)
+                    .expect("Failed to load XGB models");
+                */
+
+                //xgb_models_builder.add_column_header("id").order_columns(vec!["id", "..."]).cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())]).resequence_id_column("id").print_table_all_rows();
+
+                let _ = delete_xgb_file(&csv_db_path);
+
+                /*
+                let xgb_models_path = csv_db_path.join("xgb_models");
+                let xgb_models_path_str = xgb_models_path.to_str().unwrap();
+
+                let mut xgb_models_builder = XgbConnect::get_all_xgb_models(xgb_models_path_str)
+                    .expect("Failed to load XGB models");
+
+                xgb_models_builder.add_column_header("id").order_columns(vec!["id", "..."]).cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())]).resequence_id_column("id").print_table_all_rows();
+                */
+
+                println!();
+
+                /*
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+                */
             }
 
             _ => {
