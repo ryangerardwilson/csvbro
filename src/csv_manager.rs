@@ -11,12 +11,14 @@ use crate::user_experience::{
     handle_special_flag_returning_new_builder, handle_special_flag_without_builder,
 };
 use crate::user_interaction::{
-    determine_action_as_text, get_user_input, print_insight, print_insight_level_2, print_list,
+    determine_action_as_text, get_user_input, get_user_input_level_2, print_insight,
+    print_insight_level_2, print_list,
 };
 use calamine::{open_workbook, Reader, Xls};
 use chrono::{DateTime, Local};
 use fuzzywuzzy::fuzz;
 use rgwml::csv_utils::CsvBuilder;
+use std::collections::HashMap;
 use std::fs::{self};
 use std::io;
 use std::path::PathBuf;
@@ -35,81 +37,79 @@ pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
         Ok(files)
     }
 
-    match list_csv_files(&csv_db_path) {
-        Ok(mut files) => {
-            if files.is_empty() {
-                print_insight("No files in sight, bro.");
-                return None;
-            }
+    let csv_db_path_str = csv_db_path.to_str().unwrap();
 
-            files.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+    let mut csv_builder =
+        CsvBuilder::get_all_csv_files(csv_db_path_str).expect("Failed to load CSV files");
 
-            // Collect file names into a Vec<&str>
-            let file_names: Vec<String> = files
-                .iter()
-                .filter_map(|file| file.file_name()?.to_str().map(String::from))
-                .collect();
+    csv_builder
+        .add_column_header("id")
+        .order_columns(vec!["id", "..."])
+        .cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())])
+        .resequence_id_column("id")
+        .print_table_all_rows();
+    println!();
 
-            // Since print_list expects a Vec<&str>, convert Vec<String> to Vec<&str>
-            let file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
-            //file_name_slices.push("BACK");
-            // Now, call print_list with this vector
-            print_list(&file_name_slices);
+    // Extract IDs and corresponding file names from csv_builder
+    let binding = Vec::new();
+    let data = csv_builder.get_data().unwrap_or(&binding);
+    let id_to_file_map: HashMap<usize, &str> = data
+        .iter()
+        .map(|row| {
+            let id = row[0].parse::<usize>().unwrap_or(0);
+            let file_name = &row[1];
+            (id, file_name.as_str())
+        })
+        .collect();
 
-            let choice = get_user_input("What's it gonna be?: ").to_lowercase();
+    loop {
+        match list_csv_files(&csv_db_path) {
+            Ok(files) => {
+                if files.is_empty() {
+                    println!("No files in sight, bro.");
+                    return None;
+                }
 
-            // Assuming 'back' is always the last option
-            //let back_option_number = file_name_slices.len();
+                let choice = get_user_input_level_2("Enter the ID of the file to open: ")
+                    .trim()
+                    .to_lowercase();
 
-            if handle_back_flag(&choice) || handle_cancel_flag(&choice) {
-                return None;
-            }
+                if handle_back_flag(&choice) || handle_cancel_flag(&choice) {
+                    return None;
+                }
 
-            match choice.parse::<usize>() {
-                Ok(serial) if serial > 0 && serial <= files.len() => {
-                    let file_path = files[serial - 1].clone();
-                    if file_path.is_file() {
-                        if let Some(file_name) = file_path.file_name().and_then(|n| n.to_str()) {
-                            print_insight(&format!("Opening {}", file_name));
+                if let Ok(index) = choice.parse::<usize>() {
+                    if let Some(file_name) = id_to_file_map.get(&index) {
+                        let file_path = files.iter().find(|&file| {
+                            file.file_name()
+                                .and_then(|n| n.to_str())
+                                .map_or(false, |n| n == *file_name)
+                        });
+
+                        if let Some(file_path) = file_path {
+                            if file_path.is_file() {
+                                print_insight_level_2(&format!("Opening {}", file_name));
+                                return Some((
+                                    CsvBuilder::from_csv(file_path.to_str().unwrap()),
+                                    file_path.clone(),
+                                ));
+                            }
+                        } else {
+                            print_insight_level_2("File not found for the provided ID.");
                         }
-                        return Some((
-                            CsvBuilder::from_csv(file_path.to_str().unwrap()),
-                            file_path,
-                        ));
+                    } else {
+                        print_insight_level_2("Invalid ID provided.");
                     }
-                }
-                _ => (),
-            }
-
-            // Fuzzy search and opening logic
-            let best_match_result = files
-                .iter()
-                .filter_map(|path| {
-                    path.file_name()
-                        .and_then(|n| n.to_str())
-                        .map(|name| (path.clone(), fuzz::ratio(&choice, name)))
-                })
-                .max_by_key(|&(_, score)| score);
-
-            if let Some((best_match, _)) = best_match_result {
-                if best_match.is_file() {
-                    if let Some(file_name) = best_match.file_name().and_then(|n| n.to_str()) {
-                        print_insight(&format!("Opening {}", file_name));
-                    }
-                    return Some((
-                        CsvBuilder::from_csv(best_match.to_str().unwrap()),
-                        best_match.clone(),
-                    ));
+                } else {
+                    print_insight_level_2("Invalid input.");
                 }
             }
-
-            print_insight("No matching file found.");
-        }
-        Err(_) => {
-            print_insight("Failed to read the directory.");
+            Err(_) => {
+                print_insight_level_2("Failed to read the directory.");
+                return None;
+            }
         }
     }
-    None
 }
 
 pub fn delete_csv_file(csv_db_path: &PathBuf) {
@@ -129,15 +129,15 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
         range_str
             .split(',')
             .flat_map(|part| {
-                let part = part.trim(); // Trim each part after splitting by comma
+                let part = part.trim();
                 if part.contains('-') {
-                    let bounds: Vec<&str> = part.split('-').map(str::trim).collect(); // Trim parts of the range
+                    let bounds: Vec<&str> = part.split('-').map(str::trim).collect();
                     if bounds.len() == 2 {
                         let start = bounds[0].parse::<usize>().unwrap_or(0);
                         let end = bounds[1].parse::<usize>().unwrap_or(0);
                         (start..=end).collect::<Vec<usize>>()
                     } else {
-                        vec![] // Return an empty vector if the range format is incorrect
+                        vec![]
                     }
                 } else {
                     vec![part.parse::<usize>().unwrap_or(0)]
@@ -146,26 +146,46 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
             .collect()
     }
 
+    //let models_path = csv_db_path.join("xgb_models");
+    let csv_db_path_str = csv_db_path.to_str().unwrap();
+
+    let mut csv_builder =
+        CsvBuilder::get_all_csv_files(csv_db_path_str).expect("Failed to load CSV files");
+
+    //let models_path = csv_db_path.join("xgb_models");
+    csv_builder
+        .add_column_header("id")
+        .order_columns(vec!["id", "..."])
+        .cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())])
+        .resequence_id_column("id")
+        .print_table_all_rows();
+    println!();
+
+    // Extract IDs and corresponding file names from xgb_models_builder
+    let binding = Vec::new();
+    let data = csv_builder.get_data().unwrap_or(&binding);
+    let id_to_file_map: HashMap<usize, &str> = data
+        .iter()
+        .map(|row| {
+            let id = row[0].parse::<usize>().unwrap_or(0);
+            let file_name = &row[1];
+            (id, file_name.as_str())
+        })
+        .collect();
+
     loop {
-        match list_csv_files(csv_db_path) {
-            Ok(mut files) => {
+        match list_csv_files(&csv_db_path) {
+            Ok(files) => {
                 if files.is_empty() {
                     println!("No files in sight, bro.");
                     return;
                 }
 
-                files.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
-
-                let file_names: Vec<String> = files
-                    .iter()
-                    .filter_map(|file| file.file_name()?.to_str().map(String::from))
-                    .collect();
-
-                let file_name_slices: Vec<&str> = file_names.iter().map(AsRef::as_ref).collect();
-                print_list(&file_name_slices);
-
-                let choice = get_user_input("Enter the serial numbers, or ranges (for example, 4-10) of the files to delete, separated by commas: ")
-                    .trim().to_lowercase();
+                let choice = get_user_input_level_2(
+                    "Enter the IDs of the models to delete, separated by commas: ",
+                )
+                .trim()
+                .to_lowercase();
 
                 if handle_back_flag(&choice) || handle_cancel_flag(&choice) {
                     return;
@@ -176,11 +196,15 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
                 indices.reverse();
 
                 for index in indices {
-                    if index > 0 && index <= files.len() {
-                        let file_path = &files[index - 1];
-                        if file_path.is_file() {
-                            if let Some(file_name) = file_path.file_name().and_then(|n| n.to_str())
-                            {
+                    if let Some(file_name) = id_to_file_map.get(&index) {
+                        let file_path = files.iter().find(|&file| {
+                            file.file_name()
+                                .and_then(|n| n.to_str())
+                                .map_or(false, |n| n == *file_name)
+                        });
+
+                        if let Some(file_path) = file_path {
+                            if file_path.is_file() {
                                 print_insight_level_2(&format!("Deleting {}", file_name));
                                 if let Err(e) = fs::remove_file(file_path) {
                                     print_insight_level_2(&format!("Failed to delete file: {}", e));
@@ -188,11 +212,25 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
                                     print_insight_level_2("File deleted successfully.");
                                 }
                             }
+                        } else {
+                            print_insight_level_2("File not found for the provided ID.");
                         }
                     } else {
-                        print_insight_level_2("Invalid serial number provided.");
+                        print_insight_level_2("Invalid ID provided.");
                     }
                 }
+
+                let mut csv_builder_2 = CsvBuilder::get_all_csv_files(csv_db_path_str)
+                    .expect("Failed to load CSV files");
+
+                //let models_path = csv_db_path.join("xgb_models");
+                csv_builder_2
+                    .add_column_header("id")
+                    .order_columns(vec!["id", "..."])
+                    .cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())])
+                    .resequence_id_column("id")
+                    .print_table_all_rows();
+                println!();
             }
             Err(_) => {
                 print_insight_level_2("Failed to read the directory.");
