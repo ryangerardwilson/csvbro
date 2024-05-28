@@ -219,7 +219,8 @@ The following feature flags can be used to perform different types of calculatio
  - `NUMERICAL_STANDARD_DEVIATION` - Calculates the standard deviation of numerical values in the column, rounded to two decimal places.
  - `DATETIME_MAX` - Finds the maximum datetime value in the column, based on specified formats.
  - `DATETIME_MIN` - Finds the minimum datetime value in the column, based on specified formats.
- - `MODE` - Finds the most frequent value in the column.
+ - `DATETIME_COMMA_SEPARATED` - Comma separates datetime values in the columns
+- `MODE` - Finds the most frequent value in the column.
  - `BOOL_PERCENT` - Calculates the percentage of `1`s in the column, assuming the values are either `1` or `0`, rounded to two decimal places.
 "#,
                     );
@@ -272,6 +273,7 @@ The following feature flags can be used to perform different types of calculatio
  - `NUMERICAL_STANDARD_DEVIATION` - Calculates the standard deviation of numerical values in the column, rounded to two decimal places.
  - `DATETIME_MAX` - Finds the maximum datetime value in the column, based on specified formats.
  - `DATETIME_MIN` - Finds the minimum datetime value in the column, based on specified formats.
+ - `DATETIME_COMMA_SEPARATED` - Comma separates datetime values in the columns
  - `MODE` - Finds the most frequent value in the column.
  - `BOOL_PERCENT` - Calculates the percentage of `1`s in the column, assuming the values are either `1` or `0`, rounded to two decimal places.
                 "#;

@@ -1121,6 +1121,8 @@ Note the implications of the params in the JSON query:
         "APPEND DERIVED CATEGORY COLUMN",
         "APPEND DERIVED CONCATENATION COLUMN",
         "APPEND CATEGORY COLUMNS BY SPLITTING DATE/TIMESTAMP COLUMN",
+        "APPEND COUNT OF COMMA SEPARATED TIMESTAMP COLUMN OF VALUES *AFTER* ANOTHER TIMESTAMP PARSEABLE",
+        "APPEND COUNT OF COMMA SEPARATED TIMESTAMP COLUMN OF VALUES *BEFORE* ANOTHER TIMESTAMP PARSEABLE",
         "APPEND FUZZAI ANALYSIS COLUMN",
         "APPEND FUZZAI ANALYSIS COLUMN WHERE",
         "OPENAI /SYNC APPEND ANALYSIS COLUMNS",
@@ -1557,6 +1559,124 @@ The following value formats can be processed by this feature:
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
+Appends a new column with the count of timestamps in a comma separated timestamp column after the timestamp value of another column                        
+
+"#,
+                    );
+                    continue;
+                }
+
+                let comma_separated_timestamp_column_name_str = get_user_input_level_2(
+                    "Enter the name of the column with comma separated timestamp values: ",
+                );
+
+                if handle_cancel_flag(&comma_separated_timestamp_column_name_str) {
+                    continue;
+                }
+
+                let relative_timestamp_column_name_str =
+                    get_user_input_level_2("Enter the name of the timestamp parseable column, which, in relation to, will be used to compute a count of timestamps AFTER: ");
+
+                if handle_cancel_flag(&relative_timestamp_column_name_str) {
+                    continue;
+                }
+
+                let new_column_name_str = get_user_input_level_2(
+                    "Enter the name of the newly created column containing the count: ",
+                );
+
+                if handle_cancel_flag(&new_column_name_str) {
+                    continue;
+                }
+
+                csv_builder.append_comma_separated_timestamp_count_after_date_column(
+                    &comma_separated_timestamp_column_name_str,
+                    &relative_timestamp_column_name_str,
+                    &new_column_name_str,
+                );
+
+                if csv_builder.has_data() {
+                    csv_builder.print_table();
+                    println!();
+                }
+
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+            }
+
+            Some(6) => {
+                if choice.to_lowercase() == "6d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Appends a new column with the count of timestamps in a comma separated timestamp column before the timestamp value of another column                        
+
+"#,
+                    );
+                    continue;
+                }
+
+                let comma_separated_timestamp_column_name_str = get_user_input_level_2(
+                    "Enter the name of the column with comma separated timestamp values: ",
+                );
+
+                if handle_cancel_flag(&comma_separated_timestamp_column_name_str) {
+                    continue;
+                }
+
+                let relative_timestamp_column_name_str =
+                    get_user_input_level_2("Enter the name of the timestamp parseable column, which, in relation to, will be used to compute a count of timestamps BEFORE: ");
+
+                if handle_cancel_flag(&relative_timestamp_column_name_str) {
+                    continue;
+                }
+
+                let new_column_name_str = get_user_input_level_2(
+                    "Enter the name of the newly created column containing the count: ",
+                );
+
+                if handle_cancel_flag(&new_column_name_str) {
+                    continue;
+                }
+
+                csv_builder.append_comma_separated_timestamp_count_before_date_column(
+                    &comma_separated_timestamp_column_name_str,
+                    &relative_timestamp_column_name_str,
+                    &new_column_name_str,
+                );
+
+                if csv_builder.has_data() {
+                    csv_builder.print_table();
+                    println!();
+                }
+
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+            }
+
+            Some(7) => {
+                if choice.to_lowercase() == "7d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
 Creates category flags upon doing a fuzzy analysis on column values vis-a-vis specified training data.
 |id |item    |value |type  |item_type     |
 -------------------------------------------
@@ -1655,9 +1775,8 @@ Note the implications of the params in the JSON query:
                 }
             }
 
-            // 7. "expressions" and "result_expression": Indicates the exact conditions of the row, that should trigger the fuzzy analysis.
-            Some(6) => {
-                if choice.to_lowercase() == "6d" {
+            Some(8) => {
+                if choice.to_lowercase() == "8d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1787,8 +1906,8 @@ Note the implications of the params in the JSON query:
                 }
             }
 
-            Some(7) => {
-                if choice.to_lowercase() == "7d" {
+            Some(9) => {
+                if choice.to_lowercase() == "9d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1923,8 +2042,8 @@ Total rows: 3
                 }
             }
 
-            Some(8) => {
-                if choice.to_lowercase() == "8d" {
+            Some(10) => {
+                if choice.to_lowercase() == "10d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2013,8 +2132,8 @@ Total rows: 3
                 }
             }
 
-            Some(9) => {
-                if choice.to_lowercase() == "9d" {
+            Some(11) => {
+                if choice.to_lowercase() == "11d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2080,8 +2199,8 @@ Total rows: 2
                 continue;
             }
 
-            Some(10) => {
-                if choice.to_lowercase() == "10d" {
+            Some(12) => {
+                if choice.to_lowercase() == "12d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2156,8 +2275,8 @@ Total rows: 2
                 continue;
             }
 
-            Some(11) => {
-                if choice.to_lowercase() == "11d" {
+            Some(13) => {
+                if choice.to_lowercase() == "13d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2227,8 +2346,8 @@ Total rows: 3
                 //continue;
             }
 
-            Some(12) => {
-                if choice.to_lowercase() == "12d" {
+            Some(14) => {
+                if choice.to_lowercase() == "14d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2403,7 +2522,7 @@ Total rows: 5
             }
 
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 12.");
+                println!("Invalid option. Please enter a number from 1 to 14.");
                 continue; // Ask for the choice again
             }
         }
