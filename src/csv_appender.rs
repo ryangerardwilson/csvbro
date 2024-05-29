@@ -1119,6 +1119,8 @@ Note the implications of the params in the JSON query:
     let menu_options = vec![
         "APPEND DERIVED BOOLEAN COLUMN",
         "APPEND DERIVED CATEGORY COLUMN",
+        "APPEND INCLUSIVE-EXCLUSIVE (NUMERICAL) INTERVAL CATEGORY COLUMN",
+        "APPEND INCLUSIVE-EXCLUSIVE (DATE) INTERVAL CATEGORY COLUMN",
         "APPEND DERIVED CONCATENATION COLUMN",
         "APPEND CATEGORY COLUMNS BY SPLITTING DATE/TIMESTAMP COLUMN",
         "APPEND COUNT OF COMMA SEPARATED TIMESTAMP COLUMN OF VALUES *AFTER* ANOTHER TIMESTAMP PARSEABLE",
@@ -1400,6 +1402,128 @@ Total rows: 5
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
+Appends an inclusive-exclusive numerical interval category column.
+
+
+"#,
+                    );
+                    continue;
+                }
+
+                let column_name_str = get_user_input_level_2(
+                    "Enter the name of the numerically parseable column to label/categorize: ",
+                );
+
+                if handle_cancel_flag(&column_name_str) {
+                    continue;
+                }
+
+                let interval_points_str = get_user_input_level_2(
+                    "Enter numerically parseable interval points (comma-separated): ",
+                );
+
+                if handle_cancel_flag(&interval_points_str) {
+                    continue;
+                }
+
+                let new_column_name_str = get_user_input_level_2(
+                    "Enter the name of the newly created column containing the row labelling/categorization: ",
+                );
+
+                if handle_cancel_flag(&new_column_name_str) {
+                    continue;
+                }
+
+                csv_builder.append_inclusive_exclusive_numerical_interval_category_column(
+                    &column_name_str,
+                    &interval_points_str,
+                    &new_column_name_str,
+                );
+
+                if csv_builder.has_data() {
+                    csv_builder.print_table();
+                    println!();
+                }
+
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+            }
+
+            Some(4) => {
+                if choice.to_lowercase() == "4d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
+Appends an inclusive-exclusive date interval category column.
+
+
+"#,
+                    );
+                    continue;
+                }
+
+                let column_name_str = get_user_input_level_2(
+                    "Enter the name of the timestamp parseable column to label/categorize: ",
+                );
+
+                if handle_cancel_flag(&column_name_str) {
+                    continue;
+                }
+
+                let interval_points_str = get_user_input_level_2(
+                    "Enter YYYY-MM-DD date interval points (comma-separated): ",
+                );
+
+                if handle_cancel_flag(&interval_points_str) {
+                    continue;
+                }
+
+                let new_column_name_str = get_user_input_level_2(
+                    "Enter the name of the newly created column containing the row labelling/categorization: ",
+                );
+
+                if handle_cancel_flag(&new_column_name_str) {
+                    continue;
+                }
+
+                csv_builder.append_inclusive_exclusive_date_interval_category_column(
+                    &column_name_str,
+                    &interval_points_str,
+                    &new_column_name_str,
+                );
+
+                if csv_builder.has_data() {
+                    csv_builder.print_table();
+                    println!();
+                }
+
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+            }
+
+            Some(5) => {
+                if choice.to_lowercase() == "5d" {
+                    print_insight_level_2(
+                        r#"DOCUMENTATION
+
 Appends a column whose value is a concatenation of other columns. This can be useful in the following scenarios:
 
 (1) Crating Unique Identifiers: Concatenated columns can create unique identifiers (IDs) for records when individual columns alone might not contain unique information. This is especially useful in scenarios where composite keys are required to uniquely identify records in relational databases.
@@ -1470,8 +1594,8 @@ Total rows: 5
                 }
             }
 
-            Some(4) => {
-                if choice.to_lowercase() == "4d" {
+            Some(6) => {
+                if choice.to_lowercase() == "6d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1554,8 +1678,8 @@ The following value formats can be processed by this feature:
                 }
             }
 
-            Some(5) => {
-                if choice.to_lowercase() == "5d" {
+            Some(7) => {
+                if choice.to_lowercase() == "7d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1613,8 +1737,8 @@ Appends a new column with the count of timestamps in a comma separated timestamp
                 }
             }
 
-            Some(6) => {
-                if choice.to_lowercase() == "6d" {
+            Some(8) => {
+                if choice.to_lowercase() == "8d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1672,8 +1796,8 @@ Appends a new column with the count of timestamps in a comma separated timestamp
                 }
             }
 
-            Some(7) => {
-                if choice.to_lowercase() == "7d" {
+            Some(9) => {
+                if choice.to_lowercase() == "9d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1775,8 +1899,8 @@ Note the implications of the params in the JSON query:
                 }
             }
 
-            Some(8) => {
-                if choice.to_lowercase() == "8d" {
+            Some(10) => {
+                if choice.to_lowercase() == "10d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -1906,8 +2030,8 @@ Note the implications of the params in the JSON query:
                 }
             }
 
-            Some(9) => {
-                if choice.to_lowercase() == "9d" {
+            Some(11) => {
+                if choice.to_lowercase() == "11d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2042,8 +2166,8 @@ Total rows: 3
                 }
             }
 
-            Some(10) => {
-                if choice.to_lowercase() == "10d" {
+            Some(12) => {
+                if choice.to_lowercase() == "12d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2132,8 +2256,8 @@ Total rows: 3
                 }
             }
 
-            Some(11) => {
-                if choice.to_lowercase() == "11d" {
+            Some(13) => {
+                if choice.to_lowercase() == "13d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2199,8 +2323,8 @@ Total rows: 2
                 continue;
             }
 
-            Some(12) => {
-                if choice.to_lowercase() == "12d" {
+            Some(14) => {
+                if choice.to_lowercase() == "14d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2275,8 +2399,8 @@ Total rows: 2
                 continue;
             }
 
-            Some(13) => {
-                if choice.to_lowercase() == "13d" {
+            Some(15) => {
+                if choice.to_lowercase() == "15d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2346,8 +2470,8 @@ Total rows: 3
                 //continue;
             }
 
-            Some(14) => {
-                if choice.to_lowercase() == "14d" {
+            Some(16) => {
+                if choice.to_lowercase() == "16d" {
                     print_insight_level_2(
                         r#"DOCUMENTATION
 
@@ -2522,7 +2646,7 @@ Total rows: 5
             }
 
             _ => {
-                println!("Invalid option. Please enter a number from 1 to 14.");
+                println!("Invalid option. Please enter a number from 1 to 16.");
                 continue; // Ask for the choice again
             }
         }

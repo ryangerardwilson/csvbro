@@ -20,14 +20,16 @@ use crate::user_interaction::{
 };
 use rgwml::csv_utils::CsvBuilder;
 use std::env;
-//use std::fs::remove_file;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::{self, Command};
 
+const BRO_VERSION: &str = "1.2.1";
+
 #[tokio::main]
 async fn main() {
-    fn embed_and_set_up_in_directory_system() -> (String, String, String) {
+    fn embed_and_set_up_in_directory_system(
+    ) -> Result<(String, String, String), Box<dyn std::error::Error>> {
         // Attempt to dynamically find the current executable's path
         let current_exe_path_buf =
             env::current_exe().expect("Failed to find current executable path");
@@ -53,6 +55,47 @@ async fn main() {
         let is_executed_from_target = current_exe_path == target_binary_path;
 
         if !is_executed_from_target && !is_cargo_run {
+            // Install pip dependencies to bare metal
+            let packages: Vec<&str> = vec![
+                "google-cloud-bigquery",
+                "clickhouse-driver",
+                "pandas",
+                "xgboost",
+                "scikit-learn",
+                "numpy",
+            ];
+
+            let mut missing_packages = Vec::new();
+
+            for package in &packages {
+                // Split the package string to separate package and import name if provided
+                let parts: Vec<&str> = package.split('|').collect();
+                let package_name = parts[0];
+                let import_name = parts.get(1).unwrap_or(&package_name);
+
+                // Check if the package can be imported
+                let check_package_status = Command::new("python3")
+                    .arg("-c")
+                    .arg(format!("import {}", import_name))
+                    .status();
+
+                // If the package is missing, add it to the list of missing packages
+                if check_package_status.is_err() || !check_package_status.unwrap().success() {
+                    missing_packages.push(package_name);
+                }
+            }
+
+            // Install missing packages if any
+            if !missing_packages.is_empty() {
+                let pip_install_status = Command::new("pip3")
+                    .args(&["install"])
+                    .args(&missing_packages)
+                    .status()?;
+                if !pip_install_status.success() {
+                    return Err("Failed to install packages".into());
+                }
+            }
+
             // Move the binary to the target path using 'sudo mv'
             let status = Command::new("sudo")
                 .arg("mv")
@@ -67,31 +110,21 @@ async fn main() {
             }
         }
 
-        return (
+        Ok((
             desktop_path.to_string_lossy().into_owned(),
             downloads_path.to_string_lossy().into_owned(),
             csv_db_path.to_string_lossy().into_owned(),
-        );
+        ))
     }
 
     if std::env::args().any(|arg| arg == "--version") {
-        print_insight("csvbro 1.1.9");
+        print_insight(BRO_VERSION);
         std::process::exit(0);
     }
 
-    /*
-    async fn clear_temp_file() -> Result<(), std::io::Error> {
-        let temp_path = std::env::temp_dir().join("db_connect");
-        remove_file(&temp_path)?;
-        Ok(())
-    }
-
-    if let Err(_e) = clear_temp_file().await {
-        //eprintln!("Failed to clear temp file: {}", e);
-    }
-    */
-
-    let (desktop_path, downloads_path, csv_db_path) = embed_and_set_up_in_directory_system();
+    //let (desktop_path, downloads_path, csv_db_path) = embed_and_set_up_in_directory_system();
+    let (desktop_path, downloads_path, csv_db_path) =
+        embed_and_set_up_in_directory_system().expect("Failed to set up directory system");
 
     let csv_db_path_buf = PathBuf::from(csv_db_path);
     let desktop_path_buf = PathBuf::from(desktop_path);

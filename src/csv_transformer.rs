@@ -306,6 +306,8 @@ The following feature flags can be used to perform different types of calculatio
                         }
                     }
 
+                    // dbg!(&group_by_column, &grouped_column_name, &feature_flags);
+
                     csv_builder.grouped_index_transform(
                         &group_by_column,
                         &grouped_column_name,
