@@ -56,23 +56,18 @@ async fn main() {
 
         if !is_executed_from_target && !is_cargo_run {
             // Install pip dependencies to bare metal
-            let packages: Vec<&str> = vec![
-                "google-cloud-bigquery",
-                "clickhouse-driver",
-                "pandas",
-                "xgboost",
-                "scikit-learn",
-                "numpy",
+            let packages: Vec<(&str, &str)> = vec![
+                ("google-cloud-bigquery", "google.cloud.bigquery"),
+                ("clickhouse-driver", "clickhouse_driver"),
+                ("pandas", "pandas"),
+                ("xgboost", "xgboost"),
+                ("scikit-learn", "sklearn"),
+                ("numpy", "numpy"),
             ];
 
             let mut missing_packages = Vec::new();
 
-            for package in &packages {
-                // Split the package string to separate package and import name if provided
-                let parts: Vec<&str> = package.split('|').collect();
-                let package_name = parts[0];
-                let import_name = parts.get(1).unwrap_or(&package_name);
-
+            for (package_name, import_name) in &packages {
                 // Check if the package can be imported
                 let check_package_status = Command::new("python3")
                     .arg("-c")
@@ -81,7 +76,7 @@ async fn main() {
 
                 // If the package is missing, add it to the list of missing packages
                 if check_package_status.is_err() || !check_package_status.unwrap().success() {
-                    missing_packages.push(package_name);
+                    missing_packages.push(*package_name);
                 }
             }
 

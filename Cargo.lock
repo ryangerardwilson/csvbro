@@ -534,7 +534,7 @@ dependencies = [
 
 [[package]]
 name = "csvbro"
-version = "1.1.9"
+version = "1.2.1"
 dependencies = [
  "calamine 0.23.1",
  "chrono",
