@@ -402,11 +402,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         if handle_special_flag_without_builder(&choice) {
             continue;
         }
-        /*
-        if handle_back_flag(&choice) || &choice == "" {
-            break;
-        }
-        */
 
         let _ = handle_quit_flag(&choice);
 
@@ -418,9 +413,47 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
 
         match action_type.as_str() {
             "1" => {
+                /*
                 if let Err(e) = handle_search(&mut builder, file_path_option).await {
                     println!("Error during search: {}", e);
                     continue;
+                }
+                */
+                dbg!(&action_type, &action_feature, &action_flag);
+                let copied_builder = CsvBuilder::from_copy(&builder);
+                let (new_builder, modified) = match handle_search(
+                    copied_builder,
+                    file_path_option,
+                    &action_feature,
+                    &action_flag,
+                )
+                .await
+                {
+                    Ok(result) => result,
+                    Err(e) => {
+                        println!("Error during search: {}", e);
+                        // Restore the original builder in case of error
+                        //            *builder = std::mem::replace(builder, CsvBuilder::new());
+                        return;
+                    }
+                };
+
+                // Update the original builder with the new one
+                if modified {
+                    println!("The builder has been modified.");
+                    match apply_builder_changes_menu(
+                        new_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                } else {
+                    println!("The builder has not been modified.");
                 }
             }
             "2" => {
@@ -450,7 +483,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 };
 
                 // Update the original builder with the new one
-                //builder = new_builder;
                 if modified {
                     println!("The builder has been modified.");
                     match apply_builder_changes_menu(

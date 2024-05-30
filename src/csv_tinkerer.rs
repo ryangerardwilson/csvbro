@@ -246,6 +246,7 @@ SYNTAX
         Ok((expression_names, result_expression))
     }
 
+    /*
     fn apply_filter_changes_menu(
         csv_builder: &mut CsvBuilder,
         prev_iteration_builder: &CsvBuilder,
@@ -286,6 +287,7 @@ SYNTAX
             _ => Err("Invalid option. Please enter a number from 1 to 3.".to_string()),
         }
     }
+    */
 
     fn apply_limit(csv_builder: &mut CsvBuilder) -> Result<(), String> {
         let syntax = r#"{
@@ -406,7 +408,7 @@ Note the implications of the limit_type value:
     ];
     */
 
-    let original_csv_builder = CsvBuilder::from_copy(&csv_builder);
+    //let original_csv_builder = CsvBuilder::from_copy(&csv_builder);
     //let choice = doc_request_flag;
     /*
         loop {
