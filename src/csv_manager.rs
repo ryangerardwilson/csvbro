@@ -404,21 +404,11 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
 
         let _ = handle_quit_flag(&choice);
 
-        //dbg!(&choice);
-
         let (action_type, action_feature, action_flag) =
             determine_action_type_feature_and_flag(&choice);
-        dbg!(&action_type, &action_feature, &action_flag);
 
         match action_type.as_str() {
             "1" => {
-                /*
-                if let Err(e) = handle_search(&mut builder, file_path_option).await {
-                    println!("Error during search: {}", e);
-                    continue;
-                }
-                */
-                dbg!(&action_type, &action_feature, &action_flag);
                 let copied_builder = CsvBuilder::from_copy(&builder);
                 let (new_builder, modified) = match handle_search(
                     copied_builder,
@@ -431,8 +421,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     Ok(result) => result,
                     Err(e) => {
                         println!("Error during search: {}", e);
-                        // Restore the original builder in case of error
-                        //            *builder = std::mem::replace(builder, CsvBuilder::new());
                         return;
                     }
                 };
@@ -456,14 +444,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 }
             }
             "2" => {
-                /*
-                if let Err(e) = handle_inspect(&mut builder, file_path_option) {
-                    println!("Error during inspection: {}", e);
-                    continue;
-                }
-                */
-
-                dbg!(&action_type, &action_feature, &action_flag);
                 let copied_builder = CsvBuilder::from_copy(&builder);
                 let _ = handle_inspect(
                     copied_builder,
@@ -472,29 +452,8 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     &action_flag,
                 )
                 .await;
-
-                /*
-                // Update the original builder with the new one
-                if modified {
-                    println!("The builder has been modified.");
-                    match apply_builder_changes_menu(
-                        new_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                } else {
-                    println!("The builder has not been modified.");
-                }
-                */
             }
             "3" => {
-                dbg!(&action_type, &action_feature, &action_flag);
                 let copied_builder = CsvBuilder::from_copy(&builder);
                 let (new_builder, modified) = match handle_tinker(
                     copied_builder,
@@ -507,8 +466,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     Ok(result) => result,
                     Err(e) => {
                         println!("Error during tinker: {}", e);
-                        // Restore the original builder in case of error
-                        //            *builder = std::mem::replace(builder, CsvBuilder::new());
                         return;
                     }
                 };
@@ -532,14 +489,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 }
             }
             "4" => {
-                /*
-                if let Err(e) = handle_transform(&mut builder, file_path_option).await {
-                    println!("Error during transform operation: {}", e);
-                    continue;
-                }
-                */
-
-                dbg!(&action_type, &action_feature, &action_flag);
                 let copied_builder = CsvBuilder::from_copy(&builder);
                 let (new_builder, modified) = match handle_transform(
                     copied_builder,
@@ -552,8 +501,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     Ok(result) => result,
                     Err(e) => {
                         println!("Error during search: {}", e);
-                        // Restore the original builder in case of error
-                        //            *builder = std::mem::replace(builder, CsvBuilder::new());
                         return;
                     }
                 };
@@ -576,14 +523,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 }
             }
             "5" => {
-                /*
-                if let Err(e) = handle_append(&mut builder, file_path_option).await {
-                    println!("Error during pivot operation: {}", e);
-                    continue;
-                }
-                */
-
-                dbg!(&action_type, &action_feature, &action_flag);
                 let copied_builder = CsvBuilder::from_copy(&builder);
                 let (new_builder, modified) = match handle_append(
                     copied_builder,
@@ -596,8 +535,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     Ok(result) => result,
                     Err(e) => {
                         println!("Error during search: {}", e);
-                        // Restore the original builder in case of error
-                        //            *builder = std::mem::replace(builder, CsvBuilder::new());
                         return;
                     }
                 };
@@ -620,14 +557,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 }
             }
             "6" => {
-                /*
-                if let Err(e) = handle_join(&mut builder, file_path_option) {
-                    println!("Error during join operation: {}", e);
-                    continue;
-                }
-                */
-
-                dbg!(&action_type, &action_feature, &action_flag);
                 let copied_builder = CsvBuilder::from_copy(&builder);
                 let (new_builder, modified) = match handle_join(
                     copied_builder,
@@ -640,8 +569,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     Ok(result) => result,
                     Err(e) => {
                         println!("Error during search: {}", e);
-                        // Restore the original builder in case of error
-                        //            *builder = std::mem::replace(builder, CsvBuilder::new());
                         return;
                     }
                 };
@@ -665,14 +592,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 }
             }
             "7" => {
-                /*
-                if let Err(e) = handle_predict(&mut builder, file_path_option).await {
-                    println!("Error during predict operation: {}", e);
-                    continue;
-                }
-                */
-
-                dbg!(&action_type, &action_feature, &action_flag);
                 let copied_builder = CsvBuilder::from_copy(&builder);
                 let (new_builder, modified) = match handle_predict(
                     copied_builder,
@@ -685,8 +604,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     Ok(result) => result,
                     Err(e) => {
                         println!("Error during search: {}", e);
-                        // Restore the original builder in case of error
-                        //            *builder = std::mem::replace(builder, CsvBuilder::new());
                         return;
                     }
                 };

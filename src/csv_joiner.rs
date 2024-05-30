@@ -10,60 +10,11 @@ use std::path::Path;
 use std::path::PathBuf;
 
 pub async fn handle_join(
-    /*
-        csv_builder: &mut CsvBuilder,
-        file_path_option: Option<&str>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        */
     mut csv_builder: CsvBuilder,
     _file_path_option: Option<&str>,
     action_feature: &str,
     action_flag: &str,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
-    /*
-    fn apply_filter_changes_menu(
-        csv_builder: &mut CsvBuilder,
-        prev_iteration_builder: &CsvBuilder,
-        original_csv_builder: &CsvBuilder,
-    ) -> Result<(), String> {
-        let menu_options = vec![
-            "Continue with filtered data",
-            "Discard this result, and load previous search result",
-            "Load original, to search from scratch",
-        ];
-        println!();
-        print_insight_level_2("Apply changes?");
-        print_list_level_2(&menu_options);
-
-        let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-        let selected_option = determine_action_as_number(&menu_options, &choice);
-
-        match selected_option {
-            Some(1) => {
-                print_insight_level_2("Continuing with filtered data");
-                csv_builder.print_table();
-                // Implement the logic for continuing with filtered data
-                Ok(())
-            }
-            Some(2) => {
-                print_insight_level_2("Discarding this result, and loading previous search result");
-                csv_builder
-                    .override_with(prev_iteration_builder)
-                    .print_table();
-                Ok(())
-            }
-            Some(3) => {
-                print_insight_level_2("Loading original data, for you to search from scratch");
-                csv_builder
-                    .override_with(original_csv_builder)
-                    .print_table();
-                Ok(())
-            }
-            _ => Err("Invalid option. Please enter a number from 1 to 3.".to_string()),
-        }
-    }
-    */
-
     fn get_csv_db_path() -> String {
         let home_dir = env::var("HOME").expect("Unable to determine user home directory");
         let desktop_path = Path::new(&home_dir).join("Desktop");
@@ -104,11 +55,6 @@ pub async fn handle_join(
                     "Punch in the serial number or a slice of the file name to LOAD: ",
                 )
                 .to_lowercase();
-                /*
-                if choice.to_lowercase() == "@cancel" {
-                    return None;
-                }
-                */
                 if handle_cancel_flag(&choice) {
                     return None;
                 }
@@ -164,41 +110,8 @@ pub async fn handle_join(
         }
     }
 
-    /*
-        let menu_options = vec![
-            "UNION",
-            "UNION (BAG)",
-            "UNION (LEFT JOIN/ OUTER LEFT JOIN)",
-            "UNION (RIGHT JOIN/ OUTER RIGHT JOIN)",
-            "UNION (OUTER FULL JOIN)",
-            "INTERSECTION",
-            "INTERSECTION (INNER JOIN)",
-            "DIFFERENCE",
-            "DIFFERENCE (SYMMETRIC)",
-        ];
-
-        let original_csv_builder = CsvBuilder::from_copy(csv_builder);
-
-        loop {
-
-            print_insight_level_2("Select an option to inspect CSV data:");
-            print_list_level_2(&menu_options);
-            let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-            if handle_special_flag(&choice, csv_builder, file_path_option) {
-                continue;
-            }
-
-            if handle_back_flag(&choice) {
-                break;
-            }
-            let _ = handle_quit_flag(&choice);
-
-            let selected_option = determine_action_as_number(&menu_options, &choice);
-    */
     let csv_db_path = get_csv_db_path();
     let csv_db_path_buf = PathBuf::from(csv_db_path);
-
-    //      let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
 
     match action_feature {
         "" => {
@@ -222,7 +135,6 @@ pub async fn handle_join(
 
         "1" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "1d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -320,7 +232,6 @@ Total rows: 5
 Total rows: 7
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -333,17 +244,8 @@ Total rows: 7
                     )
                     .to_lowercase();
 
-                /*
-                if join_at_choice.to_lowercase() == "@cancel" {
-                    //return None;
-                    return Ok(());
-                }
-                */
-
                 if handle_cancel_flag(&join_at_choice) {
-                    //continue;
                     return Ok((csv_builder, false));
-                    //return Ok(());
                 }
 
                 let column_names: Vec<&str> = join_at_choice.split(',').map(|s| s.trim()).collect();
@@ -357,26 +259,11 @@ Total rows: 7
                 sort_csv_by_id_if_needed(&mut csv_builder);
 
                 csv_builder.print_table();
-
-                /*
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-                */
             }
         }
 
         "2" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "2d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -436,7 +323,6 @@ What's it gonna be?: test2
 Total rows: 22
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -451,26 +337,11 @@ Total rows: 22
                 sort_csv_by_id_if_needed(&mut csv_builder);
 
                 csv_builder.print_table();
-
-                /*
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-                */
             }
         }
 
         "3" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "3d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -522,7 +393,6 @@ Total rows: 3
 Total rows: 10
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -535,20 +405,9 @@ Total rows: 10
                     )
                     .to_lowercase();
 
-                /*
-                if left_join_at_choice.to_lowercase() == "@cancel" {
-                    //return None;
-                    return Ok(());
-                }
-                */
-
                 if handle_cancel_flag(&left_join_at_choice) {
-                    //continue;
                     return Ok((csv_builder, false));
-                    //return Ok(());
                 }
-
-                //let union_type = format!("UNION_TYPE:LEFT_JOIN_AT_{}", left_join_at_choice);
 
                 let column_names: Vec<&str> =
                     left_join_at_choice.split(',').map(|s| s.trim()).collect();
@@ -561,26 +420,11 @@ Total rows: 10
                         column_names,
                     )
                     .print_table();
-
-                /*
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-                */
             }
         }
 
         "4" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "4d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -633,7 +477,6 @@ Total rows: 10
 Total rows: 10
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -646,20 +489,10 @@ Total rows: 10
                     )
                     .to_lowercase();
 
-                /*
-                if right_join_at_choice.to_lowercase() == "@cancel" {
-                    //return None;
-                    return Ok(());
-                }
-                */
-
                 if handle_cancel_flag(&right_join_at_choice) {
-                    //continue;
                     return Ok((csv_builder, false));
-                    //return Ok(());
                 }
 
-                //let union_type = format!("UNION_TYPE:RIGHT_JOIN_AT_{}", right_join_at_choice);
                 let column_names: Vec<&str> =
                     right_join_at_choice.split(',').map(|s| s.trim()).collect();
 
@@ -670,25 +503,11 @@ Total rows: 10
                         column_names,
                     )
                     .print_table();
-                /*
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-                */
             }
         }
 
         "5" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "5d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 An OUTER FULL JOIN between tables A and B combines the results of both a left join and a right join. This join type includes every row from both tables A and B. If a row from table A matches one from table B based on a join condition (typically a shared column), the joined table will include columns from both rows. If there is no match:
@@ -742,7 +561,6 @@ Total rows: 4
 Total rows: 11
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -761,17 +579,8 @@ Total rows: 11
         "Enter column names (comma separated, if multiple) to SET_OUTER_FULL_JOIN_UNION_WITH at: ",
     );
 
-                /*
-                if set_intersection_at_choice.to_lowercase() == "@cancel" {
-                    //return None;
-                    return Ok(());
-                }
-                */
-
                 if handle_cancel_flag(&set_intersection_at_choice) {
-                    //continue;
                     return Ok((csv_builder, false));
-                    //return Ok(());
                 }
 
                 // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
@@ -796,25 +605,11 @@ Total rows: 11
                         )
                         .print_table();
                 }
-                /*
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-                */
             }
         }
 
         "6" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "6d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -924,7 +719,6 @@ Total rows: 4
 Total rows: 3
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -943,17 +737,8 @@ Total rows: 3
         "Enter column names (comma separated, if multiple) to SET_INTERSECTION_WITH at: ",
     );
 
-                /*
-                if set_intersection_at_choice.to_lowercase() == "@cancel" {
-                    //return None;
-                    return Ok(());
-                }
-                */
-
                 if handle_cancel_flag(&set_intersection_at_choice) {
-                    //continue;
                     return Ok((csv_builder, false));
-                    //return Ok(());
                 }
 
                 // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
@@ -978,25 +763,11 @@ Total rows: 3
                         )
                         .print_table();
                 }
-                /*
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-                */
             }
         }
 
         "7" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "7d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1085,7 +856,6 @@ Total rows: 5
 Total rows: 3
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1105,9 +875,7 @@ Total rows: 3
     );
 
                 if handle_cancel_flag(&set_intersection_at_choice) {
-                    //continue;
                     return Ok((csv_builder, false));
-                    //return Ok(());
                 }
 
                 // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
@@ -1132,25 +900,11 @@ Total rows: 3
                         )
                         .print_table();
                 }
-                /*
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-                */
             }
         }
 
         "8" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "8d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1261,7 +1015,6 @@ Total rows: 2
 Total rows: 3
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1280,17 +1033,8 @@ Total rows: 3
                     "Enter column names (comma separated, if multiple) to SET_DIFFERENCE_WITH at: ",
                 );
 
-                /*
-                if set_intersection_at_choice.to_lowercase() == "@cancel" {
-                    //return None;
-                    return Ok(());
-                }
-                */
-
                 if handle_cancel_flag(&set_intersection_at_choice) {
-                    //continue;
                     return Ok((csv_builder, false));
-                    //return Ok(());
                 }
 
                 // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
@@ -1315,25 +1059,11 @@ Total rows: 3
                         )
                         .print_table();
                 }
-                /*
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-                */
             }
         }
 
         "9" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "9d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1455,7 +1185,6 @@ hase_day
 Total rows: 6
 "#,
                 );
-                // continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1474,16 +1203,8 @@ Total rows: 6
         "Enter column names (comma separated, if multiple) to SET_SYMMETRIC_DIFFERENCE_WITH at: ",
     );
 
-                /*
-                if set_intersection_at_choice.to_lowercase() == "@cancel" {
-                    //return None;
-                    return Ok(());
-                }
-                */
                 if handle_cancel_flag(&set_intersection_at_choice) {
-                    //continue;
                     return Ok((csv_builder, false));
-                    //return Ok(());
                 }
 
                 // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
@@ -1509,33 +1230,15 @@ Total rows: 6
                         )
                         .print_table();
                 }
-
-                /*
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-                */
             }
         }
 
         _ => {
             println!("Invalid option. Please enter a number from 1 to 9.");
-            //continue; // Ask for the choice again
             return Ok((csv_builder, false));
         }
     }
 
-    println!(); // Print a new line for better readability
-                //    }
-
-    //Ok(())
+    println!();
     return Ok((csv_builder, true));
 }

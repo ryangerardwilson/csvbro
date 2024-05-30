@@ -366,8 +366,6 @@ DIRECTIVES SYNTAX
                     if let Err(e) = query_execution_result {
                         println!("Failed to execute query: {}", e);
 
-                        //let menu_options =
-                        //  vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
                         print_list(&special_confirmations);
                         //print_list(&menu_options);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -550,8 +548,6 @@ DIRECTIVES SYNTAX
                     if let Err(e) = query_execution_result {
                         println!("Failed to execute query: {}", e);
 
-                        //let menu_options =
-                        //   vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
                         print_list(&special_confirmations);
                         //print_list(&menu_options);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -733,8 +729,6 @@ DIRECTIVES SYNTAX
                     if let Err(e) = query_execution_result {
                         println!("Failed to execute query: {}", e);
 
-                        //let menu_options =
-                        //  vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
                         print_list(&special_confirmations);
                         //print_list(&menu_options);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
@@ -916,9 +910,6 @@ DIRECTIVES SYNTAX
                     if let Err(e) = query_execution_result {
                         println!("Failed to execute query: {}", e);
 
-                        //let menu_options =
-                        //  vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
-
                         print_list(&special_confirmations);
                         let choice = get_user_input("Enter your choice: ").to_lowercase();
                         confirmation = choice.clone();
@@ -956,8 +947,6 @@ DIRECTIVES SYNTAX
 
         println!();
 
-        //let menu_options = vec!["TINKER", "SEARCH", "INSPECT", "JOIN", "GROUP", "PIVOT"];
-
         print_list(&special_confirmations);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
 
@@ -979,175 +968,5 @@ DIRECTIVES SYNTAX
 
         let csv_builder_copy = CsvBuilder::from_copy(&csv_builder);
         chain_builder(csv_builder_copy, None).await;
-        //confirmation = "@r".to_string();
-        //continue;
-
-        /*
-                if handle_query_special_flag(&choice, &mut csv_builder) {
-                    //continue;
-                    break Ok(CsvBuilder::new());
-                }
-
-                if handle_back_flag(&choice) {
-                    //break;
-                    break Ok(CsvBuilder::new());
-                }
-                let _ = handle_quit_flag(&choice);
-
-                if handle_query_retry_flag(&choice) {
-                    confirmation = "@r".to_string();
-                    continue;
-                }
-
-
-
-
-                //let selected_option = determine_action_as_text(&special_confirmations, &choice);
-
-
-                //confirmation = selected_option.clone().expect("REASON");
-
-                    let (action_type, action_feature, action_flag) =
-                        determine_action_type_feature_and_flag(&choice);
-                    dbg!(&action_type, &action_feature, &action_flag);
-
-                    match action_type.as_str() {
-                        "1" => {
-                            if let Err(e) = handle_search(&mut csv_builder, None).await {
-                                println!("Error during search: {}", e);
-                                continue;
-                            }
-                        }
-                        "2" => {
-                            if let Err(e) = handle_inspect(&mut csv_builder, None) {
-                                println!("Error during inspection: {}", e);
-                                continue;
-                            }
-                        }
-                        "3" => {
-                            dbg!(&action_type, &action_feature, &action_flag);
-                            let copied_builder = CsvBuilder::from_copy(&csv_builder);
-                            let (new_builder, modified) = match handle_tinker(
-                                copied_builder,
-                                None,
-                                &action_feature,
-                                &action_flag,
-                            )
-                            .await
-                            {
-                                Ok(result) => result,
-                                Err(e) => {
-                                    println!("Error during tinker: {}", e);
-                                    // Restore the original builder in case of error
-                                    //            *builder = std::mem::replace(builder, CsvBuilder::new());
-                                    return;
-                                }
-                            };
-
-                            // Update the original builder with the new one
-                            //builder = new_builder;
-                            if modified {
-                                println!("The builder has been modified.");
-                                match apply_builder_changes_menu(
-                                    new_builder,
-                                    &prev_iteration_builder,
-                                    &original_csv_builder,
-                                ) {
-                                    Ok(_) => (),
-                                    Err(e) => {
-                                        println!("{}", e);
-                                        continue; // Ask for the choice again if there was an error
-                                    }
-                                }
-                            } else {
-                                println!("The builder has not been modified.");
-                            }
-
-                        }
-                        "4" => {
-                            if let Err(e) = handle_transform(&mut builder, file_path_option).await {
-                                println!("Error during transform operation: {}", e);
-                                continue;
-                            }
-                        }
-                        "5" => {
-                            if let Err(e) = handle_append(&mut builder, file_path_option).await {
-                                println!("Error during pivot operation: {}", e);
-                                continue;
-                            }
-                        }
-                        "6" => {
-                            if let Err(e) = handle_join(&mut builder, file_path_option) {
-                                println!("Error during join operation: {}", e);
-                                continue;
-                            }
-                        }
-                        "7" => {
-                            if let Err(e) = handle_predict(&mut builder, file_path_option).await {
-                                println!("Error during predict operation: {}", e);
-                                continue;
-                            }
-                        }
-
-                        _ => println!("Unknown Action Type: {}", action_type),
-                    }
-        */
-
-        /*
-        match selected_option {
-
-            Some(ref action) if action == "TINKER" => {
-                if let Err(e) = handle_tinker(&mut csv_builder, None, "1", "d").await {
-                    println!("Error during tinker: {}", e);
-                    continue;
-                }
-            }
-
-            Some(ref action) if action == "SEARCH" => {
-                if let Err(e) = handle_search(&mut csv_builder, None).await {
-                    println!("Error during search: {}", e);
-                    continue;
-                }
-            }
-
-            Some(ref action) if action == "INSPECT" => {
-                if let Err(e) = handle_inspect(&mut csv_builder, None) {
-                    println!("Error during inspection: {}", e);
-                    continue;
-                }
-            }
-
-            Some(ref action) if action == "APPEND" => {
-                if let Err(e) = handle_append(&mut csv_builder, None).await {
-                    println!("Error during pivot operation: {}", e);
-                    continue;
-                }
-            }
-
-            Some(ref action) if action == "JOIN" => {
-                if let Err(e) = handle_join(&mut csv_builder, None) {
-                    println!("Error during join operation: {}", e);
-                    continue;
-                }
-            }
-
-            Some(ref action) if action == "TRANSFORM" => {
-                if let Err(e) = handle_transform(&mut csv_builder, None).await {
-                    println!("Error during group operation: {}", e);
-                    continue;
-                }
-            }
-
-            Some(ref action) if action == "PREDICT" => {
-                if let Err(e) = handle_predict(&mut csv_builder, None).await {
-                    println!("Error during group operation: {}", e);
-                    continue;
-                }
-            }
-
-            None => todo!(),
-            Some(_) => todo!(),
-        }
-        */
     }
 }

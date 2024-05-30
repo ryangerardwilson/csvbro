@@ -244,49 +244,6 @@ SYNTAX
         Ok((expression_names, result_expression))
     }
 
-    /*
-    fn apply_filter_changes_menu(
-        csv_builder: &mut CsvBuilder,
-        prev_iteration_builder: &CsvBuilder,
-        original_csv_builder: &CsvBuilder,
-    ) -> Result<(), String> {
-        let menu_options = vec![
-            "Continue with tinkered data",
-            "Discard this result, and load previous state",
-            "Load original, to search from scratch",
-        ];
-        print_insight_level_2("Apply changes?");
-        print_list_level_2(&menu_options);
-
-        let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-        let selected_option = determine_action_as_number(&menu_options, &choice);
-
-        match selected_option {
-            Some(1) => {
-                print_insight_level_2("Continuing with tinkered data");
-                csv_builder.print_table();
-                // Implement the logic for continuing with filtered data
-                Ok(())
-            }
-            Some(2) => {
-                print_insight_level_2("Discarding this result, and loading previous state");
-                csv_builder
-                    .override_with(prev_iteration_builder)
-                    .print_table();
-                Ok(())
-            }
-            Some(3) => {
-                print_insight_level_2("Loading original data, for you to start from scratch");
-                csv_builder
-                    .override_with(original_csv_builder)
-                    .print_table();
-                Ok(())
-            }
-            _ => Err("Invalid option. Please enter a number from 1 to 3.".to_string()),
-        }
-    }
-    */
-
     fn apply_limit(csv_builder: &mut CsvBuilder) -> Result<(), String> {
         let syntax = r#"{
   "limit_value": "",
@@ -383,53 +340,6 @@ Note the implications of the limit_type value:
         Ok(())
     }
 
-    //let mut is_modified = false;
-
-    /*
-    let menu_options = vec![
-        "SET HEADERS",
-        "UPDATE HEADERS",
-        "ADD ROWS",
-        "UPDATE ROW",
-        "EDIT TABLE (ASC)",
-        "EDIT TABLE (DESC)",
-        "DELETE ROWS",
-        "FILTER ROWS",
-        "LIMIT ROWS",
-        "ADD COLUMNS",
-        "DROP COLUMNS",
-        "RETAIN COLUMNS",
-        "REORDER COLUMNS",
-        "SET INDEX COLUMN",
-        "CASCADE SORT",
-        "CLEAN DATA BY COLUMN PARSE",
-    ];
-    */
-
-    //let original_csv_builder = CsvBuilder::from_copy(&csv_builder);
-    //let choice = doc_request_flag;
-    /*
-        loop {
-            print_insight_level_2("Select an option to search CSV data: ");
-            print_list_level_2(&menu_options);
-
-            let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-
-            if handle_special_flag(&choice, csv_builder, file_path_option) {
-                continue;
-            }
-
-            if handle_back_flag(&choice) {
-                break;
-            }
-            let _ = handle_quit_flag(&choice);
-
-            let selected_option = determine_action_as_number(&menu_options, &choice);
-
-            let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
-
-            match selected_option {
-    */
     match action_feature {
         "" => {
             print_insight_level_2("Here's the TINKER feature menu ... ");
@@ -472,9 +382,6 @@ Sets header values for an empty csv.
 Total rows: 0
 "#,
                 );
-                //Ok(())
-                //return Ok(());
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -494,16 +401,13 @@ Total rows: 0
             let edited_json = get_edited_user_json_input(headers_json_str);
 
             if handle_cancel_flag(&edited_json) {
-                //Ok(())
                 return Ok((csv_builder, false));
-                //continue;
             }
 
             let edited_headers: serde_json::Value = match serde_json::from_str(&edited_json) {
                 Ok(headers) => headers,
                 Err(e) => {
                     eprintln!("Error parsing JSON string: {}", e);
-                    //return;
                     return Err("An error occurred".to_string().into());
                 }
             };
@@ -520,7 +424,6 @@ Total rows: 0
                     .collect::<Vec<String>>(),
                 None => {
                     eprintln!("Invalid format for new headers");
-                    //return;
                     return Err("An error occurred".to_string().into());
                 }
             };
@@ -532,25 +435,10 @@ Total rows: 0
                 csv_builder.print_table();
                 println!();
             }
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "2" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "2d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -583,9 +471,6 @@ Updates header values.
 Total rows: 5
 "#,
                 );
-                //continue;
-                //Ok(())
-                //return Ok(());
                 return Ok((csv_builder, false));
             }
 
@@ -600,7 +485,6 @@ Total rows: 5
                 Ok(json) => json,
                 Err(e) => {
                     eprintln!("Error creating JSON string: {}", e);
-                    //return;
                     return Err("An error occurred".to_string().into());
                 }
             };
@@ -608,9 +492,6 @@ Total rows: 5
             let edited_json = get_edited_user_json_input(headers_json_str);
             //dbg!(&edited_json);
             if handle_cancel_flag(&edited_json) {
-                //continue;
-                //Ok(())
-                //return Ok(());
                 return Ok((csv_builder, false));
             }
 
@@ -618,7 +499,6 @@ Total rows: 5
                 Ok(headers) => headers,
                 Err(e) => {
                     eprintln!("Error parsing JSON string: {}", e);
-                    //return;
                     return Err("An error occurred".to_string().into());
                 }
             };
@@ -635,7 +515,6 @@ Total rows: 5
                     .collect::<Vec<String>>(),
                 None => {
                     eprintln!("Invalid format for new headers");
-                    //return;
                     return Err("An error occurred".to_string().into());
                 }
             };
@@ -652,25 +531,10 @@ Total rows: 5
                 csv_builder.print_table();
                 println!();
             }
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "3" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "3d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -695,9 +559,6 @@ Adds rows.
 Total rows: 6
 "#,
                 );
-                //continue;
-                //Ok(())
-                //return Ok(());
                 return Ok((csv_builder, false));
             }
 
@@ -748,9 +609,6 @@ SYNTAX
                 let rows_json_str = get_edited_user_json_input(full_syntax);
                 //dbg!(&rows_json_str);
                 if handle_cancel_flag(&rows_json_str) {
-                    //continue;
-                    //Ok(())
-                    //return Ok(());
                     return Ok((csv_builder, false));
                 }
 
@@ -816,29 +674,13 @@ SYNTAX
                 csv_builder.add_rows(rows_as_str_slices);
                 csv_builder.print_table();
                 println!();
-                //continue;
             } else {
                 print_insight_level_2("No headers set. Cannot add rows.");
             }
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "4" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "4d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -874,15 +716,11 @@ Total rows: 6
 Total rows: 6
 "#,
                 );
-                //Ok(())
-                // return Ok(());
-                //continue;
                 return Ok((csv_builder, false));
             }
 
             if !csv_builder.has_data() {
                 eprintln!("No data available to update.");
-                //return;
                 return Err("An error occurred".to_string().into());
             }
 
@@ -911,7 +749,6 @@ Total rows: 6
                     original_id = id.to_string();
                 } else {
                     eprintln!("ID not found.");
-                    //return;
                     return Err("An error occurred".to_string().into());
                 }
             } else {
@@ -921,7 +758,6 @@ Total rows: 6
                     Ok(num) => num,
                     Err(_) => {
                         eprintln!("Invalid input for row index.");
-                        //return;
                         return Err("An error occurred".to_string().into());
                     }
                 };
@@ -931,7 +767,6 @@ Total rows: 6
 
             if zero_based_index >= csv_builder.get_data().unwrap().len() {
                 eprintln!("Row index out of range.");
-                //return;
                 return Err("An error occurred".to_string().into());
             }
 
@@ -960,9 +795,6 @@ Total rows: 6
                     let edited_json = get_edited_user_sql_input(row_json_str);
 
                     if handle_cancel_flag(&edited_json) {
-                        //continue;
-                        //Ok(())
-                        //return Ok(());
                         return Ok((csv_builder, false));
                     }
 
@@ -1014,24 +846,9 @@ Total rows: 6
 
             csv_builder.print_table();
             println!();
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
         "5" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "5d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1077,9 +894,6 @@ Total rows: 3
 Total rows: 3
 "#,
                 );
-                //continue;
-                //Ok(())
-                //return Ok(());
                 return Ok((csv_builder, false));
             }
 
@@ -1097,14 +911,6 @@ Total rows: 3
             if existing_data_option == None {
                 // Handle case when there is no data
                 json_array_str.push_str("\n  {");
-                /*
-                for (col_index, header) in existing_headers.iter().enumerate() {
-                    json_array_str.push_str(&format!("\n    \"{}\": \"\"", header));
-                    if col_index < existing_headers.len() - 1 {
-                        json_array_str.push(',');
-                    }
-                }
-                */
                 for (col_index, header) in existing_headers.iter().enumerate() {
                     json_array_str.push_str(&format!("\n    \"{}\": \"\"", header));
                     if col_index < existing_headers.len() - 1 {
@@ -1164,9 +970,6 @@ SYNTAX
             let rows_json_str = get_edited_user_json_input(full_syntax);
 
             if handle_cancel_flag(&rows_json_str) {
-                //continue;
-                //Ok(())
-                //return Ok(());
                 return Ok((csv_builder, false));
             }
 
@@ -1228,24 +1031,10 @@ SYNTAX
             csv_builder.print_table();
 
             println!();
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "6" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "6d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1291,9 +1080,6 @@ Total rows: 3
 Total rows: 3
 "#,
                 );
-                //continue;
-                //Ok(())
-                //return Ok(());
                 return Ok((csv_builder, false));
             }
 
@@ -1371,9 +1157,6 @@ SYNTAX
             let rows_json_str = get_edited_user_json_input(full_syntax);
 
             if handle_cancel_flag(&rows_json_str) {
-                //continue;
-                //Ok(())
-                //return Ok(());
                 return Ok((csv_builder, false));
             }
 
@@ -1435,19 +1218,6 @@ SYNTAX
 
             csv_builder.print_table();
             println!();
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "7" => {
@@ -1477,15 +1247,11 @@ Total rows: 5
 Total rows: 3
 "#,
                 );
-                //continue;
-                //Ok(())
-                //return Ok(());
                 return Ok((csv_builder, false));
             }
 
             if !csv_builder.has_data() {
                 eprintln!("No data available for deletion.");
-                //return;
                 return Err("An error occurred".to_string().into());
             }
 
@@ -1502,9 +1268,6 @@ Total rows: 3
             );
 
             if handle_cancel_flag(&row_identifiers_str) {
-                //continue;
-                //Ok(())
-                // return Ok(());
                 return Ok((csv_builder, false));
             }
 
@@ -1530,7 +1293,6 @@ Total rows: 3
 
                 if row_indices.is_empty() {
                     eprintln!("No valid indices provided.");
-                    //return;
                     return Err("An error occurred".to_string().into());
                 }
 
@@ -1554,25 +1316,10 @@ Total rows: 3
             // Print updated table
             csv_builder.print_table();
             println!();
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue;
-                }
-            }
-            */
         }
 
         "8" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "8d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1626,15 +1373,11 @@ Total rows: 10
 Total rows: 4
 "#,
                 );
-                //continue;
-                //Ok(())
-                //return Ok(());
                 return Ok((csv_builder, false));
             }
 
             if !csv_builder.has_data() {
                 eprintln!("No data available for deletion.");
-                //return;
                 return Err("An error occurred".to_string().into());
             }
 
@@ -1654,39 +1397,19 @@ Total rows: 4
 
                     csv_builder.print_table();
                     println!();
-                    /*
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                    */
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
-                    //Ok(())
-                    //return Ok(());
-                    //continue;
                     return Ok((csv_builder, false));
                 }
                 Err(e) => {
                     println!("Error getting filter expressions: {}", e);
-                    //Ok(())
-                    //return Ok(());
                     return Ok((csv_builder, false));
-                    //continue; // Return to the menu to let the user try again or choose another option
                 }
             }
         }
 
         "9" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "9d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1776,53 +1499,13 @@ Note the implications of the limit_type value:
 4. COLUMN_DISTRIBUTION: Balances the sample based on the distribution of values within a specified column, aiming to maintain proportional representation across different categories or values.
 "#,
                 );
-                //continue;
-                //Ok(())
-                //return Ok(());
                 return Ok((csv_builder, false));
             }
 
             if !csv_builder.has_data() {
                 eprintln!("No data available for deletion.");
-                //return;
                 return Err("An error occurred".to_string().into());
             }
-
-            /*
-            match apply_limit(&mut csv_builder) {
-                Ok(_) => {
-                    csv_builder.print_table();
-                    println!();
-                    /*
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                    */
-                }
-                Err(e) if e.to_string() == "Operation canceled" => {
-                    // If the operation was canceled by the user, do not print an error and just continue
-                    //continue;
-                    //Ok(())
-                    //return Ok(());
-                    return Ok((csv_builder, false));
-                }
-                Err(e) => {
-                    println!("Error getting limit expressions: {}", e);
-                    //continue; // Return to the menu to let the user try again or choose another option
-                    //Ok(())
-                    //return Ok(());
-                    return Ok((csv_builder, false));
-                }
-            }
-            */
 
             match apply_limit(&mut csv_builder) {
                 Ok(_) => {
@@ -1837,14 +1520,10 @@ Note the implications of the limit_type value:
                     return Ok((csv_builder, false));
                 }
             };
-
-            // Use the transformed CsvBuilder
-            //Ok((transformed_csv_builder, false))
         }
 
         "10" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "10d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1892,23 +1571,16 @@ Total rows: 3
 Total rows: 3
 "#,
                 );
-                //continue;
-                //Ok(())
-                // return Ok(());
                 return Ok((csv_builder, false));
             }
 
             let new_columns_input = get_user_input_level_2("Enter new column names: ");
 
             if handle_cancel_flag(&new_columns_input) {
-                //continue;
-                //Ok(())
-                //return Ok(());
                 return Ok((csv_builder, false));
             }
 
             println!();
-            //let new_columns: Vec<&str> = new_columns_input.trim().split(',').collect();
 
             let new_columns: Vec<String> = new_columns_input
                 .trim() // Trim the whole input to remove leading/trailing whitespace around the input
@@ -1979,9 +1651,6 @@ SYNTAX
                 let rows_json_str = get_edited_user_json_input(full_syntax);
 
                 if handle_cancel_flag(&rows_json_str) {
-                    //continue;
-                    //Ok(())
-                    // return Ok(());
                     return Ok((csv_builder, false));
                 }
 
@@ -1998,9 +1667,6 @@ SYNTAX
 
                 // Now call add_column_headers with the corrected type
                 csv_builder.add_column_headers(new_columns_str_slices);
-
-                // Add new column headers
-                //builder.add_column_headers(new_columns.clone());
 
                 for (row_index, row_json) in rows_json.iter().enumerate() {
                     // Collect new and existing values for the current row
@@ -2030,25 +1696,10 @@ SYNTAX
             } else {
                 println!("No columns entered. Exiting ADD COLUMNS function.");
             }
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue;
-                }
-            }
-            */
         }
 
         "11" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "11d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -2070,9 +1721,6 @@ Total rows: 3
 Total rows: 3
 "#,
                 );
-                //continue;
-                //Ok(())
-                // return Ok(());
                 return Ok((csv_builder, false));
             }
 
@@ -2080,33 +1728,15 @@ Total rows: 3
                 get_user_input_level_2("Please type a comma-separated list of columns: ");
 
             if handle_cancel_flag(&columns_input) {
-                //continue;
-                //Ok(())
-                // return Ok(());
                 return Ok((csv_builder, false));
             }
 
             let columns: Vec<&str> = columns_input.trim().split(',').map(|s| s.trim()).collect();
 
             csv_builder.drop_columns(columns).print_table();
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
         "12" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "12d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -2132,9 +1762,6 @@ Total rows: 5
 Total rows: 5
 "#,
                 );
-                //continue;
-                //Ok(())
-                // return Ok(());
                 return Ok((csv_builder, false));
             }
 
@@ -2142,34 +1769,16 @@ Total rows: 5
                 get_user_input_level_2("Please type a comma-separated list of columns: ");
 
             if handle_cancel_flag(&columns_input) {
-                //continue;
-                //Ok(())
-                // return Ok(());
                 return Ok((csv_builder, false));
             }
 
             let columns: Vec<&str> = columns_input.trim().split(',').map(|s| s.trim()).collect();
 
             csv_builder.retain_columns(columns).print_table();
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "13" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "13d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -2241,23 +1850,12 @@ Total rows: 11
 Total rows: 11
 "#,
                 );
-                //continue;
-                //Ok(())
-                // return Ok(());
                 return Ok((csv_builder, false));
             }
 
             let new_columns_order_input =
                 get_user_input_level_2("Specify new column order: ").to_lowercase();
-            /*
-            if new_columns_order_input.to_lowercase() == "@cancel" {
-                continue;
-            }
-            */
             if handle_cancel_flag(&new_columns_order_input) {
-                //continue;
-                //Ok(())
-                // return Ok(());
                 return Ok((csv_builder, false));
             }
 
@@ -2268,25 +1866,10 @@ Total rows: 11
 
             // To be updated
             csv_builder.order_columns(new_columns_order).print_table();
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "14" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "14d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -2348,22 +1931,11 @@ Omitted columns: type
 Total rows: 10
 "#,
                 );
-                //continue;
-                //Ok(())
-                // return Ok(());
                 return Ok((csv_builder, false));
             }
 
             let id_column_name = get_user_input_level_2("Name of id column: ").to_lowercase();
-            /*
-            if id_column_name.to_lowercase() == "@cancel" {
-                continue;
-            }
-            */
             if handle_cancel_flag(&id_column_name) {
-                //continue;
-                //Ok(())
-                // return Ok(());
                 return Ok((csv_builder, false));
             }
 
@@ -2382,42 +1954,19 @@ Total rows: 10
                 let _ = csv_builder.add_column_header(&id_column_name);
             }
 
-            //dbg!(&csv_builder);
-
             let _ = csv_builder.resequence_id_column(&id_column_name);
 
-            //dbg!(&csv_builder);
             if add_new_column_header {
                 let _ = csv_builder.cascade_sort(vec![(id_column_name.clone(), "ASC".to_string())]);
             }
 
-            //dbg!(&csv_builder);
-
             csv_builder
                 .order_columns(vec![&id_column_name, "..."])
                 .print_table();
-
-            //dbg!(&csv_builder);
-
-            //    csv_builder.print_table();
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "15" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "15d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -2465,9 +2014,6 @@ Total rows: 10
 Total rows: 10
 "#,
                 );
-                //continue;
-                //Ok(())
-                // return Ok(());
                 return Ok((csv_builder, false));
             }
 
@@ -2496,9 +2042,6 @@ SYNTAX
             //dbg!(&sort_json);
 
             if handle_cancel_flag(&sort_json) {
-                //continue;
-                //Ok(())
-                // return Ok(());
                 return Ok((csv_builder, false));
             }
 
@@ -2509,10 +2052,7 @@ SYNTAX
                     Ok(config) => config,
                     Err(e) => {
                         eprintln!("Error parsing JSON: {}", e);
-                        //Ok(())
-                        // return Ok(());
                         return Ok((csv_builder, false));
-                        //continue; // Exit the function early if there's an error
                     }
                 };
 
@@ -2536,26 +2076,10 @@ SYNTAX
                 csv_builder.print_table();
                 println!();
             }
-
-            //    csv_builder.print_table();
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "16" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "16d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -2579,9 +2103,6 @@ SYNTAX
 - "IS_DATETIME_PARSEABLE"
 "#,
                 );
-                //continue;
-                //Ok(())
-                //return Ok(());
                 return Ok((csv_builder, false));
             }
 
@@ -2636,9 +2157,6 @@ SYNTAX
                 let rows_json_str = get_edited_user_json_input(full_syntax);
                 //dbg!(&rows_json_str);
                 if handle_cancel_flag(&rows_json_str) {
-                    //continue;
-                    //Ok(())
-                    //return Ok(());
                     return Ok((csv_builder, false));
                 }
 
@@ -2681,35 +2199,14 @@ SYNTAX
                     csv_builder.print_table();
                     println!();
                 }
-
-                //    csv_builder.print_table();
-                /*
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-                */
             }
         }
 
         _ => {
             println!("Invalid option. Please enter a number from 1 to 16.");
-            //continue;
-            //Ok(())
-            //return Ok(());
             return Ok((csv_builder, false));
-        } //        }
-
-          //println!();
+        }
     }
 
-    //Ok(())
     return Ok((csv_builder, true));
 }

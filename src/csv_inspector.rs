@@ -50,16 +50,11 @@ impl ExpStore {
 }
 
 pub async fn handle_inspect(
-    /*
-    csv_builder: &mut CsvBuilder,
-    file_path_option: Option<&str>,
-    */
     mut csv_builder: CsvBuilder,
     _file_path_option: Option<&str>,
     action_feature: &str,
     action_flag: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    //pub async fn handle_inspect(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
     fn get_filter_expressions(
         data_store: &mut ExpStore,
     ) -> Result<(Vec<(String, usize)>, String), Box<dyn std::error::Error>> {
@@ -246,47 +241,6 @@ SYNTAX
         Ok((expression_names, result_expression))
     }
 
-    /*
-    let menu_options = vec![
-        "PRINT FIRST ROW",
-        "PRINT LAST ROW",
-        "PRINT ROWS (JSON)",
-        "PRINT ALL ROWS (JSON)",
-        "PRINT ALL ROWS (TABULATED)",
-        "PRINT CLEANLINESS REPORT",
-        "PRINT ROWS WHERE",
-        "PRINT NUMERICAL ANALYSIS",
-        "PRINT FREQ OF MULTIPLE COLUMN VALUES (LINEAR)",
-        "PRINT FREQ OF MULTIPLE COLUMN VALUES (CASCADING)",
-        "PRINT UNIQUE COLUMN VALUES",
-        "PRINT STATS OF UNIQUE VALUE FREQ",
-        "PRINT COUNT WHERE",
-        "PRINT DOT CHART (NORMAL)",
-        "PRINT DOT CHART (CUMULATIVE)",
-        "PRINT SMOOTH LINE CHART (NORMAL)",
-        "PRINT SMOOTH LINE CHART (CUMULATIVE)",
-    ];
-    */
-
-    //    loop {
-    /*
-    print_insight_level_2("Select an option to inspect CSV data:");
-    print_list_level_2(&menu_options);
-
-    let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-    if handle_special_flag(&choice, csv_builder, file_path_option) {
-        continue;
-    }
-
-    if handle_back_flag(&choice) {
-        break;
-    }
-    let _ = handle_quit_flag(&choice);
-
-    let selected_option = determine_action_as_number(&menu_options, &choice);
-    */
-
-    //match selected_option {
     match action_feature {
         "" => {
             print_insight_level_2("Here's the INSPECT feature menu ... ");
@@ -311,14 +265,11 @@ SYNTAX
             ];
 
             print_list_level_2(&menu_options);
-
-            //return Ok((csv_builder, false));
             return Ok(());
         }
 
         "1" => {
             if action_flag == "d" {
-                //   if choice.to_lowercase() == "1d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -349,8 +300,6 @@ First row:
 }
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -358,7 +307,6 @@ First row:
         }
         "2" => {
             if action_flag == "d" {
-                //    if choice.to_lowercase() == "2d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -389,8 +337,6 @@ Last row:
 }
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -398,7 +344,6 @@ Last row:
         }
         "3" => {
             if action_flag == "d" {
-                //    if choice.to_lowercase() == "3d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -452,16 +397,12 @@ Row 4:
 }
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
             let start_str = get_user_input_level_2("Enter the start row number: ");
 
             if handle_cancel_flag(&start_str) {
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -472,8 +413,6 @@ Row 4:
             let end_str = get_user_input_level_2("Enter the end row number: ");
 
             if handle_cancel_flag(&end_str) {
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -486,7 +425,6 @@ Row 4:
 
         "4" => {
             if action_flag == "d" {
-                // if choice.to_lowercase() == "4d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -542,8 +480,6 @@ Row 10:
 Total rows: 10
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -592,8 +528,6 @@ Total rows: 12
 Total rows: 12
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -605,7 +539,6 @@ Total rows: 12
 
         "6" => {
             if action_flag == "d" {
-                // if choice.to_lowercase() == "6d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -629,8 +562,6 @@ Total rows: 12
 - "IS_DATETIME_PARSEABLE"
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -684,8 +615,6 @@ SYNTAX
                 let rows_json_str = get_edited_user_json_input(full_syntax);
                 //dbg!(&rows_json_str);
                 if handle_cancel_flag(&rows_json_str) {
-                    //continue;
-                    //return Ok((csv_builder, false));
                     return Ok(());
                 }
 
@@ -807,8 +736,6 @@ Row number: 8
 Total rows printed: 4
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -827,22 +754,16 @@ Total rows printed: 4
                     csv_builder.print_rows_where(expressions_refs, &result_expression);
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
-                    // If the operation was canceled by the user, do not print an error and just continue
-                    //continue;
-                    //return Ok((csv_builder, false));
                     return Ok(());
                 }
                 Err(e) => {
                     println!("Error getting filter expressions: {}", e);
-                    //continue; // Return to the menu to let the user try again or choose another option
-                    //return Ok((csv_builder, false));
                     return Ok(());
                 }
             }
         }
         "8" => {
             if action_flag == "d" {
-                //  if choice.to_lowercase() == "8d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -894,16 +815,12 @@ Analysis for column 'gst':
   - Sum of Squared Deviations (Total of Each Value's Difference from the Mean, Squared): Think of it like the total jumps needed to reach different distances in hopscotch. A large total means some jumps were really big. A small total means the jumps were mostly the same, easy hops. The sum of squared deviations (SSD), or sum of squares, measures the total variability in a dataset. However, it isn't interpreted directly because its value depends on the number of data points, making comparisons challenging across different datasets. Instead, it is often used as an intermediate calculation for other metrics like variance or standard deviation. 
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
             let column_names = get_user_input_level_2("Enter column names separated by commas: ");
 
             if handle_cancel_flag(&column_names) {
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -914,7 +831,6 @@ Analysis for column 'gst':
 
         "9" => {
             if action_flag == "d" {
-                // if choice.to_lowercase() == "9d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -952,16 +868,12 @@ Frequency for column 'interest':
   9.4: f = 1 (10%)
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
             let column_names = get_user_input_level_2("Enter column names separated by commas: ");
 
             if handle_cancel_flag(&column_names) {
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -970,7 +882,6 @@ Frequency for column 'interest':
         }
         "10" => {
             if action_flag == "d" {
-                // if choice.to_lowercase() == "10d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1030,16 +941,12 @@ Frequency for column 'type':
           420: f = 1 (100.00%)
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
             let column_names = get_user_input_level_2("Enter column names separated by commas: ");
 
             if handle_cancel_flag(&column_names) {
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -1050,7 +957,6 @@ Frequency for column 'type':
 
         "11" => {
             if action_flag == "d" {
-                // if choice.to_lowercase() == "11d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1074,15 +980,11 @@ Total rows: 12
 Unique values in 'value': 200, 1000, 20000, 1500, 2000, 300, 1100
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
             let column_name = get_user_input_level_2("Enter the column name: ");
             if handle_cancel_flag(&column_name) {
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -1091,7 +993,6 @@ Unique values in 'value': 200, 1000, 20000, 1500, 2000, 300, 1100
 
         "12" => {
             if action_flag == "d" {
-                // if choice.to_lowercase() == "12d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1125,16 +1026,12 @@ Statistics for column 'interest':
   Median frequency of the unique values: 1.00
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
             let column_names = get_user_input_level_2("Enter column names separated by commas: ");
 
             if handle_cancel_flag(&column_names) {
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -1142,10 +1039,8 @@ Statistics for column 'interest':
             csv_builder.print_unique_values_stats(columns);
         }
 
-        // In your handle_inspect method
         "13" => {
             if action_flag == "d" {
-                // if choice.to_lowercase() == "13d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1184,8 +1079,6 @@ Total rows: 12
 Count: 7
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -1203,23 +1096,17 @@ Count: 7
                     csv_builder.print_count_where(expressions_refs, &result_expression);
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
-                    // If the operation was canceled by the user, do not print an error and just continue
-                    //continue;
-                    //return Ok((csv_builder, false));
                     return Ok(());
                 }
 
                 Err(e) => {
                     println!("Error getting filter expressions: {}", e);
-                    //continue; // Return to the menu to let the user try again or choose another option
-                    //return Ok((csv_builder, false));
                     return Ok(());
                 }
             }
         }
         "14" => {
             if action_flag == "d" {
-                // if choice.to_lowercase() == "14d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1275,8 +1162,6 @@ Total rows: 10
   Y-Axis Median: 370.00
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -1284,15 +1169,7 @@ Total rows: 10
                 "Enter the x-axis and y-axis column names (comma separated): ",
             );
 
-            /*
-            if column_names.to_lowercase() == "@cancel" {
-                continue;
-            }
-            */
-
             if handle_cancel_flag(&column_names) {
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -1304,8 +1181,6 @@ Total rows: 10
                 print_insight_level_2(
                     "Please enter exactly two column names, separated by a comma.",
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             } else {
                 // Extracting the column names.
@@ -1318,7 +1193,6 @@ Total rows: 10
         }
         "15" => {
             if action_flag == "d" {
-                // if choice.to_lowercase() == "15d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1369,8 +1243,6 @@ Total rows: 10
   Cumulative Y-Axis Max: 3750
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -1378,15 +1250,7 @@ Total rows: 10
                 "Enter the x-axis and y-axis column names (comma separated): ",
             );
 
-            /*
-            if column_names.to_lowercase() == "@cancel" {
-                continue;
-            }
-            */
-
             if handle_cancel_flag(&column_names) {
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -1398,8 +1262,6 @@ Total rows: 10
                 print_insight_level_2(
                     "Please enter exactly two column names, separated by a comma.",
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             } else {
                 // Extracting the column names.
@@ -1413,7 +1275,6 @@ Total rows: 10
 
         "16" => {
             if action_flag == "d" {
-                // if choice.to_lowercase() == "16d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1469,8 +1330,6 @@ Total rows: 10
   Y-Axis Median: 370.00
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -1478,15 +1337,7 @@ Total rows: 10
                 "Enter the x-axis and y-axis column names (comma separated): ",
             );
 
-            /*
-            if column_names.to_lowercase() == "@cancel" {
-                continue;
-            }
-            */
-
             if handle_cancel_flag(&column_names) {
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -1498,8 +1349,6 @@ Total rows: 10
                 print_insight_level_2(
                     "Please enter exactly two column names, separated by a comma.",
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             } else {
                 // Extracting the column names.
@@ -1513,7 +1362,6 @@ Total rows: 10
 
         "17" => {
             if action_flag == "d" {
-                // if choice.to_lowercase() == "17d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1564,8 +1412,6 @@ Total rows: 10
   Cumulative Y-Axis Max: 3750
 "#,
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -1573,15 +1419,7 @@ Total rows: 10
                 "Enter the x-axis and y-axis column names (comma separated): ",
             );
 
-            /*
-            if column_names.to_lowercase() == "@cancel" {
-                continue;
-            }
-            */
-
             if handle_cancel_flag(&column_names) {
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             }
 
@@ -1593,8 +1431,6 @@ Total rows: 10
                 print_insight_level_2(
                     "Please enter exactly two column names, separated by a comma.",
                 );
-                //continue;
-                //return Ok((csv_builder, false));
                 return Ok(());
             } else {
                 // Extracting the column names.
@@ -1608,8 +1444,6 @@ Total rows: 10
 
         _ => {
             println!("Invalid option. Please enter a number from 1 to 17.");
-            //continue; // Ask for the choice again
-            //return Ok((csv_builder, false));
             return Ok(());
         }
     }
@@ -1618,5 +1452,4 @@ Total rows: 10
                 //    }
 
     Ok(())
-    //return Ok((csv_builder, false));
 }

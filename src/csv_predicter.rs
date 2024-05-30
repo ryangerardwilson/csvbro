@@ -15,62 +15,11 @@ use std::path::Path;
 use std::path::PathBuf;
 
 pub async fn handle_predict(
-    /*
-        csv_builder: &mut CsvBuilder,
-        file_path_option: Option<&str>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        */
     mut csv_builder: CsvBuilder,
     _file_path_option: Option<&str>,
     action_feature: &str,
     action_flag: &str,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
-    /*
-    fn apply_filter_changes_menu(
-        csv_builder: &mut CsvBuilder,
-        prev_iteration_builder: &CsvBuilder,
-        original_csv_builder: &CsvBuilder,
-    ) -> Result<(), String> {
-        let menu_options = vec![
-            "Continue with grouped data",
-            "Discard this result, and load previous state",
-            "Load original, to start from scratch",
-        ];
-        print_insight_level_2("Apply changes?");
-        print_list_level_2(&menu_options);
-
-        let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-        let selected_option = determine_action_as_number(&menu_options, &choice);
-
-        match selected_option {
-            Some(1) => {
-                print_insight_level_2("Continuing with prediction appended data");
-                csv_builder.print_table();
-                println!();
-                // Implement the logic for continuing with filtered data
-                Ok(())
-            }
-            Some(2) => {
-                print_insight_level_2("Discarding this result, and loading previous state");
-                csv_builder
-                    .override_with(prev_iteration_builder)
-                    .print_table();
-                println!();
-                Ok(())
-            }
-            Some(3) => {
-                print_insight_level_2("Loading original data, for you to start from scratch");
-                csv_builder
-                    .override_with(original_csv_builder)
-                    .print_table();
-                println!();
-                Ok(())
-            }
-            _ => Err("Invalid option. Please enter a number from 1 to 3.".to_string()),
-        }
-    }
-    */
-
     fn get_xgb_model_input(
     ) -> Result<(String, String, String, String, XgbConfig), Box<dyn std::error::Error>> {
         let xgb_model_input_syntax = r#"{
@@ -511,36 +460,6 @@ SYNTAX
             }
         }
     }
-    /*
-        let menu_options = vec![
-            "APPEND XGB_TYPE LABEL COLUMN BY RATIO",
-            "CREATE XGB MODEL",
-            "LIST XGB MODELS",
-            "DELETE XGB MODELS",
-            "APPEND XGB MODEL PREDICTIONS COLUMN",
-        ];
-
-        let original_csv_builder = CsvBuilder::from_copy(csv_builder);
-
-        loop {
-            print_insight_level_2("Select an option to group CSV data: ");
-            print_list_level_2(&menu_options);
-
-            let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-
-            if handle_special_flag(&choice, csv_builder, file_path_option) {
-                continue;
-            }
-
-            if handle_back_flag(&choice) {
-                break;
-            }
-            let _ = handle_quit_flag(&choice);
-
-            let selected_option = determine_action_as_number(&menu_options, &choice);
-
-            let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
-    */
 
     match action_feature {
         "" => {
@@ -560,7 +479,6 @@ SYNTAX
 
         "1" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "1d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -568,7 +486,6 @@ Appends a XGB_TYPE model column labelling rows as TRAIN, VALIDATE, or TEST, as p
 
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -577,7 +494,6 @@ Appends a XGB_TYPE model column labelling rows as TRAIN, VALIDATE, or TEST, as p
             );
 
             if handle_cancel_flag(&xgb_ratio_str) {
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -587,25 +503,10 @@ Appends a XGB_TYPE model column labelling rows as TRAIN, VALIDATE, or TEST, as p
                 csv_builder.print_table();
                 println!();
             }
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "2" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "2d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -774,7 +675,6 @@ Total rows: 20
 }
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -792,21 +692,6 @@ Total rows: 20
                     let csv_db_path = desktop_path.join("csv_db");
                     let model_dir = csv_db_path.join("xgb_models");
                     let model_dir_str = model_dir.to_str().unwrap();
-
-                    /*
-                    csv_builder
-                        .create_xgb_model(
-                            &param_column_names,
-                            &target_column_name,
-                            &prediction_column_name,
-                            &model_dir_str,
-                            &model_name_str,
-                            xgb_config,
-                        )
-                        .await
-                        .print_table();
-                    println!();
-                    */
 
                     let (updated_csv_builder, report_json) = csv_builder
                         .create_xgb_model(
@@ -830,19 +715,6 @@ Total rows: 20
                         println!("{}", pretty_report);
                     }
                     println!();
-                    /*
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                    */
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
                     //continue;
@@ -858,7 +730,6 @@ Total rows: 20
 
         "3" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "3d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -876,7 +747,6 @@ Lists out all XGB Models.
 Total rows: 7
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -898,25 +768,10 @@ Total rows: 7
 
             println!();
             return Ok((csv_builder, false));
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "4" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "4d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -924,55 +779,19 @@ Delete one or more of your XGB Models.
 
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
             let home_dir = env::var("HOME").expect("Unable to determine user home directory");
             let desktop_path = Path::new(&home_dir).join("Desktop");
             let csv_db_path = desktop_path.join("csv_db");
-            /*
-            let xgb_models_path = csv_db_path.join("xgb_models");
-            let xgb_models_path_str = xgb_models_path.to_str().unwrap();
-
-            let mut xgb_models_builder = XgbConnect::get_all_xgb_models(xgb_models_path_str)
-                .expect("Failed to load XGB models");
-            */
-
-            //xgb_models_builder.add_column_header("id").order_columns(vec!["id", "..."]).cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())]).resequence_id_column("id").print_table_all_rows();
-
             let _ = delete_xgb_file(&csv_db_path);
 
-            /*
-            let xgb_models_path = csv_db_path.join("xgb_models");
-            let xgb_models_path_str = xgb_models_path.to_str().unwrap();
-
-            let mut xgb_models_builder = XgbConnect::get_all_xgb_models(xgb_models_path_str)
-                .expect("Failed to load XGB models");
-
-            xgb_models_builder.add_column_header("id").order_columns(vec!["id", "..."]).cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())]).resequence_id_column("id").print_table_all_rows();
-            */
-
             println!();
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "5" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "5d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -980,7 +799,6 @@ Appends a predictions column leveraging an XGB Model.
 
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -995,7 +813,6 @@ Appends a predictions column leveraging an XGB Model.
                         get_user_input_level_2("Name your predictions column: ");
 
                     if handle_cancel_flag(&prediction_column_name) {
-                        //continue;
                         return Ok((csv_builder, false));
                     }
 
@@ -1012,23 +829,6 @@ Appends a predictions column leveraging an XGB Model.
 
                     csv_builder.print_table();
                     println!();
-
-                    /*
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                    */
-
-                    //println!("File Path: {:?}", path);
-                    //println!("Params: {}", params);
                 }
                 Err(e) => {
                     eprintln!("An error occurred: {}", e);
@@ -1039,14 +839,9 @@ Appends a predictions column leveraging an XGB Model.
 
         _ => {
             println!("Invalid option. Please enter a number from 1 to 5.");
-            //continue;
             return Ok((csv_builder, false));
         }
     }
 
-    //println!();
-    //    }
-
-    //Ok(())
     return Ok((csv_builder, true));
 }

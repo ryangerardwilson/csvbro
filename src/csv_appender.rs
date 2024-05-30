@@ -57,59 +57,11 @@ impl ExpStore {
 }
 
 pub async fn handle_append(
-    /*
-        csv_builder: &mut CsvBuilder,
-        file_path_option: Option<&str>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-    */
     mut csv_builder: CsvBuilder,
     _file_path_option: Option<&str>,
     action_feature: &str,
     action_flag: &str,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
-    /*
-    fn apply_filter_changes_menu(
-        csv_builder: &mut CsvBuilder,
-        prev_iteration_builder: &CsvBuilder,
-        original_csv_builder: &CsvBuilder,
-    ) -> Result<(), String> {
-        let menu_options = vec![
-            "Continue with modified data",
-            "Discard this result, and load previous result",
-            "Load original, to modify from scratch",
-        ];
-        print_insight_level_2("Apply changes?");
-        print_list_level_2(&menu_options);
-
-        let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-        let selected_option = determine_action_as_number(&menu_options, &choice);
-
-        match selected_option {
-            Some(1) => {
-                print_insight_level_2("Continuing with modified data");
-                csv_builder.print_table();
-                // Implement the logic for continuing with filtered data
-                Ok(())
-            }
-            Some(2) => {
-                print_insight_level_2("Discarding this result, and loading previous result");
-                csv_builder
-                    .override_with(prev_iteration_builder)
-                    .print_table();
-                Ok(())
-            }
-            Some(3) => {
-                print_insight_level_2("Loading original data, for you to modify from scratch");
-                csv_builder
-                    .override_with(original_csv_builder)
-                    .print_table();
-                Ok(())
-            }
-            _ => Err("Invalid option. Please enter a number from 1 to 3.".to_string()),
-        }
-    }
-    */
-
     fn get_append_boolean_expression(
         data_store: &mut ExpStore,
     ) -> Result<(String, Vec<(String, usize)>, String), Box<dyn std::error::Error>> {
@@ -542,11 +494,6 @@ SYNTAX
             output_range,
             predictor_column_names,
         ))
-
-        /*
-            // You will need to implement the logic for gathering and parsing this data from user input.
-            Ok(("Predictions".to_string(), vec![vec!["90".to_string(), "95".to_string()], vec!["70".to_string(), "72".to_string()]], vec![72.0, 65.0], vec![0.0, 100.0], vec!["Feature1".to_string(), "Feature2".to_string()]))
-        */
     }
 
     fn get_append_category_expression(
@@ -1122,46 +1069,6 @@ Note the implications of the params in the JSON query:
         ))
     }
 
-    /*
-        let menu_options = vec![
-            "APPEND DERIVED BOOLEAN COLUMN",
-            "APPEND DERIVED CATEGORY COLUMN",
-            "APPEND INCLUSIVE-EXCLUSIVE (NUMERICAL) INTERVAL CATEGORY COLUMN",
-            "APPEND INCLUSIVE-EXCLUSIVE (DATE) INTERVAL CATEGORY COLUMN",
-            "APPEND DERIVED CONCATENATION COLUMN",
-            "APPEND CATEGORY COLUMNS BY SPLITTING DATE/TIMESTAMP COLUMN",
-            "APPEND COUNT OF COMMA SEPARATED TIMESTAMP COLUMN OF VALUES *AFTER* ANOTHER TIMESTAMP PARSEABLE",
-            "APPEND COUNT OF COMMA SEPARATED TIMESTAMP COLUMN OF VALUES *BEFORE* ANOTHER TIMESTAMP PARSEABLE",
-            "APPEND FUZZAI ANALYSIS COLUMN",
-            "APPEND FUZZAI ANALYSIS COLUMN WHERE",
-            "OPENAI /SYNC APPEND ANALYSIS COLUMNS",
-            "OPENAI/ SEND COLUMNS FOR ASYNC BATCH ANALYSIS",
-            "OPENAI/ LIST BATCHES",
-            "OPENAI/ CANCEL BATCH",
-            "OPENAI/ APPEND BATCH ANALYSIS COLUMNS",
-            "APPEND LINEAR REGRESSION COLUMN",
-        ];
-
-        let original_csv_builder = CsvBuilder::from_copy(csv_builder);
-
-        loop {
-            print_insight_level_2("Select an option to inspect CSV data:");
-            print_list_level_2(&menu_options);
-
-            let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-            if handle_special_flag(&choice, csv_builder, file_path_option) {
-                continue;
-            }
-
-            if handle_back_flag(&choice) {
-                break;
-            }
-            let _ = handle_quit_flag(&choice);
-
-            let selected_option = determine_action_as_number(&menu_options, &choice);
-            let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
-    */
-
     match action_feature {
         "" => {
             print_insight_level_2("Here's the TINKER feature menu ... ");
@@ -1191,7 +1098,6 @@ Note the implications of the params in the JSON query:
 
         "1" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "1d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1223,7 +1129,6 @@ Appends a column whose value would be either 0 or 1, contingent on the evaluatio
 Total rows: 5
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
             let mut exp_store = ExpStore {
@@ -1235,7 +1140,6 @@ Total rows: 5
                     // Check if the new column name is empty
                     if new_column_name.trim().is_empty() {
                         print_insight_level_2("No new column name provided. Operation aborted.");
-                        //continue; // Skip the rest of the process
                         return Ok((csv_builder, false));
                     }
 
@@ -1255,27 +1159,12 @@ Total rows: 5
                         println!();
                     }
                     print_insight_level_2("Derived boolean column appended.");
-                    /*
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                    */
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
-                    //continue;
                     return Ok((csv_builder, false));
                 }
                 Err(e) => {
                     println!("Error getting expressions: {}", e);
-                    //continue; // Return to the menu to let the user try again or choose another option
                     return Ok((csv_builder, false));
                 }
             }
@@ -1283,7 +1172,6 @@ Total rows: 5
 
         "2" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "2d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1355,7 +1243,6 @@ Appends a column whose value would be assigned category flags, contingent on the
 Total rows: 5
 "#,
                 );
-                // continue;
                 return Ok((csv_builder, false));
             }
             let mut exp_store = ExpStore {
@@ -1366,7 +1253,6 @@ Total rows: 5
                 Ok((new_column_name, category_expressions)) => {
                     if new_column_name.trim().is_empty() {
                         print_insight_level_2("No new column name provided. Operation aborted.");
-                        //continue;
                         return Ok((csv_builder, false));
                     }
 
@@ -1412,29 +1298,13 @@ Total rows: 5
                         println!();
                     }
                     print_insight_level_2("Derived category column appended.");
-
-                    /*
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                    */
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
-                    //continue;
                     return Ok((csv_builder, false));
                 }
 
                 Err(e) => {
                     println!("Error getting expressions: {}", e);
-                    //continue;
                     return Ok((csv_builder, false));
                 }
             }
@@ -1442,7 +1312,6 @@ Total rows: 5
 
         "3" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "3d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1451,7 +1320,6 @@ Appends an inclusive-exclusive numerical interval category column.
 
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1460,7 +1328,6 @@ Appends an inclusive-exclusive numerical interval category column.
             );
 
             if handle_cancel_flag(&column_name_str) {
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1469,7 +1336,6 @@ Appends an inclusive-exclusive numerical interval category column.
             );
 
             if handle_cancel_flag(&interval_points_str) {
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1478,7 +1344,6 @@ Appends an inclusive-exclusive numerical interval category column.
                 );
 
             if handle_cancel_flag(&new_column_name_str) {
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1492,25 +1357,10 @@ Appends an inclusive-exclusive numerical interval category column.
                 csv_builder.print_table();
                 println!();
             }
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "4" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "4d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1519,7 +1369,6 @@ Appends an inclusive-exclusive date interval category column.
 
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1528,7 +1377,6 @@ Appends an inclusive-exclusive date interval category column.
             );
 
             if handle_cancel_flag(&column_name_str) {
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1536,8 +1384,6 @@ Appends an inclusive-exclusive date interval category column.
                 get_user_input_level_2("Enter YYYY-MM-DD date interval points (comma-separated): ");
 
             if handle_cancel_flag(&interval_points_str) {
-                //continue;
-                //
                 return Ok((csv_builder, false));
             }
 
@@ -1546,7 +1392,6 @@ Appends an inclusive-exclusive date interval category column.
                 );
 
             if handle_cancel_flag(&new_column_name_str) {
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1560,25 +1405,10 @@ Appends an inclusive-exclusive date interval category column.
                 csv_builder.print_table();
                 println!();
             }
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "5" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "5d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1603,15 +1433,12 @@ Appends a column whose value is a concatenation of other columns. This can be us
 Total rows: 5
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
             match get_concatenation_input() {
                 Ok((new_column_name, items_to_concatenate)) => {
                     if new_column_name.trim().is_empty() {
                         print_insight_level_2("No new column name provided. Operation aborted.");
-                        //continue
-                        //;
                         return Ok((csv_builder, false));
                     }
 
@@ -1630,28 +1457,13 @@ Total rows: 5
                         println!();
                     }
                     print_insight_level_2("Derived concatenation column appended.");
-                    /*
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                    */
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
-                    //continue;
                     return Ok((csv_builder, false));
                 }
 
                 Err(e) => {
                     println!("Error getting concatenation details: {}", e);
-                    //continue;
                     return Ok((csv_builder, false));
                 }
             }
@@ -1659,7 +1471,6 @@ Total rows: 5
 
         "6" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "6d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1698,7 +1509,6 @@ The following value formats can be processed by this feature:
 - %b %d, %Y: Jan 30, 2023.
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1708,7 +1518,6 @@ The following value formats can be processed by this feature:
                         print_insight_level_2(
                             "Missing column name or date format. Operation aborted.",
                         );
-                        //continue;
                         return Ok((csv_builder, false));
                     }
 
@@ -1719,29 +1528,13 @@ The following value formats can be processed by this feature:
                         println!();
                     }
                     print_insight_level_2("Date column split into category columns.");
-
-                    /*
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                    */
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
-                    //continue;
                     return Ok((csv_builder, false));
                 }
 
                 Err(e) => {
                     println!("Error getting date split details: {}", e);
-                    //continue;
                     return Ok((csv_builder, false));
                 }
             }
@@ -1749,7 +1542,6 @@ The following value formats can be processed by this feature:
 
         "7" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "7d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1757,7 +1549,6 @@ Appends a new column with the count of timestamps in a comma separated timestamp
 
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1766,7 +1557,6 @@ Appends a new column with the count of timestamps in a comma separated timestamp
             );
 
             if handle_cancel_flag(&comma_separated_timestamp_column_name_str) {
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1774,7 +1564,6 @@ Appends a new column with the count of timestamps in a comma separated timestamp
                     get_user_input_level_2("Enter the name of the timestamp parseable column, which, in relation to, will be used to compute a count of timestamps AFTER: ");
 
             if handle_cancel_flag(&relative_timestamp_column_name_str) {
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1783,7 +1572,6 @@ Appends a new column with the count of timestamps in a comma separated timestamp
             );
 
             if handle_cancel_flag(&new_column_name_str) {
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1797,25 +1585,10 @@ Appends a new column with the count of timestamps in a comma separated timestamp
                 csv_builder.print_table();
                 println!();
             }
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "8" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "8d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1823,7 +1596,6 @@ Appends a new column with the count of timestamps in a comma separated timestamp
 
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1832,7 +1604,6 @@ Appends a new column with the count of timestamps in a comma separated timestamp
             );
 
             if handle_cancel_flag(&comma_separated_timestamp_column_name_str) {
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1840,7 +1611,6 @@ Appends a new column with the count of timestamps in a comma separated timestamp
                     get_user_input_level_2("Enter the name of the timestamp parseable column, which, in relation to, will be used to compute a count of timestamps BEFORE: ");
 
             if handle_cancel_flag(&relative_timestamp_column_name_str) {
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1849,7 +1619,6 @@ Appends a new column with the count of timestamps in a comma separated timestamp
             );
 
             if handle_cancel_flag(&new_column_name_str) {
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1863,25 +1632,10 @@ Appends a new column with the count of timestamps in a comma separated timestamp
                 csv_builder.print_table();
                 println!();
             }
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "9" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "9d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -1931,7 +1685,6 @@ Note the implications of the params in the JSON query:
 6. "get_best_param": Determines the number of fuzzy analysis results that should be provided. A value of 1 would get the best match, where as a value of 2 would also return the second best match. This can have a maximum value of 3.
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -1961,23 +1714,8 @@ Note the implications of the params in the JSON query:
                         println!();
                     }
                     print_insight_level_2("Fuzzai Analysis columns appended.");
-
-                    /*
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                    */
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
-                    //continue;
                     return Ok((csv_builder, false));
                 }
 
@@ -1990,7 +1728,6 @@ Note the implications of the params in the JSON query:
 
         "10" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "10d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -2060,7 +1797,6 @@ Note the implications of the params in the JSON query:
 7. "expressions" and "result_expression": Indicates the exact conditions of the row, that should trigger the fuzzy analysis.
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -2098,23 +1834,8 @@ Note the implications of the params in the JSON query:
                         println!();
                     }
                     print_insight_level_2("Fuzzai Analysis columns appended.");
-
-                    /*
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                    */
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
-                    //continue;
                     return Ok((csv_builder, false));
                 }
 
@@ -2127,7 +1848,6 @@ Note the implications of the params in the JSON query:
 
         "11" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "11d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -2187,7 +1907,6 @@ Total rows: 3
 Total rows: 3
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -2219,9 +1938,6 @@ Total rows: 3
                     let config: Config = from_str(valid_json_part)?;
                     let api_key = &config.open_ai_key;
 
-                    // Use the api_key for your needs
-                    //println!("API Key: {}", api_key);
-
                     // Convert target_columns to Vec<&str>
                     let target_columns_refs: Vec<&str> =
                         target_columns.iter().map(String::as_str).collect();
@@ -2240,29 +1956,13 @@ Total rows: 3
                         println!();
                         print_insight_level_2("OpenAI analysis complete.");
                     }
-
-                    /*
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                    */
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
-                    //continue;
                     return Ok((csv_builder, false));
                 }
 
                 Err(e) => {
                     println!("Error getting expressions: {}", e);
-                    //continue; // Return to the menu to let the user try again or choose another option
                     return Ok((csv_builder, false));
                 }
             }
@@ -2270,7 +1970,6 @@ Total rows: 3
 
         "12" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "12d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -2297,7 +1996,6 @@ Total rows: 3
   @LILBro: Batch nutrient_predictions_2 sent to OpenAI for analysis. You can check its status via the OPENAI/ LIST BATCHES feature
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -2306,7 +2004,6 @@ Total rows: 3
                     // Check if the target columns are empty
                     if target_columns.is_empty() {
                         print_insight_level_2("No target columns provided. Operation aborted.");
-                        //continue; // Skip the rest of the process
                         return Ok((csv_builder, false));
                     }
 
@@ -2329,9 +2026,6 @@ Total rows: 3
                     let config: Config = from_str(valid_json_part)?;
                     let api_key = &config.open_ai_key;
 
-                    // Use the api_key for your needs
-                    //println!("API Key: {}", api_key);
-
                     // Convert target_columns to Vec<&str>
                     let target_columns_refs: Vec<&str> =
                         target_columns.iter().map(String::as_str).collect();
@@ -2348,17 +2042,14 @@ Total rows: 3
                     let insight = format!("Batch {} sent to OpenAI for analysis. You can check its status via the OPENAI/ LIST BATCHES feature", &batch_analysis_name);
                     print_insight_level_2(&insight);
                     println!();
-                    //continue;
                     return Ok((csv_builder, false));
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
-                    //continue;
                     return Ok((csv_builder, false));
                 }
 
                 Err(e) => {
                     println!("Error getting expressions: {}", e);
-                    //continue; // Return to the menu to let the user try again or choose another option
                     return Ok((csv_builder, false));
                 }
             }
@@ -2366,7 +2057,6 @@ Total rows: 3
 
         "13" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "13d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -2407,7 +2097,6 @@ Total rows: 2
 
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -2430,7 +2119,6 @@ Total rows: 2
             let _result = fetch_and_print_openai_batches(api_key).await?;
             println!();
 
-            //continue;
             return Ok((csv_builder, false));
         }
 
@@ -2479,7 +2167,6 @@ Total rows: 2
 
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -2510,13 +2197,11 @@ Total rows: 2
 
             let _ = fetch_and_print_openai_batches(api_key).await?;
             println!();
-            //continue;
             return Ok((csv_builder, false));
         }
 
         "15" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "15d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -2539,7 +2224,6 @@ Total rows: 3
 Total rows: 3
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -2562,7 +2246,6 @@ Total rows: 3
             let output_file_id = get_user_input_level_2("Enter OpenAI output_file_id to append: ");
 
             if handle_cancel_flag(&output_file_id) {
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -2571,27 +2254,10 @@ Total rows: 3
                 .await
                 .print_table();
             println!();
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
-
-            //continue;
         }
 
         "16" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "16d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -2696,7 +2362,6 @@ Total rows: 5
 Total rows: 5
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -2711,7 +2376,6 @@ Total rows: 5
                     // Check if the new column name is empty
                     if new_column_name.trim().is_empty() {
                         print_insight_level_2("No new column name provided. Operation aborted.");
-                        //continue; // Skip the rest of the process
                         return Ok((csv_builder, false));
                     }
 
@@ -2725,7 +2389,6 @@ Total rows: 5
                     // Verify the condition
                     if training_predictors.len() < 2 * sorted_outputs.len() {
                         print_insight_level_2("Insufficient training predictors: There must be at least twice as many predictor rows as unique outputs.");
-                        //continue; // Skip the rest of the process
                         return Ok((csv_builder, false));
                     }
 
@@ -2742,28 +2405,13 @@ Total rows: 5
                         println!();
                     }
                     print_insight_level_2("Derived linear regression column appended.");
-                    /*
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                    */
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
-                    //continue;
                     return Ok((csv_builder, false));
                 }
 
                 Err(e) => {
                     println!("Error getting expressions: {}", e);
-                    //continue; // Return to the menu to let the user try again or choose another option
                     return Ok((csv_builder, false));
                 }
             }
@@ -2771,14 +2419,11 @@ Total rows: 5
 
         _ => {
             println!("Invalid option. Please enter a number from 1 to 16.");
-            //continue; // Ask for the choice again
             return Ok((csv_builder, false));
         }
     }
 
-    println!(); // Print a new line for better readability
-                //    }
+    println!();
 
-    //Ok(())
     return Ok((csv_builder, true));
 }

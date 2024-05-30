@@ -8,62 +8,11 @@ use serde_json::Value;
 use std::fs;
 
 pub async fn handle_transform(
-    /*
-        csv_builder: &mut CsvBuilder,
-        file_path_option: Option<&str>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        */
     mut csv_builder: CsvBuilder,
     _file_path_option: Option<&str>,
     action_feature: &str,
     action_flag: &str,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
-    /*
-    fn apply_filter_changes_menu(
-        csv_builder: &mut CsvBuilder,
-        prev_iteration_builder: &CsvBuilder,
-        original_csv_builder: &CsvBuilder,
-    ) -> Result<(), String> {
-        let menu_options = vec![
-            "Continue with grouped data",
-            "Discard this result, and load previous state",
-            "Load original, to start from scratch",
-        ];
-        print_insight_level_2("Apply changes?");
-        print_list_level_2(&menu_options);
-
-        let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-        let selected_option = determine_action_as_number(&menu_options, &choice);
-
-        match selected_option {
-            Some(1) => {
-                print_insight_level_2("Continuing with grouped data");
-                csv_builder.print_table();
-                println!();
-                // Implement the logic for continuing with filtered data
-                Ok(())
-            }
-            Some(2) => {
-                print_insight_level_2("Discarding this result, and loading previous state");
-                csv_builder
-                    .override_with(prev_iteration_builder)
-                    .print_table();
-                println!();
-                Ok(())
-            }
-            Some(3) => {
-                print_insight_level_2("Loading original data, for you to start from scratch");
-                csv_builder
-                    .override_with(original_csv_builder)
-                    .print_table();
-                println!();
-                Ok(())
-            }
-            _ => Err("Invalid option. Please enter a number from 1 to 3.".to_string()),
-        }
-    }
-    */
-
     fn get_pivot_input() -> Result<Piv, Box<dyn std::error::Error>> {
         let pivot_syntax = r#"{
     "index_at": "",
@@ -156,31 +105,6 @@ Note the implication of params in the Json Query:
         })
     }
 
-    //    let menu_options = vec!["GROUP", "GROUPED SPLIT", "PIVOT"];
-
-    //    let original_csv_builder = CsvBuilder::from_copy(csv_builder);
-
-    /*
-        loop {
-            print_insight_level_2("Select an option to group CSV data: ");
-            print_list_level_2(&menu_options);
-
-            let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-
-            if handle_special_flag(&choice, csv_builder, file_path_option) {
-                continue;
-            }
-
-            if handle_back_flag(&choice) {
-                break;
-            }
-            let _ = handle_quit_flag(&choice);
-
-            let selected_option = determine_action_as_number(&menu_options, &choice);
-
-            let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
-    */
-
     match action_feature {
         "" => {
             print_insight_level_2("Here's the TRANSFORM feature menu ... ");
@@ -193,7 +117,6 @@ Note the implication of params in the Json Query:
 
         "1" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "1d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -242,7 +165,6 @@ The following feature flags can be used to perform different types of calculatio
  - `BOOL_PERCENT` - Calculates the percentage of `1`s in the column, assuming the values are either `1` or `0`, rounded to two decimal places.
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -342,25 +264,10 @@ The following feature flags can be used to perform different types of calculatio
                 csv_builder.print_table();
                 println!();
             }
-
-            /*
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "2" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "2d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -380,13 +287,12 @@ Total rows: 4
 
 /// In the concerned directory:
 
-  rgw@rgw-asus:~/Desktop/split_csvs_dr$ ls
-   'group_split_by_milk shake_in_item.csv'   
-   group_split_by_potatoe_in_item.csv
-   group_split_by_pizza_in_item.csv
+    rgw@rgw-asus:~/Desktop/split_csvs_dr$ ls
+        'group_split_by_milk shake_in_item.csv'   
+        group_split_by_potatoe_in_item.csv
+        group_split_by_pizza_in_item.csv
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -394,7 +300,6 @@ Total rows: 4
                 get_user_input_level_2("Enter the column name to group the data by: ");
 
             if handle_cancel_flag(&group_by_column_name_str) {
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -402,14 +307,11 @@ Total rows: 4
                 get_user_input_level_2("Enter file path of directory to store grouped data: ");
 
             if handle_cancel_flag(&grouped_data_dir_path_str) {
-                // continue;
                 return Ok((csv_builder, false));
             }
 
             let _ = csv_builder.split_as(&group_by_column_name_str, &grouped_data_dir_path_str);
 
-            //let insight = format!("Split completed at {}", grouped_data_dir_path_str);
-            //print_insight_level_2(&insight);
             let paths = fs::read_dir(grouped_data_dir_path_str.clone()).unwrap();
             let file_count = paths.count();
             let insight = format!(
@@ -419,31 +321,10 @@ Total rows: 4
             print_insight_level_2(&insight);
             println!();
             return Ok((csv_builder, false));
-            //continue;
-            /*
-            if csv_builder.has_data() {
-                csv_builder.print_table();
-                println!();
-            }
-
-
-            match apply_filter_changes_menu(
-                csv_builder,
-                &prev_iteration_builder,
-                &original_csv_builder,
-            ) {
-                Ok(_) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    continue; // Ask for the choice again if there was an error
-                }
-            }
-            */
         }
 
         "3" => {
             if action_flag == "d" {
-                //if choice.to_lowercase() == "3d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
@@ -543,7 +424,6 @@ Note the implication of params in the Json Query:
   - 4.2.2. AS_BOOLEAN: By setting the type to "AS_BOOLEAN", it's understood that the specified seggregation column contains boolean values (1/0). The data will be segmented into two groups based on these boolean values. This type is particularly useful for flag columns that indicate the presence or absence of a particular condition or attribute.
 "#,
                 );
-                //continue;
                 return Ok((csv_builder, false));
             }
 
@@ -552,22 +432,8 @@ Note the implication of params in the Json Query:
                 Ok(piv) => {
                     csv_builder.pivot_as(piv).print_table();
                     println!();
-                    /*
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                    */
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
-                    //continue;
                     return Ok((csv_builder, false));
                 }
 
@@ -580,14 +446,9 @@ Note the implication of params in the Json Query:
 
         _ => {
             println!("Invalid option. Please enter a number from 1 to 3.");
-            //continue;
             return Ok((csv_builder, false));
         }
     }
 
-    //println!();
-    //    }
-
-    //Ok(())
     return Ok((csv_builder, true));
 }
