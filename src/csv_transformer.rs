@@ -196,7 +196,7 @@ Total rows: 4
   "feature_flags": {
     "id": "",
     "item": "",
-    "calorie_count": "NUMERICAL_MAX"
+    "calorie_count": ["NUMERICAL_MAX"]
   }
 }
 
@@ -236,7 +236,7 @@ The following feature flags can be used to perform different types of calculatio
                     json_str.push_str("  \"feature_flags\": {\n");
 
                     for (i, header) in headers.iter().enumerate() {
-                        json_str.push_str(&format!("    \"{}\": \"\"", header));
+                        json_str.push_str(&format!("    \"{}\": [\"\"]", header));
                         if i < headers.len() - 1 {
                             json_str.push_str(",\n");
                         }
@@ -252,12 +252,12 @@ SYNTAX
 ======
 
 {
-  "group_by_column": "item",          // The column to GROUP BY with
-  "grouped_column_name": "history",   // The name of the column compressing all row data
+  "group_by_column": "item",                              // The column to GROUP BY with
+  "grouped_column_name": "history",                       // The name of the column compressing all row data
   "feature_flags": {
-    "id": "",
-    "item": "",                       // Leave blank if you don't want it include it
-    "calorie_count": "NUMERICAL_MAX"  // Specify a feature flag
+    "id": [""],
+    "item": [""],                                         // Leave blank to exclude
+    "calorie_count": ["NUMERICAL_MAX", "NUMERICAL_MEAN"]  // Specify a feature flag
   }
 }
 
@@ -295,12 +295,16 @@ The following feature flags can be used to perform different types of calculatio
                         .as_str()
                         .expect("grouped_column_name is not a string");
 
-                    let mut feature_flags = Vec::new();
+                    let mut feature_flags: Vec<(String, String)> = Vec::new();
                     if let Value::Object(map) = &edited_value["feature_flags"] {
                         for (key, value) in map.iter() {
-                            if let Value::String(feature_flag) = value {
-                                if !feature_flag.is_empty() {
-                                    feature_flags.push((key.clone(), feature_flag.clone()));
+                            if let Value::Array(arr) = value {
+                                for val in arr {
+                                    if let Value::String(feature_flag) = val {
+                                        if !feature_flag.is_empty() {
+                                            feature_flags.push((key.clone(), feature_flag.clone()));
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -314,26 +318,6 @@ The following feature flags can be used to perform different types of calculatio
                         feature_flags,
                     );
                 }
-
-                /*
-                                let group_by_column_name_str =
-                                    get_user_input_level_2("Enter the column name to group the data by: ");
-
-                                if handle_cancel_flag(&group_by_column_name_str) {
-                                    continue;
-                                }
-
-                                let grouped_column_name_str =
-                                    get_user_input_level_2("Enter the name of the grouped column: ");
-
-                                if handle_cancel_flag(&grouped_column_name_str) {
-                                    continue;
-                                }
-
-                                csv_builder
-                                    .grouped_index_transform(&group_by_column_name_str, &grouped_column_name_str);
-
-                */
 
                 if csv_builder.has_data() {
                     csv_builder.print_table();

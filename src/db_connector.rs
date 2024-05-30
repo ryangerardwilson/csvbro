@@ -988,7 +988,7 @@ DIRECTIVES SYNTAX
 
         match selected_option {
             Some(ref action) if action == "TINKER" => {
-                if let Err(e) = handle_tinker(&mut csv_builder, None).await {
+                if let Err(e) = handle_tinker(&mut csv_builder, None, "1", "d").await {
                     println!("Error during tinker: {}", e);
                     continue;
                 }

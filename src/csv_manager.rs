@@ -11,8 +11,8 @@ use crate::user_experience::{
     handle_special_flag_returning_new_builder, handle_special_flag_without_builder,
 };
 use crate::user_interaction::{
-    determine_action_as_text, get_user_input, get_user_input_level_2, print_insight,
-    print_insight_level_2, print_list,
+    determine_action_as_number, determine_action_as_text, get_user_input, get_user_input_level_2,
+    print_insight, print_insight_level_2, print_list, print_list_level_2,
 };
 use calamine::{open_workbook, Reader, Xls};
 use chrono::{DateTime, Local};
@@ -365,12 +365,56 @@ pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBui
 pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
     //let current_file_path: Option<PathBuf> = file_path_option.map(PathBuf::from);
 
+    fn apply_builder_changes_menu(
+        csv_builder: &mut CsvBuilder,
+        prev_iteration_builder: &CsvBuilder,
+        original_csv_builder: &CsvBuilder,
+    ) -> Result<(), String> {
+        let menu_options = vec![
+            "Continue with modified builder",
+            "Discard",
+            "Load original data from point of import",
+        ];
+        print_insight_level_2("Apply changes?");
+        print_list_level_2(&menu_options);
+
+        let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
+        let selected_option = determine_action_as_number(&menu_options, &choice);
+
+        match selected_option {
+            Some(1) => {
+                print_insight_level_2("Continuing with modified_builder");
+                csv_builder.print_table();
+                // Implement the logic for continuing with filtered data
+                Ok(())
+            }
+            Some(2) => {
+                print_insight_level_2("Discarding and loading previous state");
+                csv_builder
+                    .override_with(prev_iteration_builder)
+                    .print_table();
+                Ok(())
+            }
+            Some(3) => {
+                print_insight_level_2("Loading original data, for you to start from scratch");
+                csv_builder
+                    .override_with(original_csv_builder)
+                    .print_table();
+                Ok(())
+            }
+            _ => Err("Invalid option. Please enter a number from 1 to 2.".to_string()),
+        }
+    }
+
     if builder.has_data() {
         let _ = builder.print_table();
         println!();
     }
 
+    let original_csv_builder = CsvBuilder::from_copy(&builder);
     loop {
+        let prev_iteration_builder = CsvBuilder::from_copy(&builder);
+
         //let has_data = builder.has_data();
         print_insight("Choose an action:");
 
@@ -424,12 +468,34 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
             //dbg!(&choice);
 
             let selected_option = determine_action_as_text(&menu_options, &choice);
-
+            let feature_action = "1";
+            let doc_request_flag = "1d";
+            dbg!(&selected_option, &feature_action, &doc_request_flag);
             match selected_option {
                 Some(ref action) if action == "TINKER" => {
-                    if let Err(e) = handle_tinker(&mut builder, file_path_option).await {
+                    dbg!(&selected_option, &feature_action, &doc_request_flag);
+                    if let Err(e) = handle_tinker(
+                        &mut builder,
+                        file_path_option,
+                        feature_action,
+                        doc_request_flag,
+                    )
+                    .await
+                    {
                         println!("Error during tinker: {}", e);
                         continue;
+                    }
+
+                    match apply_builder_changes_menu(
+                        &mut builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
                     }
                 }
 
