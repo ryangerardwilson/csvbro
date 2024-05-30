@@ -5,8 +5,10 @@ use crate::db_connector::query;
 use crate::user_interaction::{get_user_input, get_user_input_level_2, print_insight, print_list};
 use rgwml::csv_utils::CsvBuilder;
 use std::env;
+use std::future::Future;
 use std::path::Path;
 use std::path::PathBuf;
+use std::pin::Pin;
 
 pub fn handle_special_flag_without_builder(flag: &str) -> bool {
     let home_dir = env::var("HOME").expect("Unable to determine user home directory");
@@ -113,10 +115,13 @@ pub fn handle_special_flag(
         _ => false,
     }
 }
-
+/*
 pub async fn handle_special_flag_returning_new_builder(
     flag: &str,
-) -> Option<Result<((), CsvBuilder), Box<dyn std::error::Error>>> {
+//) -> Option<Result<((), CsvBuilder), Box<dyn std::error::Error>>> {
+) -> Pin<Box<dyn Future<Output = Option<Result<((), CsvBuilder), Box<dyn std::error::Error>>>>>> {
+    Box::pin(async move {
+
     let home_dir = match env::var("HOME") {
         Ok(dir) => dir,
         Err(_) => {
@@ -176,7 +181,10 @@ pub async fn handle_special_flag_returning_new_builder(
     }
 
     Some(Ok(((), new_builder)))
+
+ })
 }
+*/
 
 pub fn handle_query_special_flag(flag: &str, builder: &mut CsvBuilder) -> bool {
     let has_data = builder.has_data();

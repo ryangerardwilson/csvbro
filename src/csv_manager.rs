@@ -8,7 +8,7 @@ use crate::csv_tinkerer::handle_tinker;
 use crate::csv_transformer::handle_transform;
 use crate::user_experience::{
     handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
-    handle_special_flag_returning_new_builder, handle_special_flag_without_builder,
+    handle_special_flag_without_builder,
 };
 use crate::user_interaction::{
     determine_action_as_number, determine_action_as_text, determine_action_type_feature_and_flag,
@@ -366,47 +366,6 @@ pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBui
 pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
     //let current_file_path: Option<PathBuf> = file_path_option.map(PathBuf::from);
 
-    fn apply_builder_changes_menu(
-        mut csv_builder: CsvBuilder,
-        prev_iteration_builder: &CsvBuilder,
-        original_csv_builder: &CsvBuilder,
-    ) -> Result<(), String> {
-        let menu_options = vec![
-            "Continue with modified builder",
-            "Discard",
-            "Load original data from point of import",
-        ];
-        print_insight_level_2("Apply changes?");
-        print_list_level_2(&menu_options);
-
-        let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-        let selected_option = determine_action_as_number(&menu_options, &choice);
-
-        match selected_option {
-            Some(1) => {
-                print_insight_level_2("Continuing with modified_builder");
-                csv_builder.print_table();
-                // Implement the logic for continuing with filtered data
-                Ok(())
-            }
-            Some(2) => {
-                print_insight_level_2("Discarding and loading previous state");
-                csv_builder
-                    .override_with(prev_iteration_builder)
-                    .print_table();
-                Ok(())
-            }
-            Some(3) => {
-                print_insight_level_2("Loading original data, for you to start from scratch");
-                csv_builder
-                    .override_with(original_csv_builder)
-                    .print_table();
-                Ok(())
-            }
-            _ => Err("Invalid option. Please enter a number from 1 to 2.".to_string()),
-        }
-    }
-
     if builder.has_data() {
         let _ = builder.print_table();
         println!();
@@ -432,6 +391,10 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         print_list(&menu_options);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
 
+        if handle_back_flag(&choice) || &choice == "" {
+            break;
+        }
+
         if handle_special_flag(&choice, &mut builder, file_path_option) {
             continue;
         }
@@ -439,155 +402,139 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         if handle_special_flag_without_builder(&choice) {
             continue;
         }
-
+        /*
         if handle_back_flag(&choice) || &choice == "" {
             break;
         }
+        */
+
         let _ = handle_quit_flag(&choice);
 
         //dbg!(&choice);
-        if let Some(result) = handle_special_flag_returning_new_builder(&choice).await {
-            //dbg!(&result);
-            match result {
-                Ok((_, mut new_builder)) => {
-                    // If successful, `new_builder` is the new CsvBuilder instance
-                    if new_builder.has_data() && new_builder.has_headers() {
-                        print_insight_level_2("Loading new CsvBuilder ...");
-                        new_builder.print_table();
-                        builder = new_builder;
-                        continue;
-                    } else {
-                        break;
-                    }
-                }
-                Err(e) => {
-                    // If there's an error, handle it here
-                    println!("An error occurred: {}", e);
+
+        let (action_type, action_feature, action_flag) =
+            determine_action_type_feature_and_flag(&choice);
+        dbg!(&action_type, &action_feature, &action_flag);
+
+        match action_type.as_str() {
+            "1" => {
+                if let Err(e) = handle_search(&mut builder, file_path_option).await {
+                    println!("Error during search: {}", e);
+                    continue;
                 }
             }
-        } else {
-            //dbg!(&choice);
-
-            let (action_type, action_feature, action_flag) =
-                determine_action_type_feature_and_flag(&choice);
-            //let selected_option = determine_action_as_text(&menu_options, &choice);
-            //let feature_action = "1";
-            //let doc_request_flag = "1d";
-            dbg!(&action_type, &action_feature, &action_flag);
-
-            match action_type.as_str() {
-                "1" => {
-                    if let Err(e) = handle_search(&mut builder, file_path_option).await {
-                        println!("Error during search: {}", e);
-                        continue;
-                    }
+            "2" => {
+                if let Err(e) = handle_inspect(&mut builder, file_path_option) {
+                    println!("Error during inspection: {}", e);
+                    continue;
                 }
-                "2" => {
-                    if let Err(e) = handle_inspect(&mut builder, file_path_option) {
-                        println!("Error during inspection: {}", e);
-                        continue;
-                    }
-                }
-                "3" => {
-                    dbg!(&action_type, &action_feature, &action_flag);
-                    let copied_builder = CsvBuilder::from_copy(&builder);
-                    let (new_builder, modified) = match handle_tinker(
-                        copied_builder,
-                        file_path_option,
-                        &action_feature,
-                        &action_flag,
-                    )
-                    .await
-                    {
-                        Ok(result) => result,
-                        Err(e) => {
-                            println!("Error during tinker: {}", e);
-                            // Restore the original builder in case of error
-                            //            *builder = std::mem::replace(builder, CsvBuilder::new());
-                            return;
-                        }
-                    };
-
-                    // Update the original builder with the new one
-                    //builder = new_builder;
-                    if modified {
-                        println!("The builder has been modified.");
-                        match apply_builder_changes_menu(
-                            new_builder,
-                            &prev_iteration_builder,
-                            &original_csv_builder,
-                        ) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("{}", e);
-                                continue; // Ask for the choice again if there was an error
-                            }
-                        }
-                    } else {
-                        println!("The builder has not been modified.");
-                    }
-
-                    /*
-                    dbg!(&action_type, &action_feature, &action_flag);
-                    match handle_tinker(std::mem::replace(builder, CsvBuilder::new()), file_path_option, action_feature, action_flag).await {
-                    //match handle_tinker(builder, file_path_option, &action_feature, &action_flag).await {
-                        Ok((new_builder, modified)) => {
-                            *builder = new_builder; // Update the original builder with the new one
-                            if modified {
-                                println!("The builder has been modified.");
-
-                                    match apply_builder_changes_menu(
-                                        &mut builder,
-                                        &prev_iteration_builder,
-                                        &original_csv_builder,
-                                    ) {
-                                        Ok(_) => (),
-                                        Err(e) => {
-                                            println!("{}", e);
-                                            continue; // Ask for the choice again if there was an error
-                                        }
-                                    }
-
-
-                            } else {
-                                println!("The builder has not been modified.");
-                                continue
-                            }
-                        },
-                        Err(e) => {
-                            println!("Error during tinker: {}", e);
-                            continue;
-                        }
-                    }
-                    */
-                }
-                "4" => {
-                    if let Err(e) = handle_transform(&mut builder, file_path_option).await {
-                        println!("Error during transform operation: {}", e);
-                        continue;
-                    }
-                }
-                "5" => {
-                    if let Err(e) = handle_append(&mut builder, file_path_option).await {
-                        println!("Error during pivot operation: {}", e);
-                        continue;
-                    }
-                }
-                "6" => {
-                    if let Err(e) = handle_join(&mut builder, file_path_option) {
-                        println!("Error during join operation: {}", e);
-                        continue;
-                    }
-                }
-                "7" => {
-                    if let Err(e) = handle_predict(&mut builder, file_path_option).await {
-                        println!("Error during predict operation: {}", e);
-                        continue;
-                    }
-                }
-
-                _ => println!("Unknown Action Type: {}", action_type),
             }
+            "3" => {
+                dbg!(&action_type, &action_feature, &action_flag);
+                let copied_builder = CsvBuilder::from_copy(&builder);
+                let (new_builder, modified) = match handle_tinker(
+                    copied_builder,
+                    file_path_option,
+                    &action_feature,
+                    &action_flag,
+                )
+                .await
+                {
+                    Ok(result) => result,
+                    Err(e) => {
+                        println!("Error during tinker: {}", e);
+                        // Restore the original builder in case of error
+                        //            *builder = std::mem::replace(builder, CsvBuilder::new());
+                        return;
+                    }
+                };
+
+                // Update the original builder with the new one
+                //builder = new_builder;
+                if modified {
+                    println!("The builder has been modified.");
+                    match apply_builder_changes_menu(
+                        new_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                } else {
+                    println!("The builder has not been modified.");
+                }
+            }
+            "4" => {
+                if let Err(e) = handle_transform(&mut builder, file_path_option).await {
+                    println!("Error during transform operation: {}", e);
+                    continue;
+                }
+            }
+            "5" => {
+                if let Err(e) = handle_append(&mut builder, file_path_option).await {
+                    println!("Error during pivot operation: {}", e);
+                    continue;
+                }
+            }
+            "6" => {
+                if let Err(e) = handle_join(&mut builder, file_path_option) {
+                    println!("Error during join operation: {}", e);
+                    continue;
+                }
+            }
+            "7" => {
+                if let Err(e) = handle_predict(&mut builder, file_path_option).await {
+                    println!("Error during predict operation: {}", e);
+                    continue;
+                }
+            }
+
+            _ => println!("Unknown Action Type: {}", action_type),
         }
+    }
+}
+
+pub fn apply_builder_changes_menu(
+    mut csv_builder: CsvBuilder,
+    prev_iteration_builder: &CsvBuilder,
+    original_csv_builder: &CsvBuilder,
+) -> Result<(), String> {
+    let menu_options = vec![
+        "Continue with modified builder",
+        "Discard",
+        "Load original data from point of import",
+    ];
+    print_insight_level_2("Apply changes?");
+    print_list_level_2(&menu_options);
+
+    let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
+    let selected_option = determine_action_as_number(&menu_options, &choice);
+
+    match selected_option {
+        Some(1) => {
+            print_insight_level_2("Continuing with modified_builder");
+            csv_builder.print_table();
+            // Implement the logic for continuing with filtered data
+            Ok(())
+        }
+        Some(2) => {
+            print_insight_level_2("Discarding and loading previous state");
+            csv_builder
+                .override_with(prev_iteration_builder)
+                .print_table();
+            Ok(())
+        }
+        Some(3) => {
+            print_insight_level_2("Loading original data, for you to start from scratch");
+            csv_builder
+                .override_with(original_csv_builder)
+                .print_table();
+            Ok(())
+        }
+        _ => Err("Invalid option. Please enter a number from 1 to 2.".to_string()),
     }
 }
