@@ -987,13 +987,14 @@ DIRECTIVES SYNTAX
         confirmation = selected_option.clone().expect("REASON");
 
         match selected_option {
+            /*
             Some(ref action) if action == "TINKER" => {
                 if let Err(e) = handle_tinker(&mut csv_builder, None, "1", "d").await {
                     println!("Error during tinker: {}", e);
                     continue;
                 }
             }
-
+            */
             Some(ref action) if action == "SEARCH" => {
                 if let Err(e) = handle_search(&mut csv_builder, None).await {
                     println!("Error during search: {}", e);

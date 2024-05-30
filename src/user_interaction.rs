@@ -271,6 +271,42 @@ pub fn determine_action_as_text(menu_options: &[&str], choice: &str) -> Option<S
     }
 }
 
+pub fn determine_action_type_feature_and_flag(choice: &str) -> (String, String, String) {
+    // Ensure the choice is in lowercase
+    let choice = choice.to_lowercase();
+
+    // Find positions of 'f' and 'd'
+    let f_pos = choice.find('f');
+    let d_pos = choice.find('d');
+
+    // Initialize the action_type, action_feature, and action_flag with empty strings
+    let mut action_type = String::new();
+    let mut action_feature = String::new();
+    let mut action_flag = String::new();
+
+    if let Some(f_index) = f_pos {
+        // Action type is everything before 'f'
+        action_type = choice[..f_index].to_string();
+        // Check if there's a 'd' after 'f'
+        if let Some(d_index) = d_pos {
+            // Action feature is between 'f' and 'd'
+            if d_index > f_index {
+                action_feature = choice[f_index + 1..d_index].to_string();
+            }
+            // Action flag is 'd' itself
+            action_flag = choice[d_index..].to_string();
+        } else {
+            // No 'd', so action feature is everything after 'f'
+            action_feature = choice[f_index + 1..].to_string();
+        }
+    } else {
+        // No 'f', so action type is the entire choice
+        action_type = choice.to_string();
+    }
+
+    (action_type, action_feature, action_flag)
+}
+
 pub fn determine_action_as_number(menu_options: &[&str], choice: &str) -> Option<usize> {
     let choice = choice.to_lowercase();
 
