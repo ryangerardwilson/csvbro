@@ -1,14 +1,11 @@
 // src/user_experience.rs
 use crate::config::edit_config;
-use crate::csv_manager::{delete_csv_file, import, open_csv_file};
-use crate::db_connector::query;
+use crate::csv_manager::delete_csv_file;
 use crate::user_interaction::{get_user_input, get_user_input_level_2, print_insight, print_list};
 use rgwml::csv_utils::CsvBuilder;
 use std::env;
-use std::future::Future;
 use std::path::Path;
 use std::path::PathBuf;
-use std::pin::Pin;
 
 pub fn handle_special_flag_without_builder(flag: &str) -> bool {
     let home_dir = env::var("HOME").expect("Unable to determine user home directory");

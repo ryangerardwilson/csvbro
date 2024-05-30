@@ -1,19 +1,24 @@
 // csv_transformer.rs
-use crate::user_experience::{
-    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
-};
+use crate::user_experience::handle_cancel_flag;
 use crate::user_interaction::{
-    determine_action_as_number, get_edited_user_json_input, get_user_input_level_2,
-    print_insight_level_2, print_list_level_2,
+    get_edited_user_json_input, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
 use rgwml::csv_utils::{CsvBuilder, Piv};
 use serde_json::Value;
 use std::fs;
 
 pub async fn handle_transform(
-    csv_builder: &mut CsvBuilder,
-    file_path_option: Option<&str>,
-) -> Result<(), Box<dyn std::error::Error>> {
+    /*
+        csv_builder: &mut CsvBuilder,
+        file_path_option: Option<&str>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        */
+    mut csv_builder: CsvBuilder,
+    _file_path_option: Option<&str>,
+    action_feature: &str,
+    action_flag: &str,
+) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
+    /*
     fn apply_filter_changes_menu(
         csv_builder: &mut CsvBuilder,
         prev_iteration_builder: &CsvBuilder,
@@ -57,6 +62,7 @@ pub async fn handle_transform(
             _ => Err("Invalid option. Please enter a number from 1 to 3.".to_string()),
         }
     }
+    */
 
     fn get_pivot_input() -> Result<Piv, Box<dyn std::error::Error>> {
         let pivot_syntax = r#"{
@@ -150,34 +156,46 @@ Note the implication of params in the Json Query:
         })
     }
 
-    let menu_options = vec!["GROUP", "GROUPED SPLIT", "PIVOT"];
+    //    let menu_options = vec!["GROUP", "GROUPED SPLIT", "PIVOT"];
 
-    let original_csv_builder = CsvBuilder::from_copy(csv_builder);
+    //    let original_csv_builder = CsvBuilder::from_copy(csv_builder);
 
-    loop {
-        print_insight_level_2("Select an option to group CSV data: ");
-        print_list_level_2(&menu_options);
+    /*
+        loop {
+            print_insight_level_2("Select an option to group CSV data: ");
+            print_list_level_2(&menu_options);
 
-        let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
+            let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
 
-        if handle_special_flag(&choice, csv_builder, file_path_option) {
-            continue;
+            if handle_special_flag(&choice, csv_builder, file_path_option) {
+                continue;
+            }
+
+            if handle_back_flag(&choice) {
+                break;
+            }
+            let _ = handle_quit_flag(&choice);
+
+            let selected_option = determine_action_as_number(&menu_options, &choice);
+
+            let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
+    */
+
+    match action_feature {
+        "" => {
+            print_insight_level_2("Here's the TRANSFORM feature menu ... ");
+            let menu_options = vec!["GROUP", "GROUPED SPLIT", "PIVOT"];
+
+            print_list_level_2(&menu_options);
+
+            return Ok((csv_builder, false));
         }
 
-        if handle_back_flag(&choice) {
-            break;
-        }
-        let _ = handle_quit_flag(&choice);
-
-        let selected_option = determine_action_as_number(&menu_options, &choice);
-
-        let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
-
-        match selected_option {
-            Some(1) => {
-                if choice.to_lowercase() == "1d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        "1" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "1d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Groups a log table by a particular column, transmuting all data pertaining to unique values of that column into a ordered array stored in a grouped column.
 
@@ -223,30 +241,31 @@ The following feature flags can be used to perform different types of calculatio
 - `MODE` - Finds the most frequent value in the column.
  - `BOOL_PERCENT` - Calculates the percentage of `1`s in the column, assuming the values are either `1` or `0`, rounded to two decimal places.
 "#,
-                    );
-                    continue;
+                );
+                //continue;
+                return Ok((csv_builder, false));
+            }
+
+            if let Some(headers) = csv_builder.get_headers() {
+                let mut json_str = "{\n".to_string();
+
+                json_str.push_str(&format!("  \"group_by_column\": \"\",\n"));
+                json_str.push_str(&format!("  \"grouped_column_name\": \"\",\n"));
+
+                json_str.push_str("  \"feature_flags\": {\n");
+
+                for (i, header) in headers.iter().enumerate() {
+                    json_str.push_str(&format!("    \"{}\": [\"\"]", header));
+                    if i < headers.len() - 1 {
+                        json_str.push_str(",\n");
+                    }
                 }
 
-                if let Some(headers) = csv_builder.get_headers() {
-                    let mut json_str = "{\n".to_string();
+                json_str.push_str("\n  }\n");
 
-                    json_str.push_str(&format!("  \"group_by_column\": \"\",\n"));
-                    json_str.push_str(&format!("  \"grouped_column_name\": \"\",\n"));
+                json_str.push_str("}");
 
-                    json_str.push_str("  \"feature_flags\": {\n");
-
-                    for (i, header) in headers.iter().enumerate() {
-                        json_str.push_str(&format!("    \"{}\": [\"\"]", header));
-                        if i < headers.len() - 1 {
-                            json_str.push_str(",\n");
-                        }
-                    }
-
-                    json_str.push_str("\n  }\n");
-
-                    json_str.push_str("}");
-
-                    let syntax = r#"
+                let syntax = r#"
 
 SYNTAX
 ======
@@ -278,69 +297,72 @@ The following feature flags can be used to perform different types of calculatio
  - `BOOL_PERCENT` - Calculates the percentage of `1`s in the column, assuming the values are either `1` or `0`, rounded to two decimal places.
                 "#;
 
-                    json_str.push_str(syntax);
+                json_str.push_str(syntax);
 
-                    let row_json_str = json_str;
+                let row_json_str = json_str;
 
-                    let edited_json = get_edited_user_json_input(row_json_str);
+                let edited_json = get_edited_user_json_input(row_json_str);
 
-                    let edited_value: Value =
-                        serde_json::from_str(&edited_json).expect("Invalid JSON format");
+                let edited_value: Value =
+                    serde_json::from_str(&edited_json).expect("Invalid JSON format");
 
-                    // Extract values from the edited JSON
-                    let group_by_column = edited_value["group_by_column"]
-                        .as_str()
-                        .expect("group_by_column is not a string");
-                    let grouped_column_name = edited_value["grouped_column_name"]
-                        .as_str()
-                        .expect("grouped_column_name is not a string");
+                // Extract values from the edited JSON
+                let group_by_column = edited_value["group_by_column"]
+                    .as_str()
+                    .expect("group_by_column is not a string");
+                let grouped_column_name = edited_value["grouped_column_name"]
+                    .as_str()
+                    .expect("grouped_column_name is not a string");
 
-                    let mut feature_flags: Vec<(String, String)> = Vec::new();
-                    if let Value::Object(map) = &edited_value["feature_flags"] {
-                        for (key, value) in map.iter() {
-                            if let Value::Array(arr) = value {
-                                for val in arr {
-                                    if let Value::String(feature_flag) = val {
-                                        if !feature_flag.is_empty() {
-                                            feature_flags.push((key.clone(), feature_flag.clone()));
-                                        }
+                let mut feature_flags: Vec<(String, String)> = Vec::new();
+                if let Value::Object(map) = &edited_value["feature_flags"] {
+                    for (key, value) in map.iter() {
+                        if let Value::Array(arr) = value {
+                            for val in arr {
+                                if let Value::String(feature_flag) = val {
+                                    if !feature_flag.is_empty() {
+                                        feature_flags.push((key.clone(), feature_flag.clone()));
                                     }
                                 }
                             }
                         }
                     }
-
-                    // dbg!(&group_by_column, &grouped_column_name, &feature_flags);
-
-                    csv_builder.grouped_index_transform(
-                        &group_by_column,
-                        &grouped_column_name,
-                        feature_flags,
-                    );
                 }
 
-                if csv_builder.has_data() {
-                    csv_builder.print_table();
-                    println!();
-                }
+                // dbg!(&group_by_column, &grouped_column_name, &feature_flags);
 
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
+                csv_builder.grouped_index_transform(
+                    &group_by_column,
+                    &grouped_column_name,
+                    feature_flags,
+                );
             }
 
-            Some(2) => {
-                if choice.to_lowercase() == "2d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            if csv_builder.has_data() {
+                csv_builder.print_table();
+                println!();
+            }
+
+            /*
+            match apply_filter_changes_menu(
+                csv_builder,
+                &prev_iteration_builder,
+                &original_csv_builder,
+            ) {
+                Ok(_) => (),
+                Err(e) => {
+                    println!("{}", e);
+                    continue; // Ask for the choice again if there was an error
+                }
+            }
+            */
+        }
+
+        "2" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "2d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Generates csv files at a specified directory, splitting your current files based on a GROUP BY column.
 
@@ -363,63 +385,67 @@ Total rows: 4
    group_split_by_potatoe_in_item.csv
    group_split_by_pizza_in_item.csv
 "#,
-                    );
-                    continue;
-                }
-
-                let group_by_column_name_str =
-                    get_user_input_level_2("Enter the column name to group the data by: ");
-
-                if handle_cancel_flag(&group_by_column_name_str) {
-                    continue;
-                }
-
-                let grouped_data_dir_path_str =
-                    get_user_input_level_2("Enter file path of directory to store grouped data: ");
-
-                if handle_cancel_flag(&grouped_data_dir_path_str) {
-                    continue;
-                }
-
-                let _ = csv_builder.split_as(&group_by_column_name_str, &grouped_data_dir_path_str);
-
-                //let insight = format!("Split completed at {}", grouped_data_dir_path_str);
-                //print_insight_level_2(&insight);
-                let paths = fs::read_dir(grouped_data_dir_path_str.clone()).unwrap();
-                let file_count = paths.count();
-                let insight = format!(
-                    "Split completed at {}. {} files generated!",
-                    grouped_data_dir_path_str, file_count
                 );
-                print_insight_level_2(&insight);
-                println!();
-
-                continue;
-                /*
-                if csv_builder.has_data() {
-                    csv_builder.print_table();
-                    println!();
-                }
-
-
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-                */
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(3) => {
-                if choice.to_lowercase() == "3d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let group_by_column_name_str =
+                get_user_input_level_2("Enter the column name to group the data by: ");
+
+            if handle_cancel_flag(&group_by_column_name_str) {
+                //continue;
+                return Ok((csv_builder, false));
+            }
+
+            let grouped_data_dir_path_str =
+                get_user_input_level_2("Enter file path of directory to store grouped data: ");
+
+            if handle_cancel_flag(&grouped_data_dir_path_str) {
+                // continue;
+                return Ok((csv_builder, false));
+            }
+
+            let _ = csv_builder.split_as(&group_by_column_name_str, &grouped_data_dir_path_str);
+
+            //let insight = format!("Split completed at {}", grouped_data_dir_path_str);
+            //print_insight_level_2(&insight);
+            let paths = fs::read_dir(grouped_data_dir_path_str.clone()).unwrap();
+            let file_count = paths.count();
+            let insight = format!(
+                "Split completed at {}. {} files generated!",
+                grouped_data_dir_path_str, file_count
+            );
+            print_insight_level_2(&insight);
+            println!();
+            return Ok((csv_builder, false));
+            //continue;
+            /*
+            if csv_builder.has_data() {
+                csv_builder.print_table();
+                println!();
+            }
+
+
+            match apply_filter_changes_menu(
+                csv_builder,
+                &prev_iteration_builder,
+                &original_csv_builder,
+            ) {
+                Ok(_) => (),
+                Err(e) => {
+                    println!("{}", e);
+                    continue; // Ask for the choice again if there was an error
+                }
+            }
+            */
+        }
+
+        "3" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "3d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Unlike a broad grouping, a pivot is grouping that emphasizes aggregating numerical values, and segregating those aggregates. This feature creates a pivot table indexed/ grouped at a category label (accruing from the unique values in a category column).
 
@@ -516,44 +542,52 @@ Note the implication of params in the Json Query:
   - 4.2.1. AS_CATEGORY: It means that each unique value in the specified seggregation column will create a separate subgroup within each primary group. This is appropriate for text data or numerical data that represent distinct categories or groups rather than values to be aggregated.
   - 4.2.2. AS_BOOLEAN: By setting the type to "AS_BOOLEAN", it's understood that the specified seggregation column contains boolean values (1/0). The data will be segmented into two groups based on these boolean values. This type is particularly useful for flag columns that indicate the presence or absence of a particular condition or attribute.
 "#,
-                    );
-                    continue;
-                }
-
-                // This matches the case in your project's workflow for the pivot operation
-                match get_pivot_input() {
-                    Ok(piv) => {
-                        csv_builder.pivot_as(piv).print_table();
-                        println!();
-
-                        match apply_filter_changes_menu(
-                            csv_builder,
-                            &prev_iteration_builder,
-                            &original_csv_builder,
-                        ) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("{}", e);
-                                continue; // Ask for the choice again if there was an error
-                            }
-                        }
-                    }
-                    Err(e) if e.to_string() == "Operation canceled" => {
-                        continue;
-                    }
-
-                    Err(e) => println!("Error getting pivot details: {}", e),
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            _ => {
-                println!("Invalid option. Please enter a number from 1 to 3.");
-                continue;
+            // This matches the case in your project's workflow for the pivot operation
+            match get_pivot_input() {
+                Ok(piv) => {
+                    csv_builder.pivot_as(piv).print_table();
+                    println!();
+                    /*
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                    */
+                }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
+
+                Err(e) => {
+                    println!("Error getting pivot details: {}", e);
+                    return Ok((csv_builder, false));
+                }
             }
         }
 
-        //println!();
+        _ => {
+            println!("Invalid option. Please enter a number from 1 to 3.");
+            //continue;
+            return Ok((csv_builder, false));
+        }
     }
 
-    Ok(())
+    //println!();
+    //    }
+
+    //Ok(())
+    return Ok((csv_builder, true));
 }

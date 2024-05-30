@@ -1,10 +1,6 @@
 // csv_searcher.rs
-use crate::user_experience::{
-    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
-};
-use crate::user_interaction::{
-    determine_action_as_number, get_user_input_level_2, print_insight_level_2, print_list_level_2,
-};
+use crate::user_experience::handle_cancel_flag;
+use crate::user_interaction::{get_user_input_level_2, print_insight_level_2, print_list_level_2};
 use rgwml::csv_utils::CsvBuilder;
 
 pub async fn handle_search(
@@ -13,7 +9,7 @@ pub async fn handle_search(
     file_path_option: Option<&str>,
     */
     mut csv_builder: CsvBuilder,
-    file_path_option: Option<&str>,
+    _file_path_option: Option<&str>,
     action_feature: &str,
     action_flag: &str,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {

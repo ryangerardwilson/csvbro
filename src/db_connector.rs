@@ -1,20 +1,13 @@
 // db_connector.rs
 use crate::config::{Config, DbPreset, GoogleBigQueryPreset};
-use crate::csv_appender::handle_append;
-use crate::csv_inspector::handle_inspect;
-use crate::csv_joiner::handle_join;
-use crate::csv_manager::{apply_builder_changes_menu, chain_builder};
-use crate::csv_predicter::handle_predict;
-use crate::csv_searcher::handle_search;
-use crate::csv_tinkerer::handle_tinker;
-use crate::csv_transformer::handle_transform;
+use crate::csv_manager::chain_builder;
 use crate::user_experience::{
     handle_back_flag, handle_cancel_flag, handle_query_retry_flag, handle_query_special_flag,
     handle_quit_flag,
 };
 use crate::user_interaction::{
-    determine_action_as_number, determine_action_as_text, determine_action_type_feature_and_flag,
-    get_edited_user_sql_input, get_user_input, get_user_input_level_2, print_list,
+    determine_action_as_number, get_edited_user_sql_input, get_user_input, get_user_input_level_2,
+    print_list,
 };
 use regex::Regex;
 use rgwml::csv_utils::CsvBuilder;

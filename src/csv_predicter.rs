@@ -1,10 +1,7 @@
 // csv_predicter.rs
-use crate::user_experience::{
-    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
-};
+use crate::user_experience::{handle_back_flag, handle_cancel_flag};
 use crate::user_interaction::{
-    determine_action_as_number, get_edited_user_json_input, get_user_input_level_2,
-    print_insight_level_2, print_list_level_2,
+    get_edited_user_json_input, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
 use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal};
 use rgwml::xgb_utils::{XgbConfig, XgbConnect};
@@ -18,9 +15,17 @@ use std::path::Path;
 use std::path::PathBuf;
 
 pub async fn handle_predict(
-    csv_builder: &mut CsvBuilder,
-    file_path_option: Option<&str>,
-) -> Result<(), Box<dyn std::error::Error>> {
+    /*
+        csv_builder: &mut CsvBuilder,
+        file_path_option: Option<&str>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        */
+    mut csv_builder: CsvBuilder,
+    _file_path_option: Option<&str>,
+    action_feature: &str,
+    action_flag: &str,
+) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
+    /*
     fn apply_filter_changes_menu(
         csv_builder: &mut CsvBuilder,
         prev_iteration_builder: &CsvBuilder,
@@ -64,6 +69,7 @@ pub async fn handle_predict(
             _ => Err("Invalid option. Please enter a number from 1 to 3.".to_string()),
         }
     }
+    */
 
     fn get_xgb_model_input(
     ) -> Result<(String, String, String, String, XgbConfig), Box<dyn std::error::Error>> {
@@ -505,80 +511,103 @@ SYNTAX
             }
         }
     }
+    /*
+        let menu_options = vec![
+            "APPEND XGB_TYPE LABEL COLUMN BY RATIO",
+            "CREATE XGB MODEL",
+            "LIST XGB MODELS",
+            "DELETE XGB MODELS",
+            "APPEND XGB MODEL PREDICTIONS COLUMN",
+        ];
 
-    let menu_options = vec![
-        "APPEND XGB_TYPE LABEL COLUMN BY RATIO",
-        "CREATE XGB MODEL",
-        "LIST XGB MODELS",
-        "DELETE XGB MODELS",
-        "APPEND XGB MODEL PREDICTIONS COLUMN",
-    ];
+        let original_csv_builder = CsvBuilder::from_copy(csv_builder);
 
-    let original_csv_builder = CsvBuilder::from_copy(csv_builder);
+        loop {
+            print_insight_level_2("Select an option to group CSV data: ");
+            print_list_level_2(&menu_options);
 
-    loop {
-        print_insight_level_2("Select an option to group CSV data: ");
-        print_list_level_2(&menu_options);
+            let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
 
-        let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
+            if handle_special_flag(&choice, csv_builder, file_path_option) {
+                continue;
+            }
 
-        if handle_special_flag(&choice, csv_builder, file_path_option) {
-            continue;
+            if handle_back_flag(&choice) {
+                break;
+            }
+            let _ = handle_quit_flag(&choice);
+
+            let selected_option = determine_action_as_number(&menu_options, &choice);
+
+            let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
+    */
+
+    match action_feature {
+        "" => {
+            print_insight_level_2("Here's the TINKER feature menu ... ");
+            let menu_options = vec![
+                "APPEND XGB_TYPE LABEL COLUMN BY RATIO",
+                "CREATE XGB MODEL",
+                "LIST XGB MODELS",
+                "DELETE XGB MODELS",
+                "APPEND XGB MODEL PREDICTIONS COLUMN",
+            ];
+
+            print_list_level_2(&menu_options);
+
+            return Ok((csv_builder, false));
         }
 
-        if handle_back_flag(&choice) {
-            break;
-        }
-        let _ = handle_quit_flag(&choice);
-
-        let selected_option = determine_action_as_number(&menu_options, &choice);
-
-        let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
-
-        match selected_option {
-            Some(1) => {
-                if choice.to_lowercase() == "1d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        "1" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "1d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Appends a XGB_TYPE model column labelling rows as TRAIN, VALIDATE, or TEST, as per the ratio provided.
 
 "#,
-                    );
-                    continue;
-                }
-
-                let xgb_ratio_str =
-                    get_user_input_level_2("Enter the TRAIN:VALIDATE:TEST ratio to label data by (for instance: 70:20:10): ");
-
-                if handle_cancel_flag(&xgb_ratio_str) {
-                    continue;
-                }
-
-                csv_builder.append_xgb_label_by_ratio_column(&xgb_ratio_str);
-
-                if csv_builder.has_data() {
-                    csv_builder.print_table();
-                    println!();
-                }
-
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(2) => {
-                if choice.to_lowercase() == "2d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let xgb_ratio_str = get_user_input_level_2(
+                "Enter the TRAIN:VALIDATE:TEST ratio to label data by (for instance: 70:20:10): ",
+            );
+
+            if handle_cancel_flag(&xgb_ratio_str) {
+                //continue;
+                return Ok((csv_builder, false));
+            }
+
+            csv_builder.append_xgb_label_by_ratio_column(&xgb_ratio_str);
+
+            if csv_builder.has_data() {
+                csv_builder.print_table();
+                println!();
+            }
+
+            /*
+            match apply_filter_changes_menu(
+                csv_builder,
+                &prev_iteration_builder,
+                &original_csv_builder,
+            ) {
+                Ok(_) => (),
+                Err(e) => {
+                    println!("{}", e);
+                    continue; // Ask for the choice again if there was an error
+                }
+            }
+            */
+        }
+
+        "2" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "2d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Creates an XGB Model.
 
@@ -744,87 +773,94 @@ Total rows: 20
   "r2_score": 0.9820593048686468
 }
 "#,
-                    );
-                    continue;
-                }
-
-                match get_xgb_model_input() {
-                    Ok((
-                        param_column_names,
-                        target_column_name,
-                        prediction_column_name,
-                        model_name_str,
-                        xgb_config,
-                    )) => {
-                        let home_dir =
-                            env::var("HOME").expect("Unable to determine user home directory");
-                        let desktop_path = Path::new(&home_dir).join("Desktop");
-                        let csv_db_path = desktop_path.join("csv_db");
-                        let model_dir = csv_db_path.join("xgb_models");
-                        let model_dir_str = model_dir.to_str().unwrap();
-
-                        /*
-                        csv_builder
-                            .create_xgb_model(
-                                &param_column_names,
-                                &target_column_name,
-                                &prediction_column_name,
-                                &model_dir_str,
-                                &model_name_str,
-                                xgb_config,
-                            )
-                            .await
-                            .print_table();
-                        println!();
-                        */
-
-                        let (updated_csv_builder, report_json) = csv_builder
-                            .create_xgb_model(
-                                &param_column_names,
-                                &target_column_name,
-                                &prediction_column_name,
-                                &model_dir_str,
-                                &model_name_str,
-                                xgb_config,
-                            )
-                            .await;
-
-                        // Print the updated table
-                        updated_csv_builder.print_table();
-                        println!();
-
-                        print_insight_level_2("Yo, here's the lowdown on the model's performance:");
-                        println!();
-                        // Pretty-print the JSON report
-                        if let Ok(pretty_report) = to_string_pretty(&report_json) {
-                            println!("{}", pretty_report);
-                        }
-                        println!();
-
-                        match apply_filter_changes_menu(
-                            csv_builder,
-                            &prev_iteration_builder,
-                            &original_csv_builder,
-                        ) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("{}", e);
-                                continue; // Ask for the choice again if there was an error
-                            }
-                        }
-                    }
-                    Err(e) if e.to_string() == "Operation canceled" => {
-                        continue;
-                    }
-
-                    Err(e) => println!("Error getting pivot details: {}", e),
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(3) => {
-                if choice.to_lowercase() == "3d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            match get_xgb_model_input() {
+                Ok((
+                    param_column_names,
+                    target_column_name,
+                    prediction_column_name,
+                    model_name_str,
+                    xgb_config,
+                )) => {
+                    let home_dir =
+                        env::var("HOME").expect("Unable to determine user home directory");
+                    let desktop_path = Path::new(&home_dir).join("Desktop");
+                    let csv_db_path = desktop_path.join("csv_db");
+                    let model_dir = csv_db_path.join("xgb_models");
+                    let model_dir_str = model_dir.to_str().unwrap();
+
+                    /*
+                    csv_builder
+                        .create_xgb_model(
+                            &param_column_names,
+                            &target_column_name,
+                            &prediction_column_name,
+                            &model_dir_str,
+                            &model_name_str,
+                            xgb_config,
+                        )
+                        .await
+                        .print_table();
+                    println!();
+                    */
+
+                    let (updated_csv_builder, report_json) = csv_builder
+                        .create_xgb_model(
+                            &param_column_names,
+                            &target_column_name,
+                            &prediction_column_name,
+                            &model_dir_str,
+                            &model_name_str,
+                            xgb_config,
+                        )
+                        .await;
+
+                    // Print the updated table
+                    updated_csv_builder.print_table();
+                    println!();
+
+                    print_insight_level_2("Yo, here's the lowdown on the model's performance:");
+                    println!();
+                    // Pretty-print the JSON report
+                    if let Ok(pretty_report) = to_string_pretty(&report_json) {
+                        println!("{}", pretty_report);
+                    }
+                    println!();
+                    /*
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                    */
+                }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
+
+                Err(e) => {
+                    println!("Error getting pivot details: {}", e);
+                    return Ok((csv_builder, false));
+                }
+            }
+        }
+
+        "3" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "3d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Lists out all XGB Models.
 
@@ -839,166 +875,178 @@ Lists out all XGB Models.
 |7  |test_regression_model.json     |2024-05-26 00:37:23|no_of_tickets,last_60_days_tickets|
 Total rows: 7
 "#,
-                    );
-                    continue;
-                }
-
-                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
-                let desktop_path = Path::new(&home_dir).join("Desktop");
-                let csv_db_path = desktop_path.join("csv_db");
-                let xgb_models_path = csv_db_path.join("xgb_models");
-                let xgb_models_path_str = xgb_models_path.to_str().unwrap();
-
-                let mut xgb_models_builder = XgbConnect::get_all_xgb_models(xgb_models_path_str)
-                    .expect("Failed to load XGB models");
-
-                xgb_models_builder
-                    .add_column_header("id")
-                    .order_columns(vec!["id", "..."])
-                    .cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())])
-                    .resequence_id_column("id")
-                    .print_table_all_rows();
-
-                println!();
-
-                /*
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-                */
+                );
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(4) => {
-                if choice.to_lowercase() == "4d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+            let desktop_path = Path::new(&home_dir).join("Desktop");
+            let csv_db_path = desktop_path.join("csv_db");
+            let xgb_models_path = csv_db_path.join("xgb_models");
+            let xgb_models_path_str = xgb_models_path.to_str().unwrap();
+
+            let mut xgb_models_builder = XgbConnect::get_all_xgb_models(xgb_models_path_str)
+                .expect("Failed to load XGB models");
+
+            xgb_models_builder
+                .add_column_header("id")
+                .order_columns(vec!["id", "..."])
+                .cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())])
+                .resequence_id_column("id")
+                .print_table_all_rows();
+
+            println!();
+            return Ok((csv_builder, false));
+
+            /*
+            match apply_filter_changes_menu(
+                csv_builder,
+                &prev_iteration_builder,
+                &original_csv_builder,
+            ) {
+                Ok(_) => (),
+                Err(e) => {
+                    println!("{}", e);
+                    continue; // Ask for the choice again if there was an error
+                }
+            }
+            */
+        }
+
+        "4" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "4d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Delete one or more of your XGB Models.
 
 "#,
-                    );
-                    continue;
-                }
-
-                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
-                let desktop_path = Path::new(&home_dir).join("Desktop");
-                let csv_db_path = desktop_path.join("csv_db");
-                /*
-                let xgb_models_path = csv_db_path.join("xgb_models");
-                let xgb_models_path_str = xgb_models_path.to_str().unwrap();
-
-                let mut xgb_models_builder = XgbConnect::get_all_xgb_models(xgb_models_path_str)
-                    .expect("Failed to load XGB models");
-                */
-
-                //xgb_models_builder.add_column_header("id").order_columns(vec!["id", "..."]).cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())]).resequence_id_column("id").print_table_all_rows();
-
-                let _ = delete_xgb_file(&csv_db_path);
-
-                /*
-                let xgb_models_path = csv_db_path.join("xgb_models");
-                let xgb_models_path_str = xgb_models_path.to_str().unwrap();
-
-                let mut xgb_models_builder = XgbConnect::get_all_xgb_models(xgb_models_path_str)
-                    .expect("Failed to load XGB models");
-
-                xgb_models_builder.add_column_header("id").order_columns(vec!["id", "..."]).cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())]).resequence_id_column("id").print_table_all_rows();
-                */
-
-                println!();
-
-                /*
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-                */
+                );
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(5) => {
-                if choice.to_lowercase() == "5d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+            let desktop_path = Path::new(&home_dir).join("Desktop");
+            let csv_db_path = desktop_path.join("csv_db");
+            /*
+            let xgb_models_path = csv_db_path.join("xgb_models");
+            let xgb_models_path_str = xgb_models_path.to_str().unwrap();
+
+            let mut xgb_models_builder = XgbConnect::get_all_xgb_models(xgb_models_path_str)
+                .expect("Failed to load XGB models");
+            */
+
+            //xgb_models_builder.add_column_header("id").order_columns(vec!["id", "..."]).cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())]).resequence_id_column("id").print_table_all_rows();
+
+            let _ = delete_xgb_file(&csv_db_path);
+
+            /*
+            let xgb_models_path = csv_db_path.join("xgb_models");
+            let xgb_models_path_str = xgb_models_path.to_str().unwrap();
+
+            let mut xgb_models_builder = XgbConnect::get_all_xgb_models(xgb_models_path_str)
+                .expect("Failed to load XGB models");
+
+            xgb_models_builder.add_column_header("id").order_columns(vec!["id", "..."]).cascade_sort(vec![("last_modified".to_string(), "ASC".to_string())]).resequence_id_column("id").print_table_all_rows();
+            */
+
+            println!();
+
+            /*
+            match apply_filter_changes_menu(
+                csv_builder,
+                &prev_iteration_builder,
+                &original_csv_builder,
+            ) {
+                Ok(_) => (),
+                Err(e) => {
+                    println!("{}", e);
+                    continue; // Ask for the choice again if there was an error
+                }
+            }
+            */
+        }
+
+        "5" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "5d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Appends a predictions column leveraging an XGB Model.
 
 "#,
-                    );
-                    continue;
-                }
-
-                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
-                let desktop_path = Path::new(&home_dir).join("Desktop");
-                let csv_db_path = desktop_path.join("csv_db");
-
-                // Call the get_xgb_details function
-                match get_xgb_details(&csv_db_path) {
-                    Ok((path, params)) => {
-                        let prediction_column_name =
-                            get_user_input_level_2("Name your predictions column: ");
-
-                        if handle_cancel_flag(&prediction_column_name) {
-                            continue;
-                        }
-
-                        let path_str = path.to_str().unwrap();
-
-                        //dbg!(&params, &prediction_column_name, &path_str);
-                        csv_builder
-                            .append_xgb_model_predictions_column(
-                                &params,
-                                &prediction_column_name,
-                                path_str,
-                            )
-                            .await;
-
-                        csv_builder.print_table();
-                        println!();
-
-                        match apply_filter_changes_menu(
-                            csv_builder,
-                            &prev_iteration_builder,
-                            &original_csv_builder,
-                        ) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("{}", e);
-                                continue; // Ask for the choice again if there was an error
-                            }
-                        }
-
-                        //println!("File Path: {:?}", path);
-                        //println!("Params: {}", params);
-                    }
-                    Err(e) => {
-                        eprintln!("An error occurred: {}", e);
-                    }
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            _ => {
-                println!("Invalid option. Please enter a number from 1 to 5.");
-                continue;
+            let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+            let desktop_path = Path::new(&home_dir).join("Desktop");
+            let csv_db_path = desktop_path.join("csv_db");
+
+            // Call the get_xgb_details function
+            match get_xgb_details(&csv_db_path) {
+                Ok((path, params)) => {
+                    let prediction_column_name =
+                        get_user_input_level_2("Name your predictions column: ");
+
+                    if handle_cancel_flag(&prediction_column_name) {
+                        //continue;
+                        return Ok((csv_builder, false));
+                    }
+
+                    let path_str = path.to_str().unwrap();
+
+                    //dbg!(&params, &prediction_column_name, &path_str);
+                    csv_builder
+                        .append_xgb_model_predictions_column(
+                            &params,
+                            &prediction_column_name,
+                            path_str,
+                        )
+                        .await;
+
+                    csv_builder.print_table();
+                    println!();
+
+                    /*
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                    */
+
+                    //println!("File Path: {:?}", path);
+                    //println!("Params: {}", params);
+                }
+                Err(e) => {
+                    eprintln!("An error occurred: {}", e);
+                    return Ok((csv_builder, false));
+                }
             }
         }
 
-        //println!();
+        _ => {
+            println!("Invalid option. Please enter a number from 1 to 5.");
+            //continue;
+            return Ok((csv_builder, false));
+        }
     }
 
-    Ok(())
+    //println!();
+    //    }
+
+    //Ok(())
+    return Ok((csv_builder, true));
 }

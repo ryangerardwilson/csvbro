@@ -1,10 +1,6 @@
 // csv_joiner.rs
-use crate::user_experience::{
-    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
-};
-use crate::user_interaction::{
-    determine_action_as_number, get_user_input_level_2, print_insight_level_2, print_list_level_2,
-};
+use crate::user_experience::handle_cancel_flag;
+use crate::user_interaction::{get_user_input_level_2, print_insight_level_2, print_list_level_2};
 use fuzzywuzzy::fuzz;
 use rgwml::csv_utils::CsvBuilder;
 use std::env;
@@ -13,10 +9,18 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
-pub fn handle_join(
-    csv_builder: &mut CsvBuilder,
-    file_path_option: Option<&str>,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn handle_join(
+    /*
+        csv_builder: &mut CsvBuilder,
+        file_path_option: Option<&str>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        */
+    mut csv_builder: CsvBuilder,
+    _file_path_option: Option<&str>,
+    action_feature: &str,
+    action_flag: &str,
+) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
+    /*
     fn apply_filter_changes_menu(
         csv_builder: &mut CsvBuilder,
         prev_iteration_builder: &CsvBuilder,
@@ -58,6 +62,7 @@ pub fn handle_join(
             _ => Err("Invalid option. Please enter a number from 1 to 3.".to_string()),
         }
     }
+    */
 
     fn get_csv_db_path() -> String {
         let home_dir = env::var("HOME").expect("Unable to determine user home directory");
@@ -141,6 +146,7 @@ pub fn handle_join(
         }
         None
     }
+
     fn sort_csv_by_id_if_needed(csv_builder: &mut CsvBuilder) {
         let mut perform_sort = false;
 
@@ -158,45 +164,67 @@ pub fn handle_join(
         }
     }
 
-    let menu_options = vec![
-        "UNION",
-        "UNION (BAG)",
-        "UNION (LEFT JOIN/ OUTER LEFT JOIN)",
-        "UNION (RIGHT JOIN/ OUTER RIGHT JOIN)",
-        "UNION (OUTER FULL JOIN)",
-        "INTERSECTION",
-        "INTERSECTION (INNER JOIN)",
-        "DIFFERENCE",
-        "DIFFERENCE (SYMMETRIC)",
-    ];
+    /*
+        let menu_options = vec![
+            "UNION",
+            "UNION (BAG)",
+            "UNION (LEFT JOIN/ OUTER LEFT JOIN)",
+            "UNION (RIGHT JOIN/ OUTER RIGHT JOIN)",
+            "UNION (OUTER FULL JOIN)",
+            "INTERSECTION",
+            "INTERSECTION (INNER JOIN)",
+            "DIFFERENCE",
+            "DIFFERENCE (SYMMETRIC)",
+        ];
 
-    let original_csv_builder = CsvBuilder::from_copy(csv_builder);
+        let original_csv_builder = CsvBuilder::from_copy(csv_builder);
 
-    loop {
-        print_insight_level_2("Select an option to inspect CSV data:");
-        print_list_level_2(&menu_options);
-        let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-        if handle_special_flag(&choice, csv_builder, file_path_option) {
-            continue;
+        loop {
+
+            print_insight_level_2("Select an option to inspect CSV data:");
+            print_list_level_2(&menu_options);
+            let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
+            if handle_special_flag(&choice, csv_builder, file_path_option) {
+                continue;
+            }
+
+            if handle_back_flag(&choice) {
+                break;
+            }
+            let _ = handle_quit_flag(&choice);
+
+            let selected_option = determine_action_as_number(&menu_options, &choice);
+    */
+    let csv_db_path = get_csv_db_path();
+    let csv_db_path_buf = PathBuf::from(csv_db_path);
+
+    //      let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
+
+    match action_feature {
+        "" => {
+            print_insight_level_2("Here's the JOIN feature menu ... ");
+            let menu_options = vec![
+                "UNION",
+                "UNION (BAG)",
+                "UNION (LEFT JOIN/ OUTER LEFT JOIN)",
+                "UNION (RIGHT JOIN/ OUTER RIGHT JOIN)",
+                "UNION (OUTER FULL JOIN)",
+                "INTERSECTION",
+                "INTERSECTION (INNER JOIN)",
+                "DIFFERENCE",
+                "DIFFERENCE (SYMMETRIC)",
+            ];
+
+            print_list_level_2(&menu_options);
+
+            return Ok((csv_builder, false));
         }
 
-        if handle_back_flag(&choice) {
-            break;
-        }
-        let _ = handle_quit_flag(&choice);
-
-        let selected_option = determine_action_as_number(&menu_options, &choice);
-
-        let csv_db_path = get_csv_db_path();
-        let csv_db_path_buf = PathBuf::from(csv_db_path);
-
-        let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
-
-        match selected_option {
-            Some(1) => {
-                if choice.to_lowercase() == "1d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        "1" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "1d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Computes A U B, under traditional set theory. For A = {1,2,3} and B = {3,4,5}, it returns {1,2,3,4,5}
 
@@ -291,62 +319,66 @@ Total rows: 5
 |9  |100   |2024-03-10|
 Total rows: 7
 "#,
-                    );
-                    continue;
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
+            }
 
-                let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
-                if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                    CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+            let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
+            if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
+                CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
 
-                    let join_at_choice = get_user_input_level_2(
+                let join_at_choice = get_user_input_level_2(
                         "Enter comma separated column name/names from your above selected csvs to determine uniqueness by (use * for a traditional union that determines uniqueness based on all columns)): ",
                     )
                     .to_lowercase();
 
-                    /*
-                    if join_at_choice.to_lowercase() == "@cancel" {
-                        //return None;
-                        return Ok(());
-                    }
-                    */
+                /*
+                if join_at_choice.to_lowercase() == "@cancel" {
+                    //return None;
+                    return Ok(());
+                }
+                */
 
-                    if handle_cancel_flag(&join_at_choice) {
-                        continue;
-                        //return Ok(());
-                    }
+                if handle_cancel_flag(&join_at_choice) {
+                    //continue;
+                    return Ok((csv_builder, false));
+                    //return Ok(());
+                }
 
-                    let column_names: Vec<&str> =
-                        join_at_choice.split(',').map(|s| s.trim()).collect();
+                let column_names: Vec<&str> = join_at_choice.split(',').map(|s| s.trim()).collect();
 
-                    let _ = csv_builder.set_union_with_csv_file(
-                        &chosen_file_path_for_join,
-                        "UNION_TYPE:NORMAL",
-                        column_names,
-                    );
+                let _ = csv_builder.set_union_with_csv_file(
+                    &chosen_file_path_for_join,
+                    "UNION_TYPE:NORMAL",
+                    column_names,
+                );
 
-                    sort_csv_by_id_if_needed(csv_builder);
+                sort_csv_by_id_if_needed(&mut csv_builder);
 
-                    csv_builder.print_table();
+                csv_builder.print_table();
 
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
+                /*
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
                     }
                 }
+                */
             }
+        }
 
-            Some(2) => {
-                if choice.to_lowercase() == "2d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        "2" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "2d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Computes A U B, whilst retaining duplicates. This operation is known as the "multiset union" or "bag union" in mathematics and computer science. Unlike the traditional set union, which produces a set that contains all of the elements from both sets without duplicates, a multiset union retains duplicates, reflecting the combined multiplicity of each element from both multisets. For A = {1,2,3} and B = {3,4,5}, it returns {1,2,3,3,4,5}
 
@@ -403,39 +435,44 @@ What's it gonna be?: test2
 |12 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
 Total rows: 22
 "#,
-                    );
-                    continue;
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
+            }
 
-                let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
+            let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
 
-                if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                    CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
-                    println!();
-                    print_insight_level_2("Now, computing the bag union with the above ...");
-                    let _ = csv_builder.set_bag_union_with_csv_file(&chosen_file_path_for_join);
+            if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
+                CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                println!();
+                print_insight_level_2("Now, computing the bag union with the above ...");
+                let _ = csv_builder.set_bag_union_with_csv_file(&chosen_file_path_for_join);
 
-                    sort_csv_by_id_if_needed(csv_builder);
+                sort_csv_by_id_if_needed(&mut csv_builder);
 
-                    csv_builder.print_table();
+                csv_builder.print_table();
 
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
+                /*
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
                     }
                 }
+                */
             }
-            Some(3) => {
-                if choice.to_lowercase() == "3d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        }
+
+        "3" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "3d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 A LEFT JOIN on tables A and B includes every row from A along with any matching rows from B based on a join condition (i.e. a shared column). If there is no match in B for a row in A, the result still includes that row from A, with empty string values for the columns from B.
 
@@ -484,63 +521,68 @@ Total rows: 3
 |10 |280   |2024-04-08|9.4      |FOOD  |1         |Daily Necessity    |
 Total rows: 10
 "#,
-                    );
-                    continue;
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
+            }
 
-                print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A LEFT_JOIN B");
-                let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
-                if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                    CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
-                    let left_join_at_choice = get_user_input_level_2(
+            print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A LEFT_JOIN B");
+            let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
+            if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
+                CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                let left_join_at_choice = get_user_input_level_2(
                         "Enter comma-separated column name/names from your above selected csv to LEFT JOIN at: ",
                     )
                     .to_lowercase();
 
-                    /*
-                    if left_join_at_choice.to_lowercase() == "@cancel" {
-                        //return None;
-                        return Ok(());
-                    }
-                    */
+                /*
+                if left_join_at_choice.to_lowercase() == "@cancel" {
+                    //return None;
+                    return Ok(());
+                }
+                */
 
-                    if handle_cancel_flag(&left_join_at_choice) {
-                        continue;
-                        //return Ok(());
-                    }
+                if handle_cancel_flag(&left_join_at_choice) {
+                    //continue;
+                    return Ok((csv_builder, false));
+                    //return Ok(());
+                }
 
-                    //let union_type = format!("UNION_TYPE:LEFT_JOIN_AT_{}", left_join_at_choice);
+                //let union_type = format!("UNION_TYPE:LEFT_JOIN_AT_{}", left_join_at_choice);
 
-                    let column_names: Vec<&str> =
-                        left_join_at_choice.split(',').map(|s| s.trim()).collect();
+                let column_names: Vec<&str> =
+                    left_join_at_choice.split(',').map(|s| s.trim()).collect();
 
-                    //dbg!(&union_type);
-                    csv_builder
-                        .set_union_with_csv_file(
-                            &chosen_file_path_for_join,
-                            "UNION_TYPE:LEFT_JOIN",
-                            column_names,
-                        )
-                        .print_table();
+                //dbg!(&union_type);
+                csv_builder
+                    .set_union_with_csv_file(
+                        &chosen_file_path_for_join,
+                        "UNION_TYPE:LEFT_JOIN",
+                        column_names,
+                    )
+                    .print_table();
 
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
+                /*
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
                     }
                 }
+                */
             }
+        }
 
-            Some(4) => {
-                if choice.to_lowercase() == "4d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        "4" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "4d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 A RIGHT JOIN between tables A and B is essentially the same as a LEFT JOIN between tables B and A, just approached from the opposite direction. Both join types aim to include all rows from one of the two tables being joined, regardless of whether there is a matching row in the other table. The difference lies in which table is guaranteed to have all its rows included:
 - In a LEFT JOIN of A and B, every row from table A is included. If there's no matching row in B, the result will still include the row from A, with the columns from B filled with NULLs or placeholders.
@@ -590,60 +632,65 @@ Total rows: 10
 |10        |280          |2024-04-08  |9.4             |FOOD  |1  |Daily Necessity|
 Total rows: 10
 "#,
-                    );
-                    continue;
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
+            }
 
-                print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A RIGHT_JOIN B");
-                let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
-                if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                    CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
-                    let right_join_at_choice = get_user_input_level_2(
+            print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A RIGHT_JOIN B");
+            let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
+            if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
+                CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                let right_join_at_choice = get_user_input_level_2(
                         "Enter comma separated column name/ names from your above selected csv to RIGHT JOIN at: ",
                     )
                     .to_lowercase();
 
-                    /*
-                    if right_join_at_choice.to_lowercase() == "@cancel" {
-                        //return None;
-                        return Ok(());
-                    }
-                    */
+                /*
+                if right_join_at_choice.to_lowercase() == "@cancel" {
+                    //return None;
+                    return Ok(());
+                }
+                */
 
-                    if handle_cancel_flag(&right_join_at_choice) {
-                        continue;
-                        //return Ok(());
-                    }
+                if handle_cancel_flag(&right_join_at_choice) {
+                    //continue;
+                    return Ok((csv_builder, false));
+                    //return Ok(());
+                }
 
-                    //let union_type = format!("UNION_TYPE:RIGHT_JOIN_AT_{}", right_join_at_choice);
-                    let column_names: Vec<&str> =
-                        right_join_at_choice.split(',').map(|s| s.trim()).collect();
+                //let union_type = format!("UNION_TYPE:RIGHT_JOIN_AT_{}", right_join_at_choice);
+                let column_names: Vec<&str> =
+                    right_join_at_choice.split(',').map(|s| s.trim()).collect();
 
-                    csv_builder
-                        .set_union_with_csv_file(
-                            &chosen_file_path_for_join,
-                            "UNION_TYPE:RIGHT_JOIN",
-                            column_names,
-                        )
-                        .print_table();
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
+                csv_builder
+                    .set_union_with_csv_file(
+                        &chosen_file_path_for_join,
+                        "UNION_TYPE:RIGHT_JOIN",
+                        column_names,
+                    )
+                    .print_table();
+                /*
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
                     }
                 }
+                */
             }
+        }
 
-            Some(5) => {
-                if choice.to_lowercase() == "5d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        "5" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "5d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 An OUTER FULL JOIN between tables A and B combines the results of both a left join and a right join. This join type includes every row from both tables A and B. If a row from table A matches one from table B based on a join condition (typically a shared column), the joined table will include columns from both rows. If there is no match:
   - For a row in table A, the row will include this data with null (or similar placeholder) values for the columns from table B.
   - Conversely, if there is a row in table B that does not match any in table A, the row will include this data with null values for the columns from table A.
@@ -694,75 +741,82 @@ Total rows: 4
 |   |      |          |         |BUSINESS|4         |Refund             |
 Total rows: 11
 "#,
-                    );
-                    continue;
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
+            }
 
-                print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_OUTER_FULL_JOIN_UNION_WITH B");
+            print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_OUTER_FULL_JOIN_UNION_WITH B");
 
-                let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
+            let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
 
-                if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
-                    let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
-                    println!();
-                }
+            if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
+                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                println!();
+            }
 
-                if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                    // Capture user input for key columns
-                    let set_intersection_at_choice = get_user_input_level_2(
+            if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
+                // Capture user input for key columns
+                let set_intersection_at_choice = get_user_input_level_2(
         "Enter column names (comma separated, if multiple) to SET_OUTER_FULL_JOIN_UNION_WITH at: ",
     );
 
-                    /*
-                    if set_intersection_at_choice.to_lowercase() == "@cancel" {
-                        //return None;
-                        return Ok(());
-                    }
-                    */
+                /*
+                if set_intersection_at_choice.to_lowercase() == "@cancel" {
+                    //return None;
+                    return Ok(());
+                }
+                */
 
-                    if handle_cancel_flag(&set_intersection_at_choice) {
-                        continue;
-                        //return Ok(());
-                    }
+                if handle_cancel_flag(&set_intersection_at_choice) {
+                    //continue;
+                    return Ok((csv_builder, false));
+                    //return Ok(());
+                }
 
-                    // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
-                    let key_columns: Vec<&str> = set_intersection_at_choice
-                        .split(',')
-                        .map(|s| s.trim())
-                        .filter(|s| !s.is_empty())
-                        .collect();
+                // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
+                let key_columns: Vec<&str> = set_intersection_at_choice
+                    .split(',')
+                    .map(|s| s.trim())
+                    .filter(|s| !s.is_empty())
+                    .collect();
 
-                    // Ensure that there is at least one key column specified
-                    if key_columns.is_empty() {
-                        println!("Error: No key columns specified. Please specify at least one key column.");
-                    } else {
-                        // Perform set intersection with the specified key columns
-                        csv_builder
-                            .set_union_with_csv_file(
-                                &chosen_file_path_for_join,
-                                "UNION_TYPE:OUTER_FULL_JOIN",
-                                key_columns,
-                            )
-                            .print_table();
-                    }
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
+                // Ensure that there is at least one key column specified
+                if key_columns.is_empty() {
+                    println!(
+                        "Error: No key columns specified. Please specify at least one key column."
+                    );
+                } else {
+                    // Perform set intersection with the specified key columns
+                    csv_builder
+                        .set_union_with_csv_file(
+                            &chosen_file_path_for_join,
+                            "UNION_TYPE:OUTER_FULL_JOIN",
+                            key_columns,
+                        )
+                        .print_table();
+                }
+                /*
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
                     }
                 }
+                */
             }
+        }
 
-            Some(6) => {
-                if choice.to_lowercase() == "6d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        "6" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "6d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 A 'SET INTERSECTION WITH' analysis is useful to find common elements of data sets with similar column names but serving different purposes. For instance, if, instead of using a category column 'sales_type', a business decides to have two different csv files to record online_sales and instore_sales, a 'SET INTERSECTION WITH' analysis can help us find out which customers (identified uniquely in both files via an id column) shop online as well as at the store.
 
@@ -869,75 +923,82 @@ Total rows: 4
 |Beverages|Coffee|Thursday     |
 Total rows: 3
 "#,
-                    );
-                    continue;
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
+            }
 
-                print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_INTERSECTION_WITH B");
+            print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_INTERSECTION_WITH B");
 
-                let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
+            let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
 
-                if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
-                    let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
-                    println!();
-                }
+            if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
+                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                println!();
+            }
 
-                if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                    // Capture user input for key columns
-                    let set_intersection_at_choice = get_user_input_level_2(
+            if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
+                // Capture user input for key columns
+                let set_intersection_at_choice = get_user_input_level_2(
         "Enter column names (comma separated, if multiple) to SET_INTERSECTION_WITH at: ",
     );
 
-                    /*
-                    if set_intersection_at_choice.to_lowercase() == "@cancel" {
-                        //return None;
-                        return Ok(());
-                    }
-                    */
+                /*
+                if set_intersection_at_choice.to_lowercase() == "@cancel" {
+                    //return None;
+                    return Ok(());
+                }
+                */
 
-                    if handle_cancel_flag(&set_intersection_at_choice) {
-                        continue;
-                        //return Ok(());
-                    }
+                if handle_cancel_flag(&set_intersection_at_choice) {
+                    //continue;
+                    return Ok((csv_builder, false));
+                    //return Ok(());
+                }
 
-                    // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
-                    let key_columns: Vec<&str> = set_intersection_at_choice
-                        .split(',')
-                        .map(|s| s.trim())
-                        .filter(|s| !s.is_empty())
-                        .collect();
+                // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
+                let key_columns: Vec<&str> = set_intersection_at_choice
+                    .split(',')
+                    .map(|s| s.trim())
+                    .filter(|s| !s.is_empty())
+                    .collect();
 
-                    // Ensure that there is at least one key column specified
-                    if key_columns.is_empty() {
-                        println!("Error: No key columns specified. Please specify at least one key column.");
-                    } else {
-                        // Perform set intersection with the specified key columns
-                        csv_builder
-                            .set_intersection_with_csv_file(
-                                &chosen_file_path_for_join,
-                                key_columns,
-                                "INTERSECTION_TYPE:NORMAL",
-                            )
-                            .print_table();
-                    }
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
+                // Ensure that there is at least one key column specified
+                if key_columns.is_empty() {
+                    println!(
+                        "Error: No key columns specified. Please specify at least one key column."
+                    );
+                } else {
+                    // Perform set intersection with the specified key columns
+                    csv_builder
+                        .set_intersection_with_csv_file(
+                            &chosen_file_path_for_join,
+                            key_columns,
+                            "INTERSECTION_TYPE:NORMAL",
+                        )
+                        .print_table();
+                }
+                /*
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
                     }
                 }
+                */
             }
+        }
 
-            Some(7) => {
-                if choice.to_lowercase() == "7d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        "7" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "7d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 A 'INTERSECTION (INNER JOIN)' is used to combine data from two distinct sets based on a common attribute or condition, effectively finding the intersection between these sets. This method is particularly useful when you're dealing with data that is related but stored in separate sources. For example, if a business maintains separate datasets for online sales and in-store sales, each identified by a unique customer ID, an INNER JOIN can merge these datasets to focus exclusively on customers who appear in both. This enables a comprehensive analysis of cross-channel shopping behaviors by filtering out customers who have only shopped through one channel. The result of an INNER JOIN provides a concentrated view of shared data points, making it ideal for identifying patterns or relationships that only exist across intersecting subsets of data.
 
@@ -1023,68 +1084,75 @@ Total rows: 5
 |5           |Monthly|2024-02-20        |2024-02-20      |
 Total rows: 3
 "#,
-                    );
-                    continue;
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
+            }
 
-                print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_INNER_JOIN_INTERSECTION_WITH B");
+            print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_INNER_JOIN_INTERSECTION_WITH B");
 
-                let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
+            let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
 
-                if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
-                    let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
-                    println!();
-                }
+            if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
+                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                println!();
+            }
 
-                if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                    // Capture user input for key columns
-                    let set_intersection_at_choice = get_user_input_level_2(
+            if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
+                // Capture user input for key columns
+                let set_intersection_at_choice = get_user_input_level_2(
         "Enter column names (comma separated, if multiple) to SET_INNER_JOIN_INTERSECTION_WITH at: ",
     );
 
-                    if handle_cancel_flag(&set_intersection_at_choice) {
-                        continue;
-                        //return Ok(());
-                    }
+                if handle_cancel_flag(&set_intersection_at_choice) {
+                    //continue;
+                    return Ok((csv_builder, false));
+                    //return Ok(());
+                }
 
-                    // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
-                    let key_columns: Vec<&str> = set_intersection_at_choice
-                        .split(',')
-                        .map(|s| s.trim())
-                        .filter(|s| !s.is_empty())
-                        .collect();
+                // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
+                let key_columns: Vec<&str> = set_intersection_at_choice
+                    .split(',')
+                    .map(|s| s.trim())
+                    .filter(|s| !s.is_empty())
+                    .collect();
 
-                    // Ensure that there is at least one key column specified
-                    if key_columns.is_empty() {
-                        println!("Error: No key columns specified. Please specify at least one key column.");
-                    } else {
-                        // Perform set intersection with the specified key columns
-                        csv_builder
-                            .set_intersection_with_csv_file(
-                                &chosen_file_path_for_join,
-                                key_columns,
-                                "INTERSECTION_TYPE:INNER_JOIN",
-                            )
-                            .print_table();
-                    }
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
+                // Ensure that there is at least one key column specified
+                if key_columns.is_empty() {
+                    println!(
+                        "Error: No key columns specified. Please specify at least one key column."
+                    );
+                } else {
+                    // Perform set intersection with the specified key columns
+                    csv_builder
+                        .set_intersection_with_csv_file(
+                            &chosen_file_path_for_join,
+                            key_columns,
+                            "INTERSECTION_TYPE:INNER_JOIN",
+                        )
+                        .print_table();
+                }
+                /*
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
                     }
                 }
+                */
             }
+        }
 
-            Some(8) => {
-                if choice.to_lowercase() == "8d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        "8" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "8d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 A 'SET DIFFERENCE WITH' analysis is an insightful tool for identifying unique elements in one dataset compared to another, especially when managing data sets with similar column names that serve distinct purposes. This type of analysis becomes particularly valuable in scenarios where we need to highlight differences rather than similarities, such as identifying exclusive customer segments, unique sales transactions, or distinct items sold.
 
@@ -1192,75 +1260,82 @@ Total rows: 2
 |Beverages|Coffee|Monday       |
 Total rows: 3
 "#,
-                    );
-                    continue;
-                }
-
-                print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_DIFFERENCE_WITH B");
-
-                let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
-
-                if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
-                    let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
-                    println!();
-                }
-
-                if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                    // Capture user input for key columns
-                    let set_intersection_at_choice = get_user_input_level_2(
-        "Enter column names (comma separated, if multiple) to SET_DIFFERENCE_WITH at: ",
-    );
-
-                    /*
-                    if set_intersection_at_choice.to_lowercase() == "@cancel" {
-                        //return None;
-                        return Ok(());
-                    }
-                    */
-
-                    if handle_cancel_flag(&set_intersection_at_choice) {
-                        continue;
-                        //return Ok(());
-                    }
-
-                    // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
-                    let key_columns: Vec<&str> = set_intersection_at_choice
-                        .split(',')
-                        .map(|s| s.trim())
-                        .filter(|s| !s.is_empty())
-                        .collect();
-
-                    // Ensure that there is at least one key column specified
-                    if key_columns.is_empty() {
-                        println!("Error: No key columns specified. Please specify at least one key column.");
-                    } else {
-                        // Perform set intersection with the specified key columns
-                        csv_builder
-                            .set_difference_with_csv_file(
-                                &chosen_file_path_for_join,
-                                "DIFFERENCE_TYPE:NORMAL",
-                                key_columns,
-                            )
-                            .print_table();
-                    }
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
-                    }
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(9) => {
-                if choice.to_lowercase() == "9d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_DIFFERENCE_WITH B");
+
+            let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
+
+            if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
+                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                println!();
+            }
+
+            if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
+                // Capture user input for key columns
+                let set_intersection_at_choice = get_user_input_level_2(
+                    "Enter column names (comma separated, if multiple) to SET_DIFFERENCE_WITH at: ",
+                );
+
+                /*
+                if set_intersection_at_choice.to_lowercase() == "@cancel" {
+                    //return None;
+                    return Ok(());
+                }
+                */
+
+                if handle_cancel_flag(&set_intersection_at_choice) {
+                    //continue;
+                    return Ok((csv_builder, false));
+                    //return Ok(());
+                }
+
+                // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
+                let key_columns: Vec<&str> = set_intersection_at_choice
+                    .split(',')
+                    .map(|s| s.trim())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+
+                // Ensure that there is at least one key column specified
+                if key_columns.is_empty() {
+                    println!(
+                        "Error: No key columns specified. Please specify at least one key column."
+                    );
+                } else {
+                    // Perform set intersection with the specified key columns
+                    csv_builder
+                        .set_difference_with_csv_file(
+                            &chosen_file_path_for_join,
+                            "DIFFERENCE_TYPE:NORMAL",
+                            key_columns,
+                        )
+                        .print_table();
+                }
+                /*
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
+                    }
+                }
+                */
+            }
+        }
+
+        "9" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "9d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 A 'SET SYMMETRIC DIFFERENCE WITH' analysis is a powerful technique for identifying elements that are unique to each of two datasets, essentially highlighting the differences between them without overlap. This method is invaluable when the objective is to uncover exclusive elements in both sets, thereby providing a comprehensive view of unique attributes, transactions, or records that do not have a common counterpart in the compared datasets.
 
@@ -1379,79 +1454,88 @@ hase_day
 |Beverages|Tea   |Friday       |
 Total rows: 6
 "#,
-                    );
-                    continue;
-                }
+                );
+                // continue;
+                return Ok((csv_builder, false));
+            }
 
-                print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_SYMMETRIC_DIFFERENCE_WITH B");
+            print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_SYMMETRIC_DIFFERENCE_WITH B");
 
-                let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
+            let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
 
-                if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
-                    let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
-                    println!();
-                }
+            if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
+                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                println!();
+            }
 
-                if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                    // Capture user input for key columns
-                    let set_intersection_at_choice = get_user_input_level_2(
+            if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
+                // Capture user input for key columns
+                let set_intersection_at_choice = get_user_input_level_2(
         "Enter column names (comma separated, if multiple) to SET_SYMMETRIC_DIFFERENCE_WITH at: ",
     );
 
-                    /*
-                    if set_intersection_at_choice.to_lowercase() == "@cancel" {
-                        //return None;
-                        return Ok(());
-                    }
-                    */
-                    if handle_cancel_flag(&set_intersection_at_choice) {
-                        continue;
-                        //return Ok(());
-                    }
+                /*
+                if set_intersection_at_choice.to_lowercase() == "@cancel" {
+                    //return None;
+                    return Ok(());
+                }
+                */
+                if handle_cancel_flag(&set_intersection_at_choice) {
+                    //continue;
+                    return Ok((csv_builder, false));
+                    //return Ok(());
+                }
 
-                    // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
-                    let key_columns: Vec<&str> = set_intersection_at_choice
-                        .split(',')
-                        .map(|s| s.trim())
-                        .filter(|s| !s.is_empty())
-                        .collect();
+                // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
+                let key_columns: Vec<&str> = set_intersection_at_choice
+                    .split(',')
+                    .map(|s| s.trim())
+                    .filter(|s| !s.is_empty())
+                    .collect();
 
-                    // Ensure that there is at least one key column specified
-                    if key_columns.is_empty() {
-                        println!("Error: No key columns specified. Please specify at least one key column.");
-                    } else {
-                        // Perform set intersection with the specified key columns
-                        csv_builder
-                            .set_difference_with_csv_file(
-                                &chosen_file_path_for_join,
-                                "DIFFERENCE_TYPE:SYMMETRIC",
-                                key_columns,
-                            )
-                            .print_table();
-                    }
+                // Ensure that there is at least one key column specified
+                if key_columns.is_empty() {
+                    println!(
+                        "Error: No key columns specified. Please specify at least one key column."
+                    );
+                    return Ok((csv_builder, false));
+                } else {
+                    // Perform set intersection with the specified key columns
+                    csv_builder
+                        .set_difference_with_csv_file(
+                            &chosen_file_path_for_join,
+                            "DIFFERENCE_TYPE:SYMMETRIC",
+                            key_columns,
+                        )
+                        .print_table();
+                }
 
-                    match apply_filter_changes_menu(
-                        csv_builder,
-                        &prev_iteration_builder,
-                        &original_csv_builder,
-                    ) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}", e);
-                            continue; // Ask for the choice again if there was an error
-                        }
+                /*
+                match apply_filter_changes_menu(
+                    csv_builder,
+                    &prev_iteration_builder,
+                    &original_csv_builder,
+                ) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        continue; // Ask for the choice again if there was an error
                     }
                 }
-            }
-
-            _ => {
-                println!("Invalid option. Please enter a number from 1 to 9.");
-                continue; // Ask for the choice again
+                */
             }
         }
 
-        println!(); // Print a new line for better readability
+        _ => {
+            println!("Invalid option. Please enter a number from 1 to 9.");
+            //continue; // Ask for the choice again
+            return Ok((csv_builder, false));
+        }
     }
 
-    Ok(())
+    println!(); // Print a new line for better readability
+                //    }
+
+    //Ok(())
+    return Ok((csv_builder, true));
 }

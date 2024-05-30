@@ -1,10 +1,7 @@
 // csv_inspector.rs
-use crate::user_experience::{
-    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
-};
+use crate::user_experience::handle_cancel_flag;
 use crate::user_interaction::{
-    determine_action_as_number, get_edited_user_json_input, get_user_input_level_2,
-    print_insight_level_2, print_list_level_2,
+    get_edited_user_json_input, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
 use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal};
 use serde_json::Value;
@@ -52,9 +49,15 @@ impl ExpStore {
     }
 }
 
-pub fn handle_inspect(
+pub async fn handle_inspect(
+    /*
     csv_builder: &mut CsvBuilder,
     file_path_option: Option<&str>,
+    */
+    mut csv_builder: CsvBuilder,
+    _file_path_option: Option<&str>,
+    action_feature: &str,
+    action_flag: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     //pub async fn handle_inspect(csv_builder: &mut CsvBuilder) -> Result<(), Box<dyn std::error::Error>> {
     fn get_filter_expressions(
@@ -243,6 +246,7 @@ SYNTAX
         Ok((expression_names, result_expression))
     }
 
+    /*
     let menu_options = vec![
         "PRINT FIRST ROW",
         "PRINT LAST ROW",
@@ -262,28 +266,61 @@ SYNTAX
         "PRINT SMOOTH LINE CHART (NORMAL)",
         "PRINT SMOOTH LINE CHART (CUMULATIVE)",
     ];
+    */
 
-    loop {
-        print_insight_level_2("Select an option to inspect CSV data:");
-        print_list_level_2(&menu_options);
+    //    loop {
+    /*
+    print_insight_level_2("Select an option to inspect CSV data:");
+    print_list_level_2(&menu_options);
 
-        let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-        if handle_special_flag(&choice, csv_builder, file_path_option) {
-            continue;
+    let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
+    if handle_special_flag(&choice, csv_builder, file_path_option) {
+        continue;
+    }
+
+    if handle_back_flag(&choice) {
+        break;
+    }
+    let _ = handle_quit_flag(&choice);
+
+    let selected_option = determine_action_as_number(&menu_options, &choice);
+    */
+
+    //match selected_option {
+    match action_feature {
+        "" => {
+            print_insight_level_2("Here's the INSPECT feature menu ... ");
+            let menu_options = vec![
+                "PRINT FIRST ROW",
+                "PRINT LAST ROW",
+                "PRINT ROWS (JSON)",
+                "PRINT ALL ROWS (JSON)",
+                "PRINT ALL ROWS (TABULATED)",
+                "PRINT CLEANLINESS REPORT",
+                "PRINT ROWS WHERE",
+                "PRINT NUMERICAL ANALYSIS",
+                "PRINT FREQ OF MULTIPLE COLUMN VALUES (LINEAR)",
+                "PRINT FREQ OF MULTIPLE COLUMN VALUES (CASCADING)",
+                "PRINT UNIQUE COLUMN VALUES",
+                "PRINT STATS OF UNIQUE VALUE FREQ",
+                "PRINT COUNT WHERE",
+                "PRINT DOT CHART (NORMAL)",
+                "PRINT DOT CHART (CUMULATIVE)",
+                "PRINT SMOOTH LINE CHART (NORMAL)",
+                "PRINT SMOOTH LINE CHART (CUMULATIVE)",
+            ];
+
+            print_list_level_2(&menu_options);
+
+            //return Ok((csv_builder, false));
+            return Ok(());
         }
 
-        if handle_back_flag(&choice) {
-            break;
-        }
-        let _ = handle_quit_flag(&choice);
-
-        let selected_option = determine_action_as_number(&menu_options, &choice);
-
-        match selected_option {
-            Some(1) => {
-                if choice.to_lowercase() == "1d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        "1" => {
+            if action_flag == "d" {
+                //   if choice.to_lowercase() == "1d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Prints the first row in JSON format.
 |id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
@@ -311,16 +348,19 @@ First row:
   "date_YEAR_MONTH": "Y2024-M01",
 }
 "#,
-                    );
-                    continue;
-                }
-
-                csv_builder.print_first_row();
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
             }
-            Some(2) => {
-                if choice.to_lowercase() == "2d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+
+            csv_builder.print_first_row();
+        }
+        "2" => {
+            if action_flag == "d" {
+                //    if choice.to_lowercase() == "2d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Prints the last row in JSON format.
 |id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
@@ -348,16 +388,19 @@ Last row:
   "date_YEAR_MONTH": "Y2024-M01",
 }
 "#,
-                    );
-                    continue;
-                }
-
-                csv_builder.print_last_row();
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
             }
-            Some(3) => {
-                if choice.to_lowercase() == "3d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+
+            csv_builder.print_last_row();
+        }
+        "3" => {
+            if action_flag == "d" {
+                //    if choice.to_lowercase() == "3d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Prints a range of rows in JSON format.
 |id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
@@ -408,37 +451,44 @@ Row 4:
   "date_YEAR_MONTH": "Y2024-M01",
 }
 "#,
-                    );
-                    continue;
-                }
-
-                let start_str = get_user_input_level_2("Enter the start row number: ");
-
-                if handle_cancel_flag(&start_str) {
-                    continue;
-                }
-
-                let start = start_str
-                    .parse::<usize>()
-                    .map_err(|_| "Invalid start row number")?;
-
-                let end_str = get_user_input_level_2("Enter the end row number: ");
-
-                if handle_cancel_flag(&end_str) {
-                    continue;
-                }
-
-                let end = end_str
-                    .parse::<usize>()
-                    .map_err(|_| "Invalid start row number")?;
-
-                csv_builder.print_rows_range(start, end);
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
             }
 
-            Some(4) => {
-                if choice.to_lowercase() == "4d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let start_str = get_user_input_level_2("Enter the start row number: ");
+
+            if handle_cancel_flag(&start_str) {
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            }
+
+            let start = start_str
+                .parse::<usize>()
+                .map_err(|_| "Invalid start row number")?;
+
+            let end_str = get_user_input_level_2("Enter the end row number: ");
+
+            if handle_cancel_flag(&end_str) {
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            }
+
+            let end = end_str
+                .parse::<usize>()
+                .map_err(|_| "Invalid start row number")?;
+
+            csv_builder.print_rows_range(start, end);
+        }
+
+        "4" => {
+            if action_flag == "d" {
+                // if choice.to_lowercase() == "4d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Prints all rows in JSON format.
 |id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
@@ -491,20 +541,23 @@ Row 10:
 
 Total rows: 10
 "#,
-                    );
-                    continue;
-                }
-
-                if csv_builder.has_data() {
-                    csv_builder.print_rows();
-                    println!();
-                }
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
             }
 
-            Some(5) => {
-                if choice.to_lowercase() == "5d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            if csv_builder.has_data() {
+                csv_builder.print_rows();
+                println!();
+            }
+        }
+
+        "5" => {
+            if action_flag == "d" {
+                // if choice.to_lowercase() == "5d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Prints all rows in tabular format.
 |id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
@@ -538,20 +591,23 @@ Total rows: 12
 |12 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
 Total rows: 12
 "#,
-                    );
-                    continue;
-                }
-
-                if csv_builder.has_data() {
-                    csv_builder.print_table_all_rows();
-                    println!();
-                }
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
             }
 
-            Some(6) => {
-                if choice.to_lowercase() == "6d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            if csv_builder.has_data() {
+                csv_builder.print_table_all_rows();
+                println!();
+            }
+        }
+
+        "6" => {
+            if action_flag == "d" {
+                // if choice.to_lowercase() == "6d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 // Prints the scope to cleans data by parsing columns with preset rules.
   @LILbro: Executing this JSON query:
@@ -572,27 +628,29 @@ Total rows: 12
 - "HAS_NO_EMPTY_STRINGS"
 - "IS_DATETIME_PARSEABLE"
 "#,
-                    );
-                    continue;
-                }
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            }
 
-                if let Some(headers) = csv_builder.get_headers() {
-                    let mut json_array_str = "{\n".to_string();
+            if let Some(headers) = csv_builder.get_headers() {
+                let mut json_array_str = "{\n".to_string();
 
-                    // Loop through headers and append them as keys in the JSON array string, excluding auto-computed columns
-                    for (i, header) in headers.iter().enumerate() {
-                        if header != "id" && header != "c@" && header != "u@" {
-                            json_array_str.push_str(&format!("    \"{}\": []", header));
-                            if i < headers.len() - 1 {
-                                json_array_str.push_str(",\n");
-                            }
+                // Loop through headers and append them as keys in the JSON array string, excluding auto-computed columns
+                for (i, header) in headers.iter().enumerate() {
+                    if header != "id" && header != "c@" && header != "u@" {
+                        json_array_str.push_str(&format!("    \"{}\": []", header));
+                        if i < headers.len() - 1 {
+                            json_array_str.push_str(",\n");
                         }
                     }
+                }
 
-                    // Close the first JSON object and start the syntax explanation
-                    json_array_str.push_str("\n}");
+                // Close the first JSON object and start the syntax explanation
+                json_array_str.push_str("\n}");
 
-                    let syntax_explanation = r#"
+                let syntax_explanation = r#"
 
 SYNTAX
 ======
@@ -620,54 +678,59 @@ SYNTAX
 - "IS_DATETIME_PARSEABLE"
 "#;
 
-                    let full_syntax = json_array_str + syntax_explanation;
+                let full_syntax = json_array_str + syntax_explanation;
 
-                    // Get user input
-                    let rows_json_str = get_edited_user_json_input(full_syntax);
-                    //dbg!(&rows_json_str);
-                    if handle_cancel_flag(&rows_json_str) {
-                        continue;
+                // Get user input
+                let rows_json_str = get_edited_user_json_input(full_syntax);
+                //dbg!(&rows_json_str);
+                if handle_cancel_flag(&rows_json_str) {
+                    //continue;
+                    //return Ok((csv_builder, false));
+                    return Ok(());
+                }
+
+                // Parse the user input
+                let rows_json: Value = match serde_json::from_str(&rows_json_str) {
+                    Ok(json) => json,
+                    Err(e) => {
+                        eprintln!("Error parsing JSON string: {}", e);
+                        //return Err("An error occurred".to_string().into());
+                        //return Ok((csv_builder, false));
+                        return Ok(());
                     }
+                };
 
-                    // Parse the user input
-                    let rows_json: Value = match serde_json::from_str(&rows_json_str) {
-                        Ok(json) => json,
-                        Err(e) => {
-                            eprintln!("Error parsing JSON string: {}", e);
-                            return Err("An error occurred".to_string().into());
-                        }
-                    };
-
-                    // Collect rules from user input
-                    let mut rules = Vec::new();
-                    if let Some(obj) = rows_json.as_object() {
-                        for (key, value) in obj {
-                            if let Some(rules_array) = value.as_array() {
-                                let mut column_rules = Vec::new();
-                                for rule in rules_array {
-                                    if let Some(rule_str) = rule.as_str() {
-                                        if !rule_str.is_empty() {
-                                            column_rules.push(rule_str.to_string());
-                                        }
+                // Collect rules from user input
+                let mut rules = Vec::new();
+                if let Some(obj) = rows_json.as_object() {
+                    for (key, value) in obj {
+                        if let Some(rules_array) = value.as_array() {
+                            let mut column_rules = Vec::new();
+                            for rule in rules_array {
+                                if let Some(rule_str) = rule.as_str() {
+                                    if !rule_str.is_empty() {
+                                        column_rules.push(rule_str.to_string());
                                     }
                                 }
-                                if !column_rules.is_empty() {
-                                    rules.push((key.clone(), column_rules));
-                                }
+                            }
+                            if !column_rules.is_empty() {
+                                rules.push((key.clone(), column_rules));
                             }
                         }
                     }
-
-                    println!();
-                    // Invoke the cleanliness report function with the collected rules
-                    csv_builder.print_cleanliness_report_by_column_parse(rules);
                 }
-            }
 
-            Some(7) => {
-                if choice.to_lowercase() == "7d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+                println!();
+                // Invoke the cleanliness report function with the collected rules
+                csv_builder.print_cleanliness_report_by_column_parse(rules);
+            }
+        }
+
+        "7" => {
+            if action_flag == "d" {
+                // if choice.to_lowercase() == "7d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Prints all rows meeting specified conditions in JSON format.
 |id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
@@ -743,38 +806,45 @@ Row number: 8
 }
 Total rows printed: 4
 "#,
-                    );
-                    continue;
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            }
+
+            let mut exp_store = ExpStore {
+                expressions: Vec::new(),
+            };
+
+            match get_filter_expressions(&mut exp_store) {
+                Ok((expression_names, result_expression)) => {
+                    let expressions_refs: Vec<(&str, Exp)> = expression_names
+                        .iter()
+                        .map(|(name, index)| (name.as_str(), exp_store.get_exp(*index).clone()))
+                        .collect();
+                    println!();
+                    //dbg!(&expressions_refs, &result_expression);
+                    csv_builder.print_rows_where(expressions_refs, &result_expression);
                 }
-
-                let mut exp_store = ExpStore {
-                    expressions: Vec::new(),
-                };
-
-                match get_filter_expressions(&mut exp_store) {
-                    Ok((expression_names, result_expression)) => {
-                        let expressions_refs: Vec<(&str, Exp)> = expression_names
-                            .iter()
-                            .map(|(name, index)| (name.as_str(), exp_store.get_exp(*index).clone()))
-                            .collect();
-                        println!();
-                        //dbg!(&expressions_refs, &result_expression);
-                        csv_builder.print_rows_where(expressions_refs, &result_expression);
-                    }
-                    Err(e) if e.to_string() == "Operation canceled" => {
-                        // If the operation was canceled by the user, do not print an error and just continue
-                        continue;
-                    }
-                    Err(e) => {
-                        println!("Error getting filter expressions: {}", e);
-                        continue; // Return to the menu to let the user try again or choose another option
-                    }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    // If the operation was canceled by the user, do not print an error and just continue
+                    //continue;
+                    //return Ok((csv_builder, false));
+                    return Ok(());
+                }
+                Err(e) => {
+                    println!("Error getting filter expressions: {}", e);
+                    //continue; // Return to the menu to let the user try again or choose another option
+                    //return Ok((csv_builder, false));
+                    return Ok(());
                 }
             }
-            Some(8) => {
-                if choice.to_lowercase() == "8d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        }
+        "8" => {
+            if action_flag == "d" {
+                //  if choice.to_lowercase() == "8d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
   @LILbro: Enter column names separated by commas: price, gst
 
@@ -823,26 +893,30 @@ Analysis for column 'gst':
 
   - Sum of Squared Deviations (Total of Each Value's Difference from the Mean, Squared): Think of it like the total jumps needed to reach different distances in hopscotch. A large total means some jumps were really big. A small total means the jumps were mostly the same, easy hops. The sum of squared deviations (SSD), or sum of squares, measures the total variability in a dataset. However, it isn't interpreted directly because its value depends on the number of data points, making comparisons challenging across different datasets. Instead, it is often used as an intermediate calculation for other metrics like variance or standard deviation. 
 "#,
-                    );
-                    continue;
-                }
-
-                let column_names =
-                    get_user_input_level_2("Enter column names separated by commas: ");
-
-                if handle_cancel_flag(&column_names) {
-                    continue;
-                }
-
-                let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
-                println!();
-                csv_builder.print_column_numerical_analysis(columns);
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
             }
 
-            Some(9) => {
-                if choice.to_lowercase() == "9d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let column_names = get_user_input_level_2("Enter column names separated by commas: ");
+
+            if handle_cancel_flag(&column_names) {
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            }
+
+            let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+            println!();
+            csv_builder.print_column_numerical_analysis(columns);
+        }
+
+        "9" => {
+            if action_flag == "d" {
+                // if choice.to_lowercase() == "9d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Prints frequencies of unique values in the specified columns.
 |id |value |date      |interest |type  |
@@ -877,24 +951,28 @@ Frequency for column 'interest':
   9.2: f = 1 (10%)
   9.4: f = 1 (10%)
 "#,
-                    );
-                    continue;
-                }
-
-                let column_names =
-                    get_user_input_level_2("Enter column names separated by commas: ");
-
-                if handle_cancel_flag(&column_names) {
-                    continue;
-                }
-
-                let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
-                csv_builder.print_freq(columns);
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
             }
-            Some(10) => {
-                if choice.to_lowercase() == "10d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+
+            let column_names = get_user_input_level_2("Enter column names separated by commas: ");
+
+            if handle_cancel_flag(&column_names) {
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            }
+
+            let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+            csv_builder.print_freq(columns);
+        }
+        "10" => {
+            if action_flag == "d" {
+                // if choice.to_lowercase() == "10d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Prints cascading frequency tables for selected columns of a dataset.
 |id |value |date      |interest |type  |
@@ -951,26 +1029,30 @@ Frequency for column 'type':
         Frequency for column 'value':
           420: f = 1 (100.00%)
 "#,
-                    );
-                    continue;
-                }
-
-                let column_names =
-                    get_user_input_level_2("Enter column names separated by commas: ");
-
-                if handle_cancel_flag(&column_names) {
-                    continue;
-                }
-
-                let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
-                println!();
-                csv_builder.print_freq_cascading(columns);
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
             }
 
-            Some(11) => {
-                if choice.to_lowercase() == "11d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let column_names = get_user_input_level_2("Enter column names separated by commas: ");
+
+            if handle_cancel_flag(&column_names) {
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            }
+
+            let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+            println!();
+            csv_builder.print_freq_cascading(columns);
+        }
+
+        "11" => {
+            if action_flag == "d" {
+                // if choice.to_lowercase() == "11d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Prints the unique values in the specified column.
 |id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
@@ -991,22 +1073,27 @@ Total rows: 12
   @LILbro: Enter the column name: value
 Unique values in 'value': 200, 1000, 20000, 1500, 2000, 300, 1100
 "#,
-                    );
-                    continue;
-                }
-
-                let column_name = get_user_input_level_2("Enter the column name: ");
-                if handle_cancel_flag(&column_name) {
-                    continue;
-                }
-
-                csv_builder.print_unique(&column_name.trim());
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
             }
 
-            Some(12) => {
-                if choice.to_lowercase() == "12d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let column_name = get_user_input_level_2("Enter the column name: ");
+            if handle_cancel_flag(&column_name) {
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            }
+
+            csv_builder.print_unique(&column_name.trim());
+        }
+
+        "12" => {
+            if action_flag == "d" {
+                // if choice.to_lowercase() == "12d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Prints the number of unique values in a column, along with the mean and median of their frequencies.
 |id |value |date      |interest |
@@ -1037,26 +1124,30 @@ Statistics for column 'interest':
   Mean frequency of the unique values: 1.11
   Median frequency of the unique values: 1.00
 "#,
-                    );
-                    continue;
-                }
-
-                let column_names =
-                    get_user_input_level_2("Enter column names separated by commas: ");
-
-                if handle_cancel_flag(&column_names) {
-                    continue;
-                }
-
-                let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
-                csv_builder.print_unique_values_stats(columns);
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
             }
 
-            // In your handle_inspect method
-            Some(13) => {
-                if choice.to_lowercase() == "13d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let column_names = get_user_input_level_2("Enter column names separated by commas: ");
+
+            if handle_cancel_flag(&column_names) {
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            }
+
+            let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+            csv_builder.print_unique_values_stats(columns);
+        }
+
+        // In your handle_inspect method
+        "13" => {
+            if action_flag == "d" {
+                // if choice.to_lowercase() == "13d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Prints the unique values in the specified column.
 |id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
@@ -1092,38 +1183,45 @@ Total rows: 12
 
 Count: 7
 "#,
-                    );
-                    continue;
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            }
+
+            let mut exp_store = ExpStore {
+                expressions: Vec::new(),
+            };
+
+            match get_filter_expressions(&mut exp_store) {
+                Ok((expression_names, result_expression)) => {
+                    let expressions_refs: Vec<(&str, Exp)> = expression_names
+                        .iter()
+                        .map(|(name, index)| (name.as_str(), exp_store.get_exp(*index).clone()))
+                        .collect();
+                    println!();
+                    csv_builder.print_count_where(expressions_refs, &result_expression);
+                }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    // If the operation was canceled by the user, do not print an error and just continue
+                    //continue;
+                    //return Ok((csv_builder, false));
+                    return Ok(());
                 }
 
-                let mut exp_store = ExpStore {
-                    expressions: Vec::new(),
-                };
-
-                match get_filter_expressions(&mut exp_store) {
-                    Ok((expression_names, result_expression)) => {
-                        let expressions_refs: Vec<(&str, Exp)> = expression_names
-                            .iter()
-                            .map(|(name, index)| (name.as_str(), exp_store.get_exp(*index).clone()))
-                            .collect();
-                        println!();
-                        csv_builder.print_count_where(expressions_refs, &result_expression);
-                    }
-                    Err(e) if e.to_string() == "Operation canceled" => {
-                        // If the operation was canceled by the user, do not print an error and just continue
-                        continue;
-                    }
-
-                    Err(e) => {
-                        println!("Error getting filter expressions: {}", e);
-                        continue; // Return to the menu to let the user try again or choose another option
-                    }
+                Err(e) => {
+                    println!("Error getting filter expressions: {}", e);
+                    //continue; // Return to the menu to let the user try again or choose another option
+                    //return Ok((csv_builder, false));
+                    return Ok(());
                 }
             }
-            Some(14) => {
-                if choice.to_lowercase() == "14d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        }
+        "14" => {
+            if action_flag == "d" {
+                // if choice.to_lowercase() == "14d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Plots two columns of a table in a dot-chart. In the event there are more than 80 values, the set of plots that best represent the curvature trend are chosen. 
 
@@ -1176,46 +1274,53 @@ Total rows: 10
   Y-Axis Mean: 375.00
   Y-Axis Median: 370.00
 "#,
-                    );
-                    continue;
-                }
-
-                let column_names = get_user_input_level_2(
-                    "Enter the x-axis and y-axis column names (comma separated): ",
                 );
-
-                /*
-                if column_names.to_lowercase() == "@cancel" {
-                    continue;
-                }
-                */
-
-                if handle_cancel_flag(&column_names) {
-                    continue;
-                }
-
-                let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
-
-                // Ensuring exactly two columns were provided.
-                if columns.len() != 2 {
-                    // Handle the error: inform the user they need to enter exactly two column names.
-                    print_insight_level_2(
-                        "Please enter exactly two column names, separated by a comma.",
-                    );
-                    continue;
-                } else {
-                    // Extracting the column names.
-                    let x_axis_column = columns[0];
-                    let y_axis_column = columns[1];
-                    println!();
-                    // Using the columns in your function.
-                    csv_builder.print_dot_chart(x_axis_column, y_axis_column);
-                }
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
             }
-            Some(15) => {
-                if choice.to_lowercase() == "15d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+
+            let column_names = get_user_input_level_2(
+                "Enter the x-axis and y-axis column names (comma separated): ",
+            );
+
+            /*
+            if column_names.to_lowercase() == "@cancel" {
+                continue;
+            }
+            */
+
+            if handle_cancel_flag(&column_names) {
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            }
+
+            let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+
+            // Ensuring exactly two columns were provided.
+            if columns.len() != 2 {
+                // Handle the error: inform the user they need to enter exactly two column names.
+                print_insight_level_2(
+                    "Please enter exactly two column names, separated by a comma.",
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            } else {
+                // Extracting the column names.
+                let x_axis_column = columns[0];
+                let y_axis_column = columns[1];
+                println!();
+                // Using the columns in your function.
+                csv_builder.print_dot_chart(x_axis_column, y_axis_column);
+            }
+        }
+        "15" => {
+            if action_flag == "d" {
+                // if choice.to_lowercase() == "15d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Plots two columns of a table in a dot-chart. In the event there are more than 80 values, the set of plots that best represent the curvature trend are chosen. 
 
@@ -1263,47 +1368,54 @@ Total rows: 10
   Lowest Non-Zero Cumulative Y-Axis Value: 500
   Cumulative Y-Axis Max: 3750
 "#,
-                    );
-                    continue;
-                }
-
-                let column_names = get_user_input_level_2(
-                    "Enter the x-axis and y-axis column names (comma separated): ",
                 );
-
-                /*
-                if column_names.to_lowercase() == "@cancel" {
-                    continue;
-                }
-                */
-
-                if handle_cancel_flag(&column_names) {
-                    continue;
-                }
-
-                let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
-
-                // Ensuring exactly two columns were provided.
-                if columns.len() != 2 {
-                    // Handle the error: inform the user they need to enter exactly two column names.
-                    print_insight_level_2(
-                        "Please enter exactly two column names, separated by a comma.",
-                    );
-                    continue;
-                } else {
-                    // Extracting the column names.
-                    let x_axis_column = columns[0];
-                    let y_axis_column = columns[1];
-                    println!();
-                    // Using the columns in your function.
-                    csv_builder.print_cumulative_dot_chart(x_axis_column, y_axis_column);
-                }
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
             }
 
-            Some(16) => {
-                if choice.to_lowercase() == "16d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let column_names = get_user_input_level_2(
+                "Enter the x-axis and y-axis column names (comma separated): ",
+            );
+
+            /*
+            if column_names.to_lowercase() == "@cancel" {
+                continue;
+            }
+            */
+
+            if handle_cancel_flag(&column_names) {
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            }
+
+            let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+
+            // Ensuring exactly two columns were provided.
+            if columns.len() != 2 {
+                // Handle the error: inform the user they need to enter exactly two column names.
+                print_insight_level_2(
+                    "Please enter exactly two column names, separated by a comma.",
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            } else {
+                // Extracting the column names.
+                let x_axis_column = columns[0];
+                let y_axis_column = columns[1];
+                println!();
+                // Using the columns in your function.
+                csv_builder.print_cumulative_dot_chart(x_axis_column, y_axis_column);
+            }
+        }
+
+        "16" => {
+            if action_flag == "d" {
+                // if choice.to_lowercase() == "16d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Plots two columns of a table in a smooth line-chart, upon analyzing plot points, that best represent the curvature trajectory. 
 
@@ -1356,47 +1468,54 @@ Total rows: 10
   Y-Axis Mean: 375.00
   Y-Axis Median: 370.00
 "#,
-                    );
-                    continue;
-                }
-
-                let column_names = get_user_input_level_2(
-                    "Enter the x-axis and y-axis column names (comma separated): ",
                 );
-
-                /*
-                if column_names.to_lowercase() == "@cancel" {
-                    continue;
-                }
-                */
-
-                if handle_cancel_flag(&column_names) {
-                    continue;
-                }
-
-                let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
-
-                // Ensuring exactly two columns were provided.
-                if columns.len() != 2 {
-                    // Handle the error: inform the user they need to enter exactly two column names.
-                    print_insight_level_2(
-                        "Please enter exactly two column names, separated by a comma.",
-                    );
-                    continue;
-                } else {
-                    // Extracting the column names.
-                    let x_axis_column = columns[0];
-                    let y_axis_column = columns[1];
-                    println!();
-                    // Using the columns in your function.
-                    csv_builder.print_smooth_line_chart(x_axis_column, y_axis_column);
-                }
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
             }
 
-            Some(17) => {
-                if choice.to_lowercase() == "17d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let column_names = get_user_input_level_2(
+                "Enter the x-axis and y-axis column names (comma separated): ",
+            );
+
+            /*
+            if column_names.to_lowercase() == "@cancel" {
+                continue;
+            }
+            */
+
+            if handle_cancel_flag(&column_names) {
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            }
+
+            let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+
+            // Ensuring exactly two columns were provided.
+            if columns.len() != 2 {
+                // Handle the error: inform the user they need to enter exactly two column names.
+                print_insight_level_2(
+                    "Please enter exactly two column names, separated by a comma.",
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            } else {
+                // Extracting the column names.
+                let x_axis_column = columns[0];
+                let y_axis_column = columns[1];
+                println!();
+                // Using the columns in your function.
+                csv_builder.print_smooth_line_chart(x_axis_column, y_axis_column);
+            }
+        }
+
+        "17" => {
+            if action_flag == "d" {
+                // if choice.to_lowercase() == "17d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Plots two columns of a table in a smooth line-chart, upon analyzing plot points, that best represent the curvature trajectory. 
 
@@ -1444,51 +1563,60 @@ Total rows: 10
   Lowest Non-Zero Cumulative Y-Axis Value: 500
   Cumulative Y-Axis Max: 3750
 "#,
-                    );
-                    continue;
-                }
-
-                let column_names = get_user_input_level_2(
-                    "Enter the x-axis and y-axis column names (comma separated): ",
                 );
-
-                /*
-                if column_names.to_lowercase() == "@cancel" {
-                    continue;
-                }
-                */
-
-                if handle_cancel_flag(&column_names) {
-                    continue;
-                }
-
-                let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
-
-                // Ensuring exactly two columns were provided.
-                if columns.len() != 2 {
-                    // Handle the error: inform the user they need to enter exactly two column names.
-                    print_insight_level_2(
-                        "Please enter exactly two column names, separated by a comma.",
-                    );
-                    continue;
-                } else {
-                    // Extracting the column names.
-                    let x_axis_column = columns[0];
-                    let y_axis_column = columns[1];
-                    println!();
-                    // Using the columns in your function.
-                    csv_builder.print_cumulative_smooth_line_chart(x_axis_column, y_axis_column);
-                }
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
             }
 
-            _ => {
-                println!("Invalid option. Please enter a number from 1 to 16.");
-                continue; // Ask for the choice again
+            let column_names = get_user_input_level_2(
+                "Enter the x-axis and y-axis column names (comma separated): ",
+            );
+
+            /*
+            if column_names.to_lowercase() == "@cancel" {
+                continue;
+            }
+            */
+
+            if handle_cancel_flag(&column_names) {
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            }
+
+            let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+
+            // Ensuring exactly two columns were provided.
+            if columns.len() != 2 {
+                // Handle the error: inform the user they need to enter exactly two column names.
+                print_insight_level_2(
+                    "Please enter exactly two column names, separated by a comma.",
+                );
+                //continue;
+                //return Ok((csv_builder, false));
+                return Ok(());
+            } else {
+                // Extracting the column names.
+                let x_axis_column = columns[0];
+                let y_axis_column = columns[1];
+                println!();
+                // Using the columns in your function.
+                csv_builder.print_cumulative_smooth_line_chart(x_axis_column, y_axis_column);
             }
         }
 
-        println!(); // Print a new line for better readability
+        _ => {
+            println!("Invalid option. Please enter a number from 1 to 17.");
+            //continue; // Ask for the choice again
+            //return Ok((csv_builder, false));
+            return Ok(());
+        }
     }
 
+    println!(); // Print a new line for better readability
+                //    }
+
     Ok(())
+    //return Ok((csv_builder, false));
 }

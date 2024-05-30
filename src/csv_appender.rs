@@ -1,11 +1,8 @@
 // csv_appender.rs
 use crate::config::Config;
-use crate::user_experience::{
-    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
-};
+use crate::user_experience::handle_cancel_flag;
 use crate::user_interaction::{
-    determine_action_as_number, get_edited_user_json_input, get_user_input_level_2,
-    print_insight_level_2, print_list_level_2,
+    get_edited_user_json_input, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
 use rgwml::ai_utils::{cancel_openai_batch, fetch_and_print_openai_batches};
 use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal, Train};
@@ -60,9 +57,17 @@ impl ExpStore {
 }
 
 pub async fn handle_append(
-    csv_builder: &mut CsvBuilder,
-    file_path_option: Option<&str>,
-) -> Result<(), Box<dyn std::error::Error>> {
+    /*
+        csv_builder: &mut CsvBuilder,
+        file_path_option: Option<&str>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+    */
+    mut csv_builder: CsvBuilder,
+    _file_path_option: Option<&str>,
+    action_feature: &str,
+    action_flag: &str,
+) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
+    /*
     fn apply_filter_changes_menu(
         csv_builder: &mut CsvBuilder,
         prev_iteration_builder: &CsvBuilder,
@@ -103,6 +108,7 @@ pub async fn handle_append(
             _ => Err("Invalid option. Please enter a number from 1 to 3.".to_string()),
         }
     }
+    */
 
     fn get_append_boolean_expression(
         data_store: &mut ExpStore,
@@ -1116,7 +1122,50 @@ Note the implications of the params in the JSON query:
         ))
     }
 
-    let menu_options = vec![
+    /*
+        let menu_options = vec![
+            "APPEND DERIVED BOOLEAN COLUMN",
+            "APPEND DERIVED CATEGORY COLUMN",
+            "APPEND INCLUSIVE-EXCLUSIVE (NUMERICAL) INTERVAL CATEGORY COLUMN",
+            "APPEND INCLUSIVE-EXCLUSIVE (DATE) INTERVAL CATEGORY COLUMN",
+            "APPEND DERIVED CONCATENATION COLUMN",
+            "APPEND CATEGORY COLUMNS BY SPLITTING DATE/TIMESTAMP COLUMN",
+            "APPEND COUNT OF COMMA SEPARATED TIMESTAMP COLUMN OF VALUES *AFTER* ANOTHER TIMESTAMP PARSEABLE",
+            "APPEND COUNT OF COMMA SEPARATED TIMESTAMP COLUMN OF VALUES *BEFORE* ANOTHER TIMESTAMP PARSEABLE",
+            "APPEND FUZZAI ANALYSIS COLUMN",
+            "APPEND FUZZAI ANALYSIS COLUMN WHERE",
+            "OPENAI /SYNC APPEND ANALYSIS COLUMNS",
+            "OPENAI/ SEND COLUMNS FOR ASYNC BATCH ANALYSIS",
+            "OPENAI/ LIST BATCHES",
+            "OPENAI/ CANCEL BATCH",
+            "OPENAI/ APPEND BATCH ANALYSIS COLUMNS",
+            "APPEND LINEAR REGRESSION COLUMN",
+        ];
+
+        let original_csv_builder = CsvBuilder::from_copy(csv_builder);
+
+        loop {
+            print_insight_level_2("Select an option to inspect CSV data:");
+            print_list_level_2(&menu_options);
+
+            let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
+            if handle_special_flag(&choice, csv_builder, file_path_option) {
+                continue;
+            }
+
+            if handle_back_flag(&choice) {
+                break;
+            }
+            let _ = handle_quit_flag(&choice);
+
+            let selected_option = determine_action_as_number(&menu_options, &choice);
+            let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
+    */
+
+    match action_feature {
+        "" => {
+            print_insight_level_2("Here's the TINKER feature menu ... ");
+            let menu_options = vec![
         "APPEND DERIVED BOOLEAN COLUMN",
         "APPEND DERIVED CATEGORY COLUMN",
         "APPEND INCLUSIVE-EXCLUSIVE (NUMERICAL) INTERVAL CATEGORY COLUMN",
@@ -1133,32 +1182,18 @@ Note the implications of the params in the JSON query:
         "OPENAI/ CANCEL BATCH",
         "OPENAI/ APPEND BATCH ANALYSIS COLUMNS",
         "APPEND LINEAR REGRESSION COLUMN",
-    ];
+            ];
 
-    let original_csv_builder = CsvBuilder::from_copy(csv_builder);
+            print_list_level_2(&menu_options);
 
-    loop {
-        print_insight_level_2("Select an option to inspect CSV data:");
-        print_list_level_2(&menu_options);
-
-        let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
-        if handle_special_flag(&choice, csv_builder, file_path_option) {
-            continue;
+            return Ok((csv_builder, false));
         }
 
-        if handle_back_flag(&choice) {
-            break;
-        }
-        let _ = handle_quit_flag(&choice);
-
-        let selected_option = determine_action_as_number(&menu_options, &choice);
-        let prev_iteration_builder = CsvBuilder::from_copy(csv_builder);
-
-        match selected_option {
-            Some(1) => {
-                if choice.to_lowercase() == "1d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        "1" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "1d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Appends a column whose value would be either 0 or 1, contingent on the evaluation of conditions.
 
@@ -1187,66 +1222,70 @@ Appends a column whose value would be either 0 or 1, contingent on the evaluatio
 |5  |movies  |1500  |1              |
 Total rows: 5
 "#,
+                );
+                //continue;
+                return Ok((csv_builder, false));
+            }
+            let mut exp_store = ExpStore {
+                expressions: Vec::new(),
+            };
+
+            match get_append_boolean_expression(&mut exp_store) {
+                Ok((new_column_name, expression_names, result_expression)) => {
+                    // Check if the new column name is empty
+                    if new_column_name.trim().is_empty() {
+                        print_insight_level_2("No new column name provided. Operation aborted.");
+                        //continue; // Skip the rest of the process
+                        return Ok((csv_builder, false));
+                    }
+
+                    let expressions_refs: Vec<(&str, Exp)> = expression_names
+                        .iter()
+                        .map(|(name, index)| (name.as_str(), exp_store.get_exp(*index).clone()))
+                        .collect();
+
+                    // Append the new derived column
+                    csv_builder.append_derived_boolean_column(
+                        &new_column_name,
+                        expressions_refs,
+                        &result_expression,
                     );
-                    continue;
+                    if csv_builder.has_data() {
+                        csv_builder.print_table();
+                        println!();
+                    }
+                    print_insight_level_2("Derived boolean column appended.");
+                    /*
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                    */
                 }
-                let mut exp_store = ExpStore {
-                    expressions: Vec::new(),
-                };
-
-                match get_append_boolean_expression(&mut exp_store) {
-                    Ok((new_column_name, expression_names, result_expression)) => {
-                        // Check if the new column name is empty
-                        if new_column_name.trim().is_empty() {
-                            print_insight_level_2(
-                                "No new column name provided. Operation aborted.",
-                            );
-                            continue; // Skip the rest of the process
-                        }
-
-                        let expressions_refs: Vec<(&str, Exp)> = expression_names
-                            .iter()
-                            .map(|(name, index)| (name.as_str(), exp_store.get_exp(*index).clone()))
-                            .collect();
-
-                        // Append the new derived column
-                        csv_builder.append_derived_boolean_column(
-                            &new_column_name,
-                            expressions_refs,
-                            &result_expression,
-                        );
-                        if csv_builder.has_data() {
-                            csv_builder.print_table();
-                            println!();
-                        }
-                        print_insight_level_2("Derived boolean column appended.");
-
-                        match apply_filter_changes_menu(
-                            csv_builder,
-                            &prev_iteration_builder,
-                            &original_csv_builder,
-                        ) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("{}", e);
-                                continue; // Ask for the choice again if there was an error
-                            }
-                        }
-                    }
-                    Err(e) if e.to_string() == "Operation canceled" => {
-                        continue;
-                    }
-                    Err(e) => {
-                        println!("Error getting expressions: {}", e);
-                        continue; // Return to the menu to let the user try again or choose another option
-                    }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
+                Err(e) => {
+                    println!("Error getting expressions: {}", e);
+                    //continue; // Return to the menu to let the user try again or choose another option
+                    return Ok((csv_builder, false));
                 }
             }
+        }
 
-            Some(2) => {
-                if choice.to_lowercase() == "2d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        "2" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "2d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Appends a column whose value would be assigned category flags, contingent on the evaluation of conditions.
 
@@ -1315,214 +1354,233 @@ Appends a column whose value would be assigned category flags, contingent on the
 |5  |movies  |1500  |medium       |
 Total rows: 5
 "#,
-                    );
-                    continue;
+                );
+                // continue;
+                return Ok((csv_builder, false));
+            }
+            let mut exp_store = ExpStore {
+                expressions: Vec::new(),
+            };
+
+            match get_append_category_expression(&mut exp_store) {
+                Ok((new_column_name, category_expressions)) => {
+                    if new_column_name.trim().is_empty() {
+                        print_insight_level_2("No new column name provided. Operation aborted.");
+                        //continue;
+                        return Ok((csv_builder, false));
+                    }
+
+                    let mut string_storage = Vec::new();
+                    // First pass: collect all strings
+                    for (cat_name, filters, cat_eval) in &category_expressions {
+                        string_storage.push(cat_name.clone());
+                        for (filter_name, _) in filters {
+                            string_storage.push(filter_name.clone());
+                        }
+                        string_storage.push(cat_eval.clone());
+                    }
+
+                    // Second pass: create references
+                    let mut string_index = 0;
+                    let category_expressions: Vec<(&str, Vec<(&str, Exp)>, &str)> =
+                        category_expressions
+                            .into_iter()
+                            .map(|(_, filters, _)| {
+                                let cat_name = &string_storage[string_index];
+                                string_index += 1;
+
+                                let filters: Vec<(&str, Exp)> = filters
+                                    .into_iter()
+                                    .map(|(_, exp)| {
+                                        let filter_name = &string_storage[string_index];
+                                        string_index += 1;
+                                        (filter_name.as_str(), exp)
+                                    })
+                                    .collect();
+
+                                let cat_eval = &string_storage[string_index];
+                                string_index += 1;
+
+                                (cat_name.as_str(), filters, cat_eval.as_str())
+                            })
+                            .collect();
+
+                    csv_builder
+                        .append_derived_category_column(&new_column_name, category_expressions);
+                    if csv_builder.has_data() {
+                        csv_builder.print_table();
+                        println!();
+                    }
+                    print_insight_level_2("Derived category column appended.");
+
+                    /*
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                    */
                 }
-                let mut exp_store = ExpStore {
-                    expressions: Vec::new(),
-                };
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
 
-                match get_append_category_expression(&mut exp_store) {
-                    Ok((new_column_name, category_expressions)) => {
-                        if new_column_name.trim().is_empty() {
-                            print_insight_level_2(
-                                "No new column name provided. Operation aborted.",
-                            );
-                            continue;
-                        }
-
-                        let mut string_storage = Vec::new();
-                        // First pass: collect all strings
-                        for (cat_name, filters, cat_eval) in &category_expressions {
-                            string_storage.push(cat_name.clone());
-                            for (filter_name, _) in filters {
-                                string_storage.push(filter_name.clone());
-                            }
-                            string_storage.push(cat_eval.clone());
-                        }
-
-                        // Second pass: create references
-                        let mut string_index = 0;
-                        let category_expressions: Vec<(&str, Vec<(&str, Exp)>, &str)> =
-                            category_expressions
-                                .into_iter()
-                                .map(|(_, filters, _)| {
-                                    let cat_name = &string_storage[string_index];
-                                    string_index += 1;
-
-                                    let filters: Vec<(&str, Exp)> = filters
-                                        .into_iter()
-                                        .map(|(_, exp)| {
-                                            let filter_name = &string_storage[string_index];
-                                            string_index += 1;
-                                            (filter_name.as_str(), exp)
-                                        })
-                                        .collect();
-
-                                    let cat_eval = &string_storage[string_index];
-                                    string_index += 1;
-
-                                    (cat_name.as_str(), filters, cat_eval.as_str())
-                                })
-                                .collect();
-
-                        csv_builder
-                            .append_derived_category_column(&new_column_name, category_expressions);
-                        if csv_builder.has_data() {
-                            csv_builder.print_table();
-                            println!();
-                        }
-                        print_insight_level_2("Derived category column appended.");
-
-                        match apply_filter_changes_menu(
-                            csv_builder,
-                            &prev_iteration_builder,
-                            &original_csv_builder,
-                        ) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("{}", e);
-                                continue; // Ask for the choice again if there was an error
-                            }
-                        }
-                    }
-                    Err(e) if e.to_string() == "Operation canceled" => {
-                        continue;
-                    }
-
-                    Err(e) => {
-                        println!("Error getting expressions: {}", e);
-                        continue;
-                    }
+                Err(e) => {
+                    println!("Error getting expressions: {}", e);
+                    //continue;
+                    return Ok((csv_builder, false));
                 }
             }
+        }
 
-            Some(3) => {
-                if choice.to_lowercase() == "3d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        "3" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "3d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Appends an inclusive-exclusive numerical interval category column.
 
 
 "#,
-                    );
-                    continue;
-                }
-
-                let column_name_str = get_user_input_level_2(
-                    "Enter the name of the numerically parseable column to label/categorize: ",
                 );
+                //continue;
+                return Ok((csv_builder, false));
+            }
 
-                if handle_cancel_flag(&column_name_str) {
-                    continue;
-                }
+            let column_name_str = get_user_input_level_2(
+                "Enter the name of the numerically parseable column to label/categorize: ",
+            );
 
-                let interval_points_str = get_user_input_level_2(
-                    "Enter numerically parseable interval points (comma-separated): ",
-                );
+            if handle_cancel_flag(&column_name_str) {
+                //continue;
+                return Ok((csv_builder, false));
+            }
 
-                if handle_cancel_flag(&interval_points_str) {
-                    continue;
-                }
+            let interval_points_str = get_user_input_level_2(
+                "Enter numerically parseable interval points (comma-separated): ",
+            );
 
-                let new_column_name_str = get_user_input_level_2(
+            if handle_cancel_flag(&interval_points_str) {
+                //continue;
+                return Ok((csv_builder, false));
+            }
+
+            let new_column_name_str = get_user_input_level_2(
                     "Enter the name of the newly created column containing the row labelling/categorization: ",
                 );
 
-                if handle_cancel_flag(&new_column_name_str) {
-                    continue;
-                }
-
-                csv_builder.append_inclusive_exclusive_numerical_interval_category_column(
-                    &column_name_str,
-                    &interval_points_str,
-                    &new_column_name_str,
-                );
-
-                if csv_builder.has_data() {
-                    csv_builder.print_table();
-                    println!();
-                }
-
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
+            if handle_cancel_flag(&new_column_name_str) {
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(4) => {
-                if choice.to_lowercase() == "4d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            csv_builder.append_inclusive_exclusive_numerical_interval_category_column(
+                &column_name_str,
+                &interval_points_str,
+                &new_column_name_str,
+            );
+
+            if csv_builder.has_data() {
+                csv_builder.print_table();
+                println!();
+            }
+
+            /*
+            match apply_filter_changes_menu(
+                csv_builder,
+                &prev_iteration_builder,
+                &original_csv_builder,
+            ) {
+                Ok(_) => (),
+                Err(e) => {
+                    println!("{}", e);
+                    continue; // Ask for the choice again if there was an error
+                }
+            }
+            */
+        }
+
+        "4" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "4d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Appends an inclusive-exclusive date interval category column.
 
 
 "#,
-                    );
-                    continue;
-                }
-
-                let column_name_str = get_user_input_level_2(
-                    "Enter the name of the timestamp parseable column to label/categorize: ",
                 );
+                //continue;
+                return Ok((csv_builder, false));
+            }
 
-                if handle_cancel_flag(&column_name_str) {
-                    continue;
-                }
+            let column_name_str = get_user_input_level_2(
+                "Enter the name of the timestamp parseable column to label/categorize: ",
+            );
 
-                let interval_points_str = get_user_input_level_2(
-                    "Enter YYYY-MM-DD date interval points (comma-separated): ",
-                );
+            if handle_cancel_flag(&column_name_str) {
+                //continue;
+                return Ok((csv_builder, false));
+            }
 
-                if handle_cancel_flag(&interval_points_str) {
-                    continue;
-                }
+            let interval_points_str =
+                get_user_input_level_2("Enter YYYY-MM-DD date interval points (comma-separated): ");
 
-                let new_column_name_str = get_user_input_level_2(
+            if handle_cancel_flag(&interval_points_str) {
+                //continue;
+                //
+                return Ok((csv_builder, false));
+            }
+
+            let new_column_name_str = get_user_input_level_2(
                     "Enter the name of the newly created column containing the row labelling/categorization: ",
                 );
 
-                if handle_cancel_flag(&new_column_name_str) {
-                    continue;
-                }
-
-                csv_builder.append_inclusive_exclusive_date_interval_category_column(
-                    &column_name_str,
-                    &interval_points_str,
-                    &new_column_name_str,
-                );
-
-                if csv_builder.has_data() {
-                    csv_builder.print_table();
-                    println!();
-                }
-
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
+            if handle_cancel_flag(&new_column_name_str) {
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(5) => {
-                if choice.to_lowercase() == "5d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            csv_builder.append_inclusive_exclusive_date_interval_category_column(
+                &column_name_str,
+                &interval_points_str,
+                &new_column_name_str,
+            );
+
+            if csv_builder.has_data() {
+                csv_builder.print_table();
+                println!();
+            }
+
+            /*
+            match apply_filter_changes_menu(
+                csv_builder,
+                &prev_iteration_builder,
+                &original_csv_builder,
+            ) {
+                Ok(_) => (),
+                Err(e) => {
+                    println!("{}", e);
+                    continue; // Ask for the choice again if there was an error
+                }
+            }
+            */
+        }
+
+        "5" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "5d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Appends a column whose value is a concatenation of other columns. This can be useful in the following scenarios:
 
@@ -1544,60 +1602,66 @@ Appends a column whose value is a concatenation of other columns. This can be us
 |5  |movies  |1500  |movies1500 |
 Total rows: 5
 "#,
+                );
+                //continue;
+                return Ok((csv_builder, false));
+            }
+            match get_concatenation_input() {
+                Ok((new_column_name, items_to_concatenate)) => {
+                    if new_column_name.trim().is_empty() {
+                        print_insight_level_2("No new column name provided. Operation aborted.");
+                        //continue
+                        //;
+                        return Ok((csv_builder, false));
+                    }
+
+                    // Convert Vec<String> to Vec<&str>
+                    let items_to_concatenate_refs: Vec<&str> =
+                        items_to_concatenate.iter().map(|s| s.as_str()).collect();
+
+                    // Now pass the vector of string slices
+                    csv_builder.append_derived_concatenation_column(
+                        &new_column_name,
+                        items_to_concatenate_refs,
                     );
-                    continue;
+
+                    if csv_builder.has_data() {
+                        csv_builder.print_table();
+                        println!();
+                    }
+                    print_insight_level_2("Derived concatenation column appended.");
+                    /*
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                    */
                 }
-                match get_concatenation_input() {
-                    Ok((new_column_name, items_to_concatenate)) => {
-                        if new_column_name.trim().is_empty() {
-                            print_insight_level_2(
-                                "No new column name provided. Operation aborted.",
-                            );
-                            continue;
-                        }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
 
-                        // Convert Vec<String> to Vec<&str>
-                        let items_to_concatenate_refs: Vec<&str> =
-                            items_to_concatenate.iter().map(|s| s.as_str()).collect();
-
-                        // Now pass the vector of string slices
-                        csv_builder.append_derived_concatenation_column(
-                            &new_column_name,
-                            items_to_concatenate_refs,
-                        );
-
-                        if csv_builder.has_data() {
-                            csv_builder.print_table();
-                            println!();
-                        }
-                        print_insight_level_2("Derived concatenation column appended.");
-                        match apply_filter_changes_menu(
-                            csv_builder,
-                            &prev_iteration_builder,
-                            &original_csv_builder,
-                        ) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("{}", e);
-                                continue; // Ask for the choice again if there was an error
-                            }
-                        }
-                    }
-                    Err(e) if e.to_string() == "Operation canceled" => {
-                        continue;
-                    }
-
-                    Err(e) => {
-                        println!("Error getting concatenation details: {}", e);
-                        continue;
-                    }
+                Err(e) => {
+                    println!("Error getting concatenation details: {}", e);
+                    //continue;
+                    return Ok((csv_builder, false));
                 }
             }
+        }
 
-            Some(6) => {
-                if choice.to_lowercase() == "6d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+        "6" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "6d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Creates category flags from columns containing data/ timestamp values.
 |id |item    |value |type  |item_type     |date      |
@@ -1633,173 +1697,193 @@ The following value formats can be processed by this feature:
 - %Y-%m-%d %H:%M:%S%.f: 2024-02-03 10:42:07.856666666
 - %b %d, %Y: Jan 30, 2023.
 "#,
-                    );
-                    continue;
-                }
-
-                match get_date_split_input() {
-                    Ok((column_name, date_format)) => {
-                        if column_name.trim().is_empty() || date_format.trim().is_empty() {
-                            print_insight_level_2(
-                                "Missing column name or date format. Operation aborted.",
-                            );
-                            continue;
-                        }
-
-                        csv_builder
-                            .split_date_as_appended_category_columns(&column_name, &date_format);
-
-                        if csv_builder.has_data() {
-                            csv_builder.print_table();
-                            println!();
-                        }
-                        print_insight_level_2("Date column split into category columns.");
-
-                        match apply_filter_changes_menu(
-                            csv_builder,
-                            &prev_iteration_builder,
-                            &original_csv_builder,
-                        ) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("{}", e);
-                                continue; // Ask for the choice again if there was an error
-                            }
-                        }
-                    }
-                    Err(e) if e.to_string() == "Operation canceled" => {
-                        continue;
-                    }
-
-                    Err(e) => {
-                        println!("Error getting date split details: {}", e);
-                        continue;
-                    }
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(7) => {
-                if choice.to_lowercase() == "7d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            match get_date_split_input() {
+                Ok((column_name, date_format)) => {
+                    if column_name.trim().is_empty() || date_format.trim().is_empty() {
+                        print_insight_level_2(
+                            "Missing column name or date format. Operation aborted.",
+                        );
+                        //continue;
+                        return Ok((csv_builder, false));
+                    }
+
+                    csv_builder.split_date_as_appended_category_columns(&column_name, &date_format);
+
+                    if csv_builder.has_data() {
+                        csv_builder.print_table();
+                        println!();
+                    }
+                    print_insight_level_2("Date column split into category columns.");
+
+                    /*
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                    */
+                }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
+
+                Err(e) => {
+                    println!("Error getting date split details: {}", e);
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
+            }
+        }
+
+        "7" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "7d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Appends a new column with the count of timestamps in a comma separated timestamp column after the timestamp value of another column                        
 
 "#,
-                    );
-                    continue;
-                }
-
-                let comma_separated_timestamp_column_name_str = get_user_input_level_2(
-                    "Enter the name of the column with comma separated timestamp values: ",
                 );
-
-                if handle_cancel_flag(&comma_separated_timestamp_column_name_str) {
-                    continue;
-                }
-
-                let relative_timestamp_column_name_str =
-                    get_user_input_level_2("Enter the name of the timestamp parseable column, which, in relation to, will be used to compute a count of timestamps AFTER: ");
-
-                if handle_cancel_flag(&relative_timestamp_column_name_str) {
-                    continue;
-                }
-
-                let new_column_name_str = get_user_input_level_2(
-                    "Enter the name of the newly created column containing the count: ",
-                );
-
-                if handle_cancel_flag(&new_column_name_str) {
-                    continue;
-                }
-
-                csv_builder.append_comma_separated_timestamp_count_after_date_column(
-                    &comma_separated_timestamp_column_name_str,
-                    &relative_timestamp_column_name_str,
-                    &new_column_name_str,
-                );
-
-                if csv_builder.has_data() {
-                    csv_builder.print_table();
-                    println!();
-                }
-
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(8) => {
-                if choice.to_lowercase() == "8d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let comma_separated_timestamp_column_name_str = get_user_input_level_2(
+                "Enter the name of the column with comma separated timestamp values: ",
+            );
+
+            if handle_cancel_flag(&comma_separated_timestamp_column_name_str) {
+                //continue;
+                return Ok((csv_builder, false));
+            }
+
+            let relative_timestamp_column_name_str =
+                    get_user_input_level_2("Enter the name of the timestamp parseable column, which, in relation to, will be used to compute a count of timestamps AFTER: ");
+
+            if handle_cancel_flag(&relative_timestamp_column_name_str) {
+                //continue;
+                return Ok((csv_builder, false));
+            }
+
+            let new_column_name_str = get_user_input_level_2(
+                "Enter the name of the newly created column containing the count: ",
+            );
+
+            if handle_cancel_flag(&new_column_name_str) {
+                //continue;
+                return Ok((csv_builder, false));
+            }
+
+            csv_builder.append_comma_separated_timestamp_count_after_date_column(
+                &comma_separated_timestamp_column_name_str,
+                &relative_timestamp_column_name_str,
+                &new_column_name_str,
+            );
+
+            if csv_builder.has_data() {
+                csv_builder.print_table();
+                println!();
+            }
+
+            /*
+            match apply_filter_changes_menu(
+                csv_builder,
+                &prev_iteration_builder,
+                &original_csv_builder,
+            ) {
+                Ok(_) => (),
+                Err(e) => {
+                    println!("{}", e);
+                    continue; // Ask for the choice again if there was an error
+                }
+            }
+            */
+        }
+
+        "8" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "8d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Appends a new column with the count of timestamps in a comma separated timestamp column before the timestamp value of another column                        
 
 "#,
-                    );
-                    continue;
-                }
-
-                let comma_separated_timestamp_column_name_str = get_user_input_level_2(
-                    "Enter the name of the column with comma separated timestamp values: ",
                 );
-
-                if handle_cancel_flag(&comma_separated_timestamp_column_name_str) {
-                    continue;
-                }
-
-                let relative_timestamp_column_name_str =
-                    get_user_input_level_2("Enter the name of the timestamp parseable column, which, in relation to, will be used to compute a count of timestamps BEFORE: ");
-
-                if handle_cancel_flag(&relative_timestamp_column_name_str) {
-                    continue;
-                }
-
-                let new_column_name_str = get_user_input_level_2(
-                    "Enter the name of the newly created column containing the count: ",
-                );
-
-                if handle_cancel_flag(&new_column_name_str) {
-                    continue;
-                }
-
-                csv_builder.append_comma_separated_timestamp_count_before_date_column(
-                    &comma_separated_timestamp_column_name_str,
-                    &relative_timestamp_column_name_str,
-                    &new_column_name_str,
-                );
-
-                if csv_builder.has_data() {
-                    csv_builder.print_table();
-                    println!();
-                }
-
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(9) => {
-                if choice.to_lowercase() == "9d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let comma_separated_timestamp_column_name_str = get_user_input_level_2(
+                "Enter the name of the column with comma separated timestamp values: ",
+            );
+
+            if handle_cancel_flag(&comma_separated_timestamp_column_name_str) {
+                //continue;
+                return Ok((csv_builder, false));
+            }
+
+            let relative_timestamp_column_name_str =
+                    get_user_input_level_2("Enter the name of the timestamp parseable column, which, in relation to, will be used to compute a count of timestamps BEFORE: ");
+
+            if handle_cancel_flag(&relative_timestamp_column_name_str) {
+                //continue;
+                return Ok((csv_builder, false));
+            }
+
+            let new_column_name_str = get_user_input_level_2(
+                "Enter the name of the newly created column containing the count: ",
+            );
+
+            if handle_cancel_flag(&new_column_name_str) {
+                //continue;
+                return Ok((csv_builder, false));
+            }
+
+            csv_builder.append_comma_separated_timestamp_count_before_date_column(
+                &comma_separated_timestamp_column_name_str,
+                &relative_timestamp_column_name_str,
+                &new_column_name_str,
+            );
+
+            if csv_builder.has_data() {
+                csv_builder.print_table();
+                println!();
+            }
+
+            /*
+            match apply_filter_changes_menu(
+                csv_builder,
+                &prev_iteration_builder,
+                &original_csv_builder,
+            ) {
+                Ok(_) => (),
+                Err(e) => {
+                    println!("{}", e);
+                    continue; // Ask for the choice again if there was an error
+                }
+            }
+            */
+        }
+
+        "9" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "9d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Creates category flags upon doing a fuzzy analysis on column values vis-a-vis specified training data.
 |id |item    |value |type  |item_type     |
@@ -1846,63 +1930,69 @@ Note the implications of the params in the JSON query:
 5. "word_length_sensitivity_param": Whether the fuzzy analysis score should be adjusted to give closer matches in the event the word length of the training inputs are more similar to the word length of the column value. Values can range from 0.0 to 1.0, with values closer to 1.0 resulting in higher scores where the rival words lengths are similar.
 6. "get_best_param": Determines the number of fuzzy analysis results that should be provided. A value of 1 would get the best match, where as a value of 2 would also return the second best match. This can have a maximum value of 3.
 "#,
-                    );
-                    continue;
-                }
-
-                // This matches the case in your project's workflow
-                match get_fuzzai_analysis_input() {
-                    Ok((
-                        column_to_analyze,
-                        column_prefix,
-                        training_data,
-                        word_split_param,
-                        word_length_sensitivity_param,
-                        get_best_param,
-                    )) => {
-                        // Assuming csv_builder is an instance of your CSV manipulation class
-                        csv_builder.append_fuzzai_analysis_columns(
-                            &column_to_analyze,
-                            &column_prefix,
-                            training_data,
-                            &word_split_param,
-                            &word_length_sensitivity_param,
-                            &get_best_param,
-                        );
-                        println!("Fuzzai analysis columns appended.");
-
-                        if csv_builder.has_data() {
-                            csv_builder.print_table();
-                            println!();
-                        }
-                        print_insight_level_2("Fuzzai Analysis columns appended.");
-
-                        match apply_filter_changes_menu(
-                            csv_builder,
-                            &prev_iteration_builder,
-                            &original_csv_builder,
-                        ) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("{}", e);
-                                continue; // Ask for the choice again if there was an error
-                            }
-                        }
-                    }
-                    Err(e) if e.to_string() == "Operation canceled" => {
-                        continue;
-                    }
-
-                    Err(e) => {
-                        println!("Error getting fuzzai analysis details: {}", e);
-                    }
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(10) => {
-                if choice.to_lowercase() == "10d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            // This matches the case in your project's workflow
+            match get_fuzzai_analysis_input() {
+                Ok((
+                    column_to_analyze,
+                    column_prefix,
+                    training_data,
+                    word_split_param,
+                    word_length_sensitivity_param,
+                    get_best_param,
+                )) => {
+                    // Assuming csv_builder is an instance of your CSV manipulation class
+                    csv_builder.append_fuzzai_analysis_columns(
+                        &column_to_analyze,
+                        &column_prefix,
+                        training_data,
+                        &word_split_param,
+                        &word_length_sensitivity_param,
+                        &get_best_param,
+                    );
+                    println!("Fuzzai analysis columns appended.");
+
+                    if csv_builder.has_data() {
+                        csv_builder.print_table();
+                        println!();
+                    }
+                    print_insight_level_2("Fuzzai Analysis columns appended.");
+
+                    /*
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                    */
+                }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
+
+                Err(e) => {
+                    println!("Error getting fuzzai analysis details: {}", e);
+                    return Ok((csv_builder, false));
+                }
+            }
+        }
+
+        "10" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "10d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Creates category flags upon doing a fuzzy analysis on column values vis-a-vis specified training data, subject to the evaluation of WHERE conditions in a row.
 |id |item    |value |type  |item_type     |
@@ -1969,71 +2059,77 @@ Note the implications of the params in the JSON query:
 6. "get_best_param": Determines the number of fuzzy analysis results that should be provided. A value of 1 would get the best match, where as a value of 2 would also return the second best match. This can have a maximum value of 3.
 7. "expressions" and "result_expression": Indicates the exact conditions of the row, that should trigger the fuzzy analysis.
 "#,
-                    );
-                    continue;
-                }
-
-                // This matches the case in your project's workflow
-                match get_fuzzai_analysis_where_input() {
-                    Ok((
-                        column_to_analyze,
-                        column_prefix,
-                        training_data,
-                        word_split_param,
-                        word_length_sensitivity_param,
-                        get_best_param,
-                        expressions,
-                        result_expression,
-                    )) => {
-                        let expressions_refs: Vec<(&str, Exp)> = expressions
-                            .iter()
-                            .map(|(name, exp)| (name.as_str(), exp.clone()))
-                            .collect();
-
-                        csv_builder.append_fuzzai_analysis_columns_with_values_where(
-                            &column_to_analyze,
-                            &column_prefix,
-                            training_data,
-                            &word_split_param,
-                            &word_length_sensitivity_param,
-                            &get_best_param,
-                            expressions_refs,
-                            &result_expression,
-                        );
-                        println!("Fuzzai analysis columns appended.");
-
-                        if csv_builder.has_data() {
-                            csv_builder.print_table();
-                            println!();
-                        }
-                        print_insight_level_2("Fuzzai Analysis columns appended.");
-
-                        match apply_filter_changes_menu(
-                            csv_builder,
-                            &prev_iteration_builder,
-                            &original_csv_builder,
-                        ) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("{}", e);
-                                continue; // Ask for the choice again if there was an error
-                            }
-                        }
-                    }
-                    Err(e) if e.to_string() == "Operation canceled" => {
-                        continue;
-                    }
-
-                    Err(e) => {
-                        println!("Error getting fuzzai analysis details: {}", e);
-                    }
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(11) => {
-                if choice.to_lowercase() == "11d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            // This matches the case in your project's workflow
+            match get_fuzzai_analysis_where_input() {
+                Ok((
+                    column_to_analyze,
+                    column_prefix,
+                    training_data,
+                    word_split_param,
+                    word_length_sensitivity_param,
+                    get_best_param,
+                    expressions,
+                    result_expression,
+                )) => {
+                    let expressions_refs: Vec<(&str, Exp)> = expressions
+                        .iter()
+                        .map(|(name, exp)| (name.as_str(), exp.clone()))
+                        .collect();
+
+                    csv_builder.append_fuzzai_analysis_columns_with_values_where(
+                        &column_to_analyze,
+                        &column_prefix,
+                        training_data,
+                        &word_split_param,
+                        &word_length_sensitivity_param,
+                        &get_best_param,
+                        expressions_refs,
+                        &result_expression,
+                    );
+                    println!("Fuzzai analysis columns appended.");
+
+                    if csv_builder.has_data() {
+                        csv_builder.print_table();
+                        println!();
+                    }
+                    print_insight_level_2("Fuzzai Analysis columns appended.");
+
+                    /*
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                    */
+                }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
+
+                Err(e) => {
+                    println!("Error getting fuzzai analysis details: {}", e);
+                    return Ok((csv_builder, false));
+                }
+            }
+        }
+
+        "11" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "11d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Synchonously creates category flags upon leveraging OpenAI's json mode enabled models.
 
@@ -2090,86 +2186,93 @@ Total rows: 3
 |3  |pizza|fun         |0                 |
 Total rows: 3
 "#,
-                    );
-                    continue;
-                }
-
-                match get_append_openai_analysis_expression() {
-                    Ok((target_columns, analysis_query, model)) => {
-                        // Check if the target columns are empty
-                        if target_columns.is_empty() {
-                            print_insight_level_2("No target columns provided. Operation aborted.");
-                            continue; // Skip the rest of the process
-                        }
-
-                        //dbg!(&file_path_option);
-
-                        let home_dir =
-                            env::var("HOME").expect("Unable to determine user home directory");
-                        let desktop_path = Path::new(&home_dir).join("Desktop");
-                        let csv_db_path = desktop_path.join("csv_db");
-
-                        //dbg!(&csv_db_path);
-
-                        let config_path = PathBuf::from(csv_db_path).join("bro.config");
-
-                        let file_contents = read_to_string(config_path)?;
-                        let valid_json_part = file_contents
-                            .split("SYNTAX")
-                            .next()
-                            .ok_or("Invalid configuration format")?;
-                        let config: Config = from_str(valid_json_part)?;
-                        let api_key = &config.open_ai_key;
-
-                        // Use the api_key for your needs
-                        //println!("API Key: {}", api_key);
-
-                        // Convert target_columns to Vec<&str>
-                        let target_columns_refs: Vec<&str> =
-                            target_columns.iter().map(String::as_str).collect();
-                        println!();
-                        let result = csv_builder
-                            .append_derived_openai_analysis_columns(
-                                target_columns_refs,
-                                analysis_query,
-                                api_key,
-                                &model,
-                            )
-                            .await;
-
-                        if result.has_data() {
-                            csv_builder.print_table();
-                            println!();
-                            print_insight_level_2("OpenAI analysis complete.");
-                        }
-
-                        match apply_filter_changes_menu(
-                            csv_builder,
-                            &prev_iteration_builder,
-                            &original_csv_builder,
-                        ) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("{}", e);
-                                continue; // Ask for the choice again if there was an error
-                            }
-                        }
-                    }
-                    Err(e) if e.to_string() == "Operation canceled" => {
-                        continue;
-                    }
-
-                    Err(e) => {
-                        println!("Error getting expressions: {}", e);
-                        continue; // Return to the menu to let the user try again or choose another option
-                    }
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(12) => {
-                if choice.to_lowercase() == "12d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            match get_append_openai_analysis_expression() {
+                Ok((target_columns, analysis_query, model)) => {
+                    // Check if the target columns are empty
+                    if target_columns.is_empty() {
+                        print_insight_level_2("No target columns provided. Operation aborted.");
+                        //continue; // Skip the rest of the process
+                        return Ok((csv_builder, false));
+                    }
+
+                    //dbg!(&file_path_option);
+
+                    let home_dir =
+                        env::var("HOME").expect("Unable to determine user home directory");
+                    let desktop_path = Path::new(&home_dir).join("Desktop");
+                    let csv_db_path = desktop_path.join("csv_db");
+
+                    //dbg!(&csv_db_path);
+
+                    let config_path = PathBuf::from(csv_db_path).join("bro.config");
+
+                    let file_contents = read_to_string(config_path)?;
+                    let valid_json_part = file_contents
+                        .split("SYNTAX")
+                        .next()
+                        .ok_or("Invalid configuration format")?;
+                    let config: Config = from_str(valid_json_part)?;
+                    let api_key = &config.open_ai_key;
+
+                    // Use the api_key for your needs
+                    //println!("API Key: {}", api_key);
+
+                    // Convert target_columns to Vec<&str>
+                    let target_columns_refs: Vec<&str> =
+                        target_columns.iter().map(String::as_str).collect();
+                    println!();
+                    let result = csv_builder
+                        .append_derived_openai_analysis_columns(
+                            target_columns_refs,
+                            analysis_query,
+                            api_key,
+                            &model,
+                        )
+                        .await;
+
+                    if result.has_data() {
+                        csv_builder.print_table();
+                        println!();
+                        print_insight_level_2("OpenAI analysis complete.");
+                    }
+
+                    /*
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                    */
+                }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
+
+                Err(e) => {
+                    println!("Error getting expressions: {}", e);
+                    //continue; // Return to the menu to let the user try again or choose another option
+                    return Ok((csv_builder, false));
+                }
+            }
+        }
+
+        "12" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "12d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Sends your data to OpenAI for batch processing to asynchronously create category flags upon leveraging its json mode enabled models.
 
@@ -2193,73 +2296,79 @@ Total rows: 3
 
   @LILBro: Batch nutrient_predictions_2 sent to OpenAI for analysis. You can check its status via the OPENAI/ LIST BATCHES feature
 "#,
-                    );
-                    continue;
-                }
-
-                match get_append_openai_batch_analysis_expression() {
-                    Ok((batch_analysis_name, target_columns, analysis_query, model)) => {
-                        // Check if the target columns are empty
-                        if target_columns.is_empty() {
-                            print_insight_level_2("No target columns provided. Operation aborted.");
-                            continue; // Skip the rest of the process
-                        }
-
-                        //dbg!(&file_path_option);
-
-                        let home_dir =
-                            env::var("HOME").expect("Unable to determine user home directory");
-                        let desktop_path = Path::new(&home_dir).join("Desktop");
-                        let csv_db_path = desktop_path.join("csv_db");
-
-                        //dbg!(&csv_db_path);
-
-                        let config_path = PathBuf::from(csv_db_path).join("bro.config");
-
-                        let file_contents = read_to_string(config_path)?;
-                        let valid_json_part = file_contents
-                            .split("SYNTAX")
-                            .next()
-                            .ok_or("Invalid configuration format")?;
-                        let config: Config = from_str(valid_json_part)?;
-                        let api_key = &config.open_ai_key;
-
-                        // Use the api_key for your needs
-                        //println!("API Key: {}", api_key);
-
-                        // Convert target_columns to Vec<&str>
-                        let target_columns_refs: Vec<&str> =
-                            target_columns.iter().map(String::as_str).collect();
-                        println!();
-                        let _ = csv_builder
-                            .send_data_for_openai_batch_analysis(
-                                target_columns_refs,
-                                analysis_query,
-                                api_key,
-                                &model,
-                                &batch_analysis_name,
-                            )
-                            .await;
-                        let insight = format!("Batch {} sent to OpenAI for analysis. You can check its status via the OPENAI/ LIST BATCHES feature", &batch_analysis_name);
-                        print_insight_level_2(&insight);
-                        println!();
-                        continue;
-                    }
-                    Err(e) if e.to_string() == "Operation canceled" => {
-                        continue;
-                    }
-
-                    Err(e) => {
-                        println!("Error getting expressions: {}", e);
-                        continue; // Return to the menu to let the user try again or choose another option
-                    }
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(13) => {
-                if choice.to_lowercase() == "13d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            match get_append_openai_batch_analysis_expression() {
+                Ok((batch_analysis_name, target_columns, analysis_query, model)) => {
+                    // Check if the target columns are empty
+                    if target_columns.is_empty() {
+                        print_insight_level_2("No target columns provided. Operation aborted.");
+                        //continue; // Skip the rest of the process
+                        return Ok((csv_builder, false));
+                    }
+
+                    //dbg!(&file_path_option);
+
+                    let home_dir =
+                        env::var("HOME").expect("Unable to determine user home directory");
+                    let desktop_path = Path::new(&home_dir).join("Desktop");
+                    let csv_db_path = desktop_path.join("csv_db");
+
+                    //dbg!(&csv_db_path);
+
+                    let config_path = PathBuf::from(csv_db_path).join("bro.config");
+
+                    let file_contents = read_to_string(config_path)?;
+                    let valid_json_part = file_contents
+                        .split("SYNTAX")
+                        .next()
+                        .ok_or("Invalid configuration format")?;
+                    let config: Config = from_str(valid_json_part)?;
+                    let api_key = &config.open_ai_key;
+
+                    // Use the api_key for your needs
+                    //println!("API Key: {}", api_key);
+
+                    // Convert target_columns to Vec<&str>
+                    let target_columns_refs: Vec<&str> =
+                        target_columns.iter().map(String::as_str).collect();
+                    println!();
+                    let _ = csv_builder
+                        .send_data_for_openai_batch_analysis(
+                            target_columns_refs,
+                            analysis_query,
+                            api_key,
+                            &model,
+                            &batch_analysis_name,
+                        )
+                        .await;
+                    let insight = format!("Batch {} sent to OpenAI for analysis. You can check its status via the OPENAI/ LIST BATCHES feature", &batch_analysis_name);
+                    print_insight_level_2(&insight);
+                    println!();
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
+
+                Err(e) => {
+                    println!("Error getting expressions: {}", e);
+                    //continue; // Return to the menu to let the user try again or choose another option
+                    return Ok((csv_builder, false));
+                }
+            }
+        }
+
+        "13" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "13d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Lists the status of your 12 most recent OpenAI Batch analysis requests. 
 
@@ -2297,36 +2406,39 @@ Total rows: 2
 Total rows: 2
 
 "#,
-                    );
-                    continue;
-                }
-
-                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
-                let desktop_path = Path::new(&home_dir).join("Desktop");
-                let csv_db_path = desktop_path.join("csv_db");
-
-                //dbg!(&csv_db_path);
-
-                let config_path = PathBuf::from(csv_db_path).join("bro.config");
-
-                let file_contents = read_to_string(config_path)?;
-                let valid_json_part = file_contents
-                    .split("SYNTAX")
-                    .next()
-                    .ok_or("Invalid configuration format")?;
-                let config: Config = from_str(valid_json_part)?;
-                let api_key = &config.open_ai_key;
-
-                let _result = fetch_and_print_openai_batches(api_key).await?;
-                println!();
-
-                continue;
+                );
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(14) => {
-                if choice.to_lowercase() == "14d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+            let desktop_path = Path::new(&home_dir).join("Desktop");
+            let csv_db_path = desktop_path.join("csv_db");
+
+            //dbg!(&csv_db_path);
+
+            let config_path = PathBuf::from(csv_db_path).join("bro.config");
+
+            let file_contents = read_to_string(config_path)?;
+            let valid_json_part = file_contents
+                .split("SYNTAX")
+                .next()
+                .ok_or("Invalid configuration format")?;
+            let config: Config = from_str(valid_json_part)?;
+            let api_key = &config.open_ai_key;
+
+            let _result = fetch_and_print_openai_batches(api_key).await?;
+            println!();
+
+            //continue;
+            return Ok((csv_builder, false));
+        }
+
+        "14" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "14d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Easily cancel any of your batch analysis requests to OpenAI.
 
@@ -2366,43 +2478,47 @@ Total rows: 2
 Total rows: 2
 
 "#,
-                    );
-                    continue;
-                }
-
-                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
-                let desktop_path = Path::new(&home_dir).join("Desktop");
-                let csv_db_path = desktop_path.join("csv_db");
-
-                //dbg!(&csv_db_path);
-
-                let config_path = PathBuf::from(csv_db_path).join("bro.config");
-
-                let file_contents = read_to_string(config_path)?;
-                let valid_json_part = file_contents
-                    .split("SYNTAX")
-                    .next()
-                    .ok_or("Invalid configuration format")?;
-                let config: Config = from_str(valid_json_part)?;
-                let api_key = &config.open_ai_key;
-
-                let batch_id = get_user_input_level_2("Enter batch id to cancel: ");
-
-                if handle_cancel_flag(&batch_id) {
-                    continue;
-                }
-
-                let _ = cancel_openai_batch(&api_key, &batch_id).await?;
-
-                let _ = fetch_and_print_openai_batches(api_key).await?;
-                println!();
-                continue;
+                );
+                //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(15) => {
-                if choice.to_lowercase() == "15d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+            let desktop_path = Path::new(&home_dir).join("Desktop");
+            let csv_db_path = desktop_path.join("csv_db");
+
+            //dbg!(&csv_db_path);
+
+            let config_path = PathBuf::from(csv_db_path).join("bro.config");
+
+            let file_contents = read_to_string(config_path)?;
+            let valid_json_part = file_contents
+                .split("SYNTAX")
+                .next()
+                .ok_or("Invalid configuration format")?;
+            let config: Config = from_str(valid_json_part)?;
+            let api_key = &config.open_ai_key;
+
+            let batch_id = get_user_input_level_2("Enter batch id to cancel: ");
+
+            if handle_cancel_flag(&batch_id) {
+                //continue;
+                return Ok((csv_builder, false));
+            }
+
+            let _ = cancel_openai_batch(&api_key, &batch_id).await?;
+
+            let _ = fetch_and_print_openai_batches(api_key).await?;
+            println!();
+            //continue;
+            return Ok((csv_builder, false));
+        }
+
+        "15" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "15d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Retrieves your OpenAI batch analysis results, and appends them as columns. If you made your batch analysis request to OpenAI with CSVBRO, this feature will seamlessly append the keys of your analysis query as column names, and their corresponding responses from OpenAI as the row values, in the same order as the file data that was originally sent to OpenAI. 
 
@@ -2422,58 +2538,62 @@ Total rows: 3
 |3  |potatoe   |100           |0              |1            |
 Total rows: 3
 "#,
-                    );
-                    continue;
-                }
-
-                let home_dir = env::var("HOME").expect("Unable to determine user home directory");
-                let desktop_path = Path::new(&home_dir).join("Desktop");
-                let csv_db_path = desktop_path.join("csv_db");
-
-                //dbg!(&csv_db_path);
-
-                let config_path = PathBuf::from(csv_db_path).join("bro.config");
-
-                let file_contents = read_to_string(config_path)?;
-                let valid_json_part = file_contents
-                    .split("SYNTAX")
-                    .next()
-                    .ok_or("Invalid configuration format")?;
-                let config: Config = from_str(valid_json_part)?;
-                let api_key = &config.open_ai_key;
-
-                let output_file_id =
-                    get_user_input_level_2("Enter OpenAI output_file_id to append: ");
-
-                if handle_cancel_flag(&output_file_id) {
-                    continue;
-                }
-
-                csv_builder
-                    .append_openai_batch_analysis_columns(&api_key, &output_file_id)
-                    .await
-                    .print_table();
-                println!();
-
-                match apply_filter_changes_menu(
-                    csv_builder,
-                    &prev_iteration_builder,
-                    &original_csv_builder,
-                ) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        println!("{}", e);
-                        continue; // Ask for the choice again if there was an error
-                    }
-                }
-
+                );
                 //continue;
+                return Ok((csv_builder, false));
             }
 
-            Some(16) => {
-                if choice.to_lowercase() == "16d" {
-                    print_insight_level_2(
-                        r#"DOCUMENTATION
+            let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+            let desktop_path = Path::new(&home_dir).join("Desktop");
+            let csv_db_path = desktop_path.join("csv_db");
+
+            //dbg!(&csv_db_path);
+
+            let config_path = PathBuf::from(csv_db_path).join("bro.config");
+
+            let file_contents = read_to_string(config_path)?;
+            let valid_json_part = file_contents
+                .split("SYNTAX")
+                .next()
+                .ok_or("Invalid configuration format")?;
+            let config: Config = from_str(valid_json_part)?;
+            let api_key = &config.open_ai_key;
+
+            let output_file_id = get_user_input_level_2("Enter OpenAI output_file_id to append: ");
+
+            if handle_cancel_flag(&output_file_id) {
+                //continue;
+                return Ok((csv_builder, false));
+            }
+
+            csv_builder
+                .append_openai_batch_analysis_columns(&api_key, &output_file_id)
+                .await
+                .print_table();
+            println!();
+
+            /*
+            match apply_filter_changes_menu(
+                csv_builder,
+                &prev_iteration_builder,
+                &original_csv_builder,
+            ) {
+                Ok(_) => (),
+                Err(e) => {
+                    println!("{}", e);
+                    continue; // Ask for the choice again if there was an error
+                }
+            }
+            */
+
+            //continue;
+        }
+
+        "16" => {
+            if action_flag == "d" {
+                //if choice.to_lowercase() == "16d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
 
 Studies your training data, and makes multi-dimensional linear regression predictions against numerical and text format column values (leveraging the Levenshtein distance as a normalizer for comparisons involving text, and traditional linear regression computation for numerical values).
 
@@ -2575,84 +2695,90 @@ Total rows: 5
 |5  |movies  |1500  |medium|movies_medium |100               |
 Total rows: 5
 "#,
-                    );
-                    continue;
-                }
+                );
+                //continue;
+                return Ok((csv_builder, false));
+            }
 
-                match get_append_linear_regression_expression() {
-                    Ok((
-                        new_column_name,
+            match get_append_linear_regression_expression() {
+                Ok((
+                    new_column_name,
+                    training_predictors,
+                    training_outputs,
+                    output_range,
+                    test_predictors_column_names,
+                )) => {
+                    // Check if the new column name is empty
+                    if new_column_name.trim().is_empty() {
+                        print_insight_level_2("No new column name provided. Operation aborted.");
+                        //continue; // Skip the rest of the process
+                        return Ok((csv_builder, false));
+                    }
+
+                    // Sort and deduplicate training_outputs manually
+                    let mut sorted_outputs = training_outputs.clone();
+                    sorted_outputs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                    sorted_outputs.dedup(); // This removes consecutive duplicate elements
+
+                    //dbg!(&training_predictors.len(), &sorted_outputs.len());
+
+                    // Verify the condition
+                    if training_predictors.len() < 2 * sorted_outputs.len() {
+                        print_insight_level_2("Insufficient training predictors: There must be at least twice as many predictor rows as unique outputs.");
+                        //continue; // Skip the rest of the process
+                        return Ok((csv_builder, false));
+                    }
+
+                    // Append the new derived linear regression column
+                    csv_builder.append_derived_linear_regression_column(
+                        &new_column_name,
                         training_predictors,
                         training_outputs,
                         output_range,
                         test_predictors_column_names,
-                    )) => {
-                        // Check if the new column name is empty
-                        if new_column_name.trim().is_empty() {
-                            print_insight_level_2(
-                                "No new column name provided. Operation aborted.",
-                            );
-                            continue; // Skip the rest of the process
-                        }
-
-                        // Sort and deduplicate training_outputs manually
-                        let mut sorted_outputs = training_outputs.clone();
-                        sorted_outputs.sort_by(|a, b| a.partial_cmp(b).unwrap());
-                        sorted_outputs.dedup(); // This removes consecutive duplicate elements
-
-                        //dbg!(&training_predictors.len(), &sorted_outputs.len());
-
-                        // Verify the condition
-                        if training_predictors.len() < 2 * sorted_outputs.len() {
-                            print_insight_level_2("Insufficient training predictors: There must be at least twice as many predictor rows as unique outputs.");
-                            continue; // Skip the rest of the process
-                        }
-
-                        // Append the new derived linear regression column
-                        csv_builder.append_derived_linear_regression_column(
-                            &new_column_name,
-                            training_predictors,
-                            training_outputs,
-                            output_range,
-                            test_predictors_column_names,
-                        );
-                        if csv_builder.has_data() {
-                            csv_builder.print_table();
-                            println!();
-                        }
-                        print_insight_level_2("Derived linear regression column appended.");
-
-                        match apply_filter_changes_menu(
-                            csv_builder,
-                            &prev_iteration_builder,
-                            &original_csv_builder,
-                        ) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("{}", e);
-                                continue; // Ask for the choice again if there was an error
-                            }
+                    );
+                    if csv_builder.has_data() {
+                        csv_builder.print_table();
+                        println!();
+                    }
+                    print_insight_level_2("Derived linear regression column appended.");
+                    /*
+                    match apply_filter_changes_menu(
+                        csv_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
                         }
                     }
-                    Err(e) if e.to_string() == "Operation canceled" => {
-                        continue;
-                    }
-
-                    Err(e) => {
-                        println!("Error getting expressions: {}", e);
-                        continue; // Return to the menu to let the user try again or choose another option
-                    }
+                    */
                 }
-            }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
 
-            _ => {
-                println!("Invalid option. Please enter a number from 1 to 16.");
-                continue; // Ask for the choice again
+                Err(e) => {
+                    println!("Error getting expressions: {}", e);
+                    //continue; // Return to the menu to let the user try again or choose another option
+                    return Ok((csv_builder, false));
+                }
             }
         }
 
-        println!(); // Print a new line for better readability
+        _ => {
+            println!("Invalid option. Please enter a number from 1 to 16.");
+            //continue; // Ask for the choice again
+            return Ok((csv_builder, false));
+        }
     }
 
-    Ok(())
+    println!(); // Print a new line for better readability
+                //    }
+
+    //Ok(())
+    return Ok((csv_builder, true));
 }

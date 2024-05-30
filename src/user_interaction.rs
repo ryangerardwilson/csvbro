@@ -280,7 +280,7 @@ pub fn determine_action_type_feature_and_flag(choice: &str) -> (String, String, 
     let d_pos = choice.find('d');
 
     // Initialize the action_type, action_feature, and action_flag with empty strings
-    let mut action_type = String::new();
+    let action_type;
     let mut action_feature = String::new();
     let mut action_flag = String::new();
 

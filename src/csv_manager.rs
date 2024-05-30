@@ -11,9 +11,8 @@ use crate::user_experience::{
     handle_special_flag_without_builder,
 };
 use crate::user_interaction::{
-    determine_action_as_number, determine_action_as_text, determine_action_type_feature_and_flag,
-    get_user_input, get_user_input_level_2, print_insight, print_insight_level_2, print_list,
-    print_list_level_2,
+    determine_action_as_number, determine_action_type_feature_and_flag, get_user_input,
+    get_user_input_level_2, print_insight, print_insight_level_2, print_list, print_list_level_2,
 };
 use calamine::{open_workbook, Reader, Xls};
 use chrono::{DateTime, Local};
@@ -457,10 +456,42 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 }
             }
             "2" => {
+                /*
                 if let Err(e) = handle_inspect(&mut builder, file_path_option) {
                     println!("Error during inspection: {}", e);
                     continue;
                 }
+                */
+
+                dbg!(&action_type, &action_feature, &action_flag);
+                let copied_builder = CsvBuilder::from_copy(&builder);
+                let _ = handle_inspect(
+                    copied_builder,
+                    file_path_option,
+                    &action_feature,
+                    &action_flag,
+                )
+                .await;
+
+                /*
+                // Update the original builder with the new one
+                if modified {
+                    println!("The builder has been modified.");
+                    match apply_builder_changes_menu(
+                        new_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                } else {
+                    println!("The builder has not been modified.");
+                }
+                */
             }
             "3" => {
                 dbg!(&action_type, &action_feature, &action_flag);
@@ -501,27 +532,180 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 }
             }
             "4" => {
+                /*
                 if let Err(e) = handle_transform(&mut builder, file_path_option).await {
                     println!("Error during transform operation: {}", e);
                     continue;
                 }
+                */
+
+                dbg!(&action_type, &action_feature, &action_flag);
+                let copied_builder = CsvBuilder::from_copy(&builder);
+                let (new_builder, modified) = match handle_transform(
+                    copied_builder,
+                    file_path_option,
+                    &action_feature,
+                    &action_flag,
+                )
+                .await
+                {
+                    Ok(result) => result,
+                    Err(e) => {
+                        println!("Error during search: {}", e);
+                        // Restore the original builder in case of error
+                        //            *builder = std::mem::replace(builder, CsvBuilder::new());
+                        return;
+                    }
+                };
+                // Update the original builder with the new one
+                if modified {
+                    println!("The builder has been modified.");
+                    match apply_builder_changes_menu(
+                        new_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                } else {
+                    println!("The builder has not been modified.");
+                }
             }
             "5" => {
+                /*
                 if let Err(e) = handle_append(&mut builder, file_path_option).await {
                     println!("Error during pivot operation: {}", e);
                     continue;
                 }
+                */
+
+                dbg!(&action_type, &action_feature, &action_flag);
+                let copied_builder = CsvBuilder::from_copy(&builder);
+                let (new_builder, modified) = match handle_append(
+                    copied_builder,
+                    file_path_option,
+                    &action_feature,
+                    &action_flag,
+                )
+                .await
+                {
+                    Ok(result) => result,
+                    Err(e) => {
+                        println!("Error during search: {}", e);
+                        // Restore the original builder in case of error
+                        //            *builder = std::mem::replace(builder, CsvBuilder::new());
+                        return;
+                    }
+                };
+                // Update the original builder with the new one
+                if modified {
+                    println!("The builder has been modified.");
+                    match apply_builder_changes_menu(
+                        new_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                } else {
+                    println!("The builder has not been modified.");
+                }
             }
             "6" => {
+                /*
                 if let Err(e) = handle_join(&mut builder, file_path_option) {
                     println!("Error during join operation: {}", e);
                     continue;
                 }
+                */
+
+                dbg!(&action_type, &action_feature, &action_flag);
+                let copied_builder = CsvBuilder::from_copy(&builder);
+                let (new_builder, modified) = match handle_join(
+                    copied_builder,
+                    file_path_option,
+                    &action_feature,
+                    &action_flag,
+                )
+                .await
+                {
+                    Ok(result) => result,
+                    Err(e) => {
+                        println!("Error during search: {}", e);
+                        // Restore the original builder in case of error
+                        //            *builder = std::mem::replace(builder, CsvBuilder::new());
+                        return;
+                    }
+                };
+
+                // Update the original builder with the new one
+                if modified {
+                    println!("The builder has been modified.");
+                    match apply_builder_changes_menu(
+                        new_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                } else {
+                    println!("The builder has not been modified.");
+                }
             }
             "7" => {
+                /*
                 if let Err(e) = handle_predict(&mut builder, file_path_option).await {
                     println!("Error during predict operation: {}", e);
                     continue;
+                }
+                */
+
+                dbg!(&action_type, &action_feature, &action_flag);
+                let copied_builder = CsvBuilder::from_copy(&builder);
+                let (new_builder, modified) = match handle_predict(
+                    copied_builder,
+                    file_path_option,
+                    &action_feature,
+                    &action_flag,
+                )
+                .await
+                {
+                    Ok(result) => result,
+                    Err(e) => {
+                        println!("Error during search: {}", e);
+                        // Restore the original builder in case of error
+                        //            *builder = std::mem::replace(builder, CsvBuilder::new());
+                        return;
+                    }
+                };
+                // Update the original builder with the new one
+                if modified {
+                    println!("The builder has been modified.");
+                    match apply_builder_changes_menu(
+                        new_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                } else {
+                    println!("The builder has not been modified.");
                 }
             }
 
