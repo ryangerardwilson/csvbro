@@ -56,7 +56,7 @@ pub async fn handle_inspect(
     action_feature: &str,
     action_flag: &str,
     action_menu_options: Vec<&str>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
     fn get_filter_expressions(
         data_store: &mut ExpStore,
     ) -> Result<(Vec<(String, usize)>, String), Box<dyn std::error::Error>> {
@@ -266,7 +266,7 @@ SYNTAX
             ];
 
             print_list_level_2(&action_menu_options, &action_sub_menu_options, &action_type);
-            return Ok(());
+            return Ok((csv_builder, false));
         }
 
         "1" => {
@@ -301,7 +301,7 @@ First row:
 }
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             csv_builder.print_first_row();
@@ -338,7 +338,7 @@ Last row:
 }
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             csv_builder.print_last_row();
@@ -398,13 +398,13 @@ Row 4:
 }
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let start_str = get_user_input_level_2("Enter the start row number: ");
 
             if handle_cancel_flag(&start_str) {
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let start = start_str
@@ -414,7 +414,7 @@ Row 4:
             let end_str = get_user_input_level_2("Enter the end row number: ");
 
             if handle_cancel_flag(&end_str) {
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let end = end_str
@@ -481,7 +481,7 @@ Row 10:
 Total rows: 10
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             if csv_builder.has_data() {
@@ -529,7 +529,7 @@ Total rows: 12
 Total rows: 12
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             if csv_builder.has_data() {
@@ -563,7 +563,7 @@ Total rows: 12
 - "IS_DATETIME_PARSEABLE"
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             if let Some(headers) = csv_builder.get_headers() {
@@ -616,7 +616,7 @@ SYNTAX
                 let rows_json_str = get_edited_user_json_input(full_syntax);
                 //dbg!(&rows_json_str);
                 if handle_cancel_flag(&rows_json_str) {
-                    return Ok(());
+                    return Ok((csv_builder, false));
                 }
 
                 // Parse the user input
@@ -624,9 +624,7 @@ SYNTAX
                     Ok(json) => json,
                     Err(e) => {
                         eprintln!("Error parsing JSON string: {}", e);
-                        //return Err("An error occurred".to_string().into());
-                        //return Ok((csv_builder, false));
-                        return Ok(());
+                        return Ok((csv_builder, false));
                     }
                 };
 
@@ -737,7 +735,7 @@ Row number: 8
 Total rows printed: 4
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let mut exp_store = ExpStore {
@@ -755,11 +753,11 @@ Total rows printed: 4
                     csv_builder.print_rows_where(expressions_refs, &result_expression);
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
-                    return Ok(());
+                    return Ok((csv_builder, false));
                 }
                 Err(e) => {
                     println!("Error getting filter expressions: {}", e);
-                    return Ok(());
+                    return Ok((csv_builder, false));
                 }
             }
         }
@@ -816,13 +814,13 @@ Analysis for column 'gst':
   - Sum of Squared Deviations (Total of Each Value's Difference from the Mean, Squared): Think of it like the total jumps needed to reach different distances in hopscotch. A large total means some jumps were really big. A small total means the jumps were mostly the same, easy hops. The sum of squared deviations (SSD), or sum of squares, measures the total variability in a dataset. However, it isn't interpreted directly because its value depends on the number of data points, making comparisons challenging across different datasets. Instead, it is often used as an intermediate calculation for other metrics like variance or standard deviation. 
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let column_names = get_user_input_level_2("Enter column names separated by commas: ");
 
             if handle_cancel_flag(&column_names) {
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
@@ -869,13 +867,13 @@ Frequency for column 'interest':
   9.4: f = 1 (10%)
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let column_names = get_user_input_level_2("Enter column names separated by commas: ");
 
             if handle_cancel_flag(&column_names) {
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
@@ -942,13 +940,13 @@ Frequency for column 'type':
           420: f = 1 (100.00%)
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let column_names = get_user_input_level_2("Enter column names separated by commas: ");
 
             if handle_cancel_flag(&column_names) {
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
@@ -981,12 +979,12 @@ Total rows: 12
 Unique values in 'value': 200, 1000, 20000, 1500, 2000, 300, 1100
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let column_name = get_user_input_level_2("Enter the column name: ");
             if handle_cancel_flag(&column_name) {
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             csv_builder.print_unique(&column_name.trim());
@@ -1027,13 +1025,13 @@ Statistics for column 'interest':
   Median frequency of the unique values: 1.00
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let column_names = get_user_input_level_2("Enter column names separated by commas: ");
 
             if handle_cancel_flag(&column_names) {
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
@@ -1080,7 +1078,7 @@ Total rows: 12
 Count: 7
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let mut exp_store = ExpStore {
@@ -1097,12 +1095,12 @@ Count: 7
                     csv_builder.print_count_where(expressions_refs, &result_expression);
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
-                    return Ok(());
+                    return Ok((csv_builder, false));
                 }
 
                 Err(e) => {
                     println!("Error getting filter expressions: {}", e);
-                    return Ok(());
+                    return Ok((csv_builder, false));
                 }
             }
         }
@@ -1163,7 +1161,7 @@ Total rows: 10
   Y-Axis Median: 370.00
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let column_names = get_user_input_level_2(
@@ -1171,7 +1169,7 @@ Total rows: 10
             );
 
             if handle_cancel_flag(&column_names) {
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
@@ -1182,7 +1180,7 @@ Total rows: 10
                 print_insight_level_2(
                     "Please enter exactly two column names, separated by a comma.",
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             } else {
                 // Extracting the column names.
                 let x_axis_column = columns[0];
@@ -1244,7 +1242,7 @@ Total rows: 10
   Cumulative Y-Axis Max: 3750
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let column_names = get_user_input_level_2(
@@ -1252,7 +1250,7 @@ Total rows: 10
             );
 
             if handle_cancel_flag(&column_names) {
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
@@ -1263,7 +1261,7 @@ Total rows: 10
                 print_insight_level_2(
                     "Please enter exactly two column names, separated by a comma.",
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             } else {
                 // Extracting the column names.
                 let x_axis_column = columns[0];
@@ -1331,7 +1329,7 @@ Total rows: 10
   Y-Axis Median: 370.00
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let column_names = get_user_input_level_2(
@@ -1339,7 +1337,7 @@ Total rows: 10
             );
 
             if handle_cancel_flag(&column_names) {
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
@@ -1350,7 +1348,7 @@ Total rows: 10
                 print_insight_level_2(
                     "Please enter exactly two column names, separated by a comma.",
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             } else {
                 // Extracting the column names.
                 let x_axis_column = columns[0];
@@ -1413,7 +1411,7 @@ Total rows: 10
   Cumulative Y-Axis Max: 3750
 "#,
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let column_names = get_user_input_level_2(
@@ -1421,7 +1419,7 @@ Total rows: 10
             );
 
             if handle_cancel_flag(&column_names) {
-                return Ok(());
+                return Ok((csv_builder, false));
             }
 
             let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
@@ -1432,7 +1430,7 @@ Total rows: 10
                 print_insight_level_2(
                     "Please enter exactly two column names, separated by a comma.",
                 );
-                return Ok(());
+                return Ok((csv_builder, false));
             } else {
                 // Extracting the column names.
                 let x_axis_column = columns[0];
@@ -1445,12 +1443,10 @@ Total rows: 10
 
         _ => {
             println!("Invalid option. Please enter a number from 1 to 17.");
-            return Ok(());
+            return Ok((csv_builder, false));
         }
     }
 
-    println!(); // Print a new line for better readability
-                //    }
-
-    Ok(())
+    println!();
+    return Ok((csv_builder, false));
 }

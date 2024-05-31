@@ -5,6 +5,7 @@ use crate::user_interaction::{
     get_edited_user_json_input, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
 use rgwml::ai_utils::{cancel_openai_batch, fetch_and_print_openai_batches};
+use rgwml::clustering_utils::ClusteringConfig;
 use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal, Train};
 use serde_json::from_str;
 use serde_json::Value;
@@ -1071,6 +1072,74 @@ Note the implications of the params in the JSON query:
         ))
     }
 
+    fn get_clustering_input(
+    ) -> Result<(String, String, ClusteringConfig), Box<dyn std::error::Error>> {
+        let xgb_model_input_syntax = r#"{
+    "param_columns": "",
+    "cluster_column_name": "",
+    "clustering_config": {
+        "operation": "",
+        "optimal_n_cluster_finding_method": "",
+        "dbscan_eps": "",
+        "dbscan_min_samples": ""
+    }
+}
+
+SYNTAX
+======
+{
+    "param_columns": "",
+    "cluster_column_name": "",
+    "clustering_config": {
+        "operation": "",                            //  KMEANS, DBSCAN, AGGLOMERATIVE, MEAN_SHIFT, GMM, SPECTRAL, BIRCH
+        "optimal_n_cluster_finding_method": "",     //  FIXED:n (like FIXED:2, FIXED:3), ELBOW, SILHOUETTE; Not relevant for MEAN_SHIFT and DBSCAN operations
+        "dbscan_eps": "",                           //  Only relevant for DBSCAN. Leave blank if NA
+        "dbscan_min_samples": ""                    //  Only relevant for DBSCAN. Leave blank if NA
+    }
+}
+"#;
+
+        let user_input = get_edited_user_json_input(xgb_model_input_syntax.to_string());
+
+        if handle_cancel_flag(&user_input) {
+            return Err("Operation canceled".into());
+        }
+
+        let parsed_json: Value = serde_json::from_str(&user_input)?;
+
+        let param_columns = parsed_json["param_columns"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let cluster_column_name = parsed_json["cluster_column_name"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+
+        let clustering_config = &parsed_json["clustering_config"];
+
+        let config = ClusteringConfig {
+            operation: clustering_config["operation"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+            optimal_n_cluster_finding_method: clustering_config["optimal_n_cluster_finding_method"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+            dbscan_eps: clustering_config["dbscan_eps"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+            dbscan_min_samples: clustering_config["dbscan_min_samples"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+        };
+
+        Ok((param_columns, cluster_column_name, config))
+    }
+
     match action_feature {
         "" => {
             let action_sub_menu_options = vec![
@@ -1090,6 +1159,7 @@ Note the implications of the params in the JSON query:
         "OPENAI/ CANCEL BATCH",
         "OPENAI/ APPEND BATCH ANALYSIS COLUMNS",
         "APPEND LINEAR REGRESSION COLUMN",
+        "APPEND CLUSTER COLUMN"
             ];
 
             print_list_level_2(&action_menu_options, &action_sub_menu_options, &action_type);
@@ -2413,6 +2483,44 @@ Total rows: 5
 
                 Err(e) => {
                     println!("Error getting expressions: {}", e);
+                    return Ok((csv_builder, false));
+                }
+            }
+        }
+
+        "17" => {
+            if action_flag == "d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
+
+Appends a cluster column.
+
+"#,
+                );
+                return Ok((csv_builder, false));
+            }
+
+            match get_clustering_input() {
+                Ok((param_column_names, cluster_column_name, clustering_config)) => {
+                    let _ = csv_builder
+                        .append_clustering_column(
+                            &param_column_names,
+                            &cluster_column_name,
+                            clustering_config,
+                        )
+                        .await;
+
+                    // Print the updated table
+                    csv_builder.print_table();
+                    println!();
+                }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
+
+                Err(e) => {
+                    println!("Error getting pivot details: {}", e);
                     return Ok((csv_builder, false));
                 }
             }

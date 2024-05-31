@@ -429,9 +429,11 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
 
                 // Update the original builder with the new one
                 if modified {
+                    builder.override_with(&new_builder);
+
                     println!("The builder has been modified.");
                     match apply_builder_changes_menu(
-                        new_builder,
+                        &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
                     ) {
@@ -445,7 +447,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
             }
             "2" => {
                 let copied_builder = CsvBuilder::from_copy(&builder);
-                let _ = handle_inspect(
+                let (_new_builder, _modified) = match handle_inspect(
                     copied_builder,
                     file_path_option,
                     &action_type,
@@ -453,7 +455,15 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     &action_flag,
                     action_menu_options.clone(),
                 )
-                .await;
+                .await
+                {
+                    Ok(result) => result,
+                    Err(e) => {
+                        println!("Error during tinker: {}", e);
+                        return;
+                    }
+                };
+                continue;
             }
             "3" => {
                 let copied_builder = CsvBuilder::from_copy(&builder);
@@ -476,9 +486,10 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
 
                 // Update the original builder with the new one
                 if modified {
+                    builder.override_with(&new_builder);
                     println!("The builder has been modified.");
                     match apply_builder_changes_menu(
-                        new_builder,
+                        &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
                     ) {
@@ -510,9 +521,9 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 };
                 // Update the original builder with the new one
                 if modified {
-                    println!("The builder has been modified.");
+                    builder.override_with(&new_builder);
                     match apply_builder_changes_menu(
-                        new_builder,
+                        &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
                     ) {
@@ -544,9 +555,12 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 };
                 // Update the original builder with the new one
                 if modified {
+                    builder.override_with(&new_builder);
+                    //.print_table();
+
                     println!("The builder has been modified.");
                     match apply_builder_changes_menu(
-                        new_builder,
+                        &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
                     ) {
@@ -579,9 +593,10 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
 
                 // Update the original builder with the new one
                 if modified {
-                    println!("The builder has been modified.");
+                    builder.override_with(&new_builder);
+
                     match apply_builder_changes_menu(
-                        new_builder,
+                        &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
                     ) {
@@ -613,9 +628,10 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 };
                 // Update the original builder with the new one
                 if modified {
-                    println!("The builder has been modified.");
+                    builder.override_with(&new_builder);
+
                     match apply_builder_changes_menu(
-                        new_builder,
+                        &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
                     ) {
@@ -701,9 +717,9 @@ pub async fn query_chain_builder(
 
                 // Update the original builder with the new one
                 if modified {
-                    println!("The builder has been modified.");
+                    builder.override_with(&new_builder);
                     match apply_builder_changes_menu(
-                        new_builder,
+                        &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
                     ) {
@@ -717,7 +733,7 @@ pub async fn query_chain_builder(
             }
             "2" => {
                 let copied_builder = CsvBuilder::from_copy(&builder);
-                let _ = handle_inspect(
+                let (_new_builder, _modified) = match handle_inspect(
                     copied_builder,
                     file_path_option,
                     &action_type,
@@ -725,7 +741,14 @@ pub async fn query_chain_builder(
                     &action_flag,
                     action_menu_options.clone(),
                 )
-                .await;
+                .await
+                {
+                    Ok(result) => result,
+                    Err(e) => {
+                        println!("Error during tinker: {}", e);
+                        return retry_invoked;
+                    }
+                };
             }
             "3" => {
                 let copied_builder = CsvBuilder::from_copy(&builder);
@@ -748,9 +771,9 @@ pub async fn query_chain_builder(
 
                 // Update the original builder with the new one
                 if modified {
-                    println!("The builder has been modified.");
+                    builder.override_with(&new_builder);
                     match apply_builder_changes_menu(
-                        new_builder,
+                        &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
                     ) {
@@ -782,9 +805,9 @@ pub async fn query_chain_builder(
                 };
                 // Update the original builder with the new one
                 if modified {
-                    println!("The builder has been modified.");
+                    builder.override_with(&new_builder);
                     match apply_builder_changes_menu(
-                        new_builder,
+                        &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
                     ) {
@@ -816,9 +839,9 @@ pub async fn query_chain_builder(
                 };
                 // Update the original builder with the new one
                 if modified {
-                    println!("The builder has been modified.");
+                    builder.override_with(&new_builder);
                     match apply_builder_changes_menu(
-                        new_builder,
+                        &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
                     ) {
@@ -851,9 +874,9 @@ pub async fn query_chain_builder(
 
                 // Update the original builder with the new one
                 if modified {
-                    println!("The builder has been modified.");
+                    builder.override_with(&new_builder);
                     match apply_builder_changes_menu(
-                        new_builder,
+                        &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
                     ) {
@@ -885,9 +908,9 @@ pub async fn query_chain_builder(
                 };
                 // Update the original builder with the new one
                 if modified {
-                    println!("The builder has been modified.");
+                    builder.override_with(&new_builder);
                     match apply_builder_changes_menu(
-                        new_builder,
+                        &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
                     ) {
@@ -908,7 +931,7 @@ pub async fn query_chain_builder(
 }
 
 pub fn apply_builder_changes_menu(
-    mut csv_builder: CsvBuilder,
+    csv_builder: &mut CsvBuilder,
     prev_iteration_builder: &CsvBuilder,
     original_csv_builder: &CsvBuilder,
 ) -> Result<(), String> {
