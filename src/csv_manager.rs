@@ -7,12 +7,12 @@ use crate::csv_searcher::handle_search;
 use crate::csv_tinkerer::handle_tinker;
 use crate::csv_transformer::handle_transform;
 use crate::user_experience::{
-    handle_back_flag, handle_cancel_flag, handle_quit_flag, handle_special_flag,
-    handle_special_flag_without_builder,
+    handle_back_flag, handle_cancel_flag, handle_query_retry_flag, handle_quit_flag,
+    handle_special_flag, handle_special_flag_without_builder,
 };
 use crate::user_interaction::{
     determine_action_as_number, determine_action_type_feature_and_flag, get_user_input,
-    get_user_input_level_2, print_insight, print_insight_level_2, print_list, print_list_level_2,
+    get_user_input_level_2, print_insight, print_insight_level_2, print_list,
 };
 use calamine::{open_workbook, Reader, Xls};
 use chrono::{DateTime, Local};
@@ -370,24 +370,24 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
         println!();
     }
 
+    print_insight("Choose an action:");
+
+    let action_menu_options = vec![
+        "SEARCH",
+        "INSPECT",
+        "TINKER",
+        "TRANSFORM",
+        "APPEND",
+        "JOIN",
+        "PREDICT",
+    ];
+
+    print_list(&action_menu_options);
+
     let original_csv_builder = CsvBuilder::from_copy(&builder);
     loop {
         let prev_iteration_builder = CsvBuilder::from_copy(&builder);
 
-        //let has_data = builder.has_data();
-        print_insight("Choose an action:");
-
-        let menu_options = vec![
-            "SEARCH",
-            "INSPECT",
-            "TINKER",
-            "TRANSFORM",
-            "APPEND",
-            "JOIN",
-            "PREDICT",
-        ];
-
-        print_list(&menu_options);
         let choice = get_user_input("Enter your choice: ").to_lowercase();
 
         if handle_back_flag(&choice) || &choice == "" {
@@ -413,8 +413,10 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 let (new_builder, modified) = match handle_search(
                     copied_builder,
                     file_path_option,
+                    &action_type,
                     &action_feature,
                     &action_flag,
+                    action_menu_options.clone(),
                 )
                 .await
                 {
@@ -439,8 +441,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                             continue; // Ask for the choice again if there was an error
                         }
                     }
-                } else {
-                    println!("The builder has not been modified.");
                 }
             }
             "2" => {
@@ -448,8 +448,10 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 let _ = handle_inspect(
                     copied_builder,
                     file_path_option,
+                    &action_type,
                     &action_feature,
                     &action_flag,
+                    action_menu_options.clone(),
                 )
                 .await;
             }
@@ -458,8 +460,10 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 let (new_builder, modified) = match handle_tinker(
                     copied_builder,
                     file_path_option,
+                    &action_type,
                     &action_feature,
                     &action_flag,
+                    action_menu_options.clone(),
                 )
                 .await
                 {
@@ -484,8 +488,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                             continue; // Ask for the choice again if there was an error
                         }
                     }
-                } else {
-                    println!("The builder has not been modified.");
                 }
             }
             "4" => {
@@ -493,8 +495,10 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 let (new_builder, modified) = match handle_transform(
                     copied_builder,
                     file_path_option,
+                    &action_type,
                     &action_feature,
                     &action_flag,
+                    action_menu_options.clone(),
                 )
                 .await
                 {
@@ -518,8 +522,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                             continue; // Ask for the choice again if there was an error
                         }
                     }
-                } else {
-                    println!("The builder has not been modified.");
                 }
             }
             "5" => {
@@ -527,8 +529,10 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 let (new_builder, modified) = match handle_append(
                     copied_builder,
                     file_path_option,
+                    &action_type,
                     &action_feature,
                     &action_flag,
+                    action_menu_options.clone(),
                 )
                 .await
                 {
@@ -552,8 +556,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                             continue; // Ask for the choice again if there was an error
                         }
                     }
-                } else {
-                    println!("The builder has not been modified.");
                 }
             }
             "6" => {
@@ -561,8 +563,10 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 let (new_builder, modified) = match handle_join(
                     copied_builder,
                     file_path_option,
+                    &action_type,
                     &action_feature,
                     &action_flag,
+                    action_menu_options.clone(),
                 )
                 .await
                 {
@@ -587,8 +591,6 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                             continue; // Ask for the choice again if there was an error
                         }
                     }
-                } else {
-                    println!("The builder has not been modified.");
                 }
             }
             "7" => {
@@ -596,8 +598,10 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 let (new_builder, modified) = match handle_predict(
                     copied_builder,
                     file_path_option,
+                    &action_type,
                     &action_feature,
                     &action_flag,
+                    action_menu_options.clone(),
                 )
                 .await
                 {
@@ -621,14 +625,286 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                             continue; // Ask for the choice again if there was an error
                         }
                     }
-                } else {
-                    println!("The builder has not been modified.");
                 }
             }
 
-            _ => println!("Unknown Action Type: {}", action_type),
+            _ => print_insight("That's not on the menu, man!"),
         }
     }
+}
+
+pub async fn query_chain_builder(
+    mut builder: CsvBuilder,
+    mut choice: String,
+    file_path_option: Option<&str>,
+) -> bool {
+    //let current_file_path: Option<PathBuf> = file_path_option.map(PathBuf::from);
+
+    if builder.has_data() {
+        let _ = builder.print_table();
+        println!();
+    }
+
+    let action_menu_options = vec![
+        "SEARCH",
+        "INSPECT",
+        "TINKER",
+        "TRANSFORM",
+        "APPEND",
+        "JOIN",
+        "PREDICT",
+    ];
+
+    let original_csv_builder = CsvBuilder::from_copy(&builder);
+    let mut is_first_iteration = true;
+    let mut retry_invoked = false;
+    loop {
+        let prev_iteration_builder = CsvBuilder::from_copy(&builder);
+
+        if !is_first_iteration {
+            choice = get_user_input("Enter your choice: ").to_lowercase();
+        }
+
+        if handle_back_flag(&choice) {
+            break;
+        }
+        let _ = handle_quit_flag(&choice);
+
+        if handle_query_retry_flag(&choice) {
+            //break;
+            retry_invoked = true;
+            break;
+        }
+
+        let (action_type, action_feature, action_flag) =
+            determine_action_type_feature_and_flag(&choice);
+
+        match action_type.as_str() {
+            "1" => {
+                let copied_builder = CsvBuilder::from_copy(&builder);
+                let (new_builder, modified) = match handle_search(
+                    copied_builder,
+                    file_path_option,
+                    &action_type,
+                    &action_feature,
+                    &action_flag,
+                    action_menu_options.clone(),
+                )
+                .await
+                {
+                    Ok(result) => result,
+                    Err(e) => {
+                        println!("Error during search: {}", e);
+                        return retry_invoked;
+                    }
+                };
+
+                // Update the original builder with the new one
+                if modified {
+                    println!("The builder has been modified.");
+                    match apply_builder_changes_menu(
+                        new_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                }
+            }
+            "2" => {
+                let copied_builder = CsvBuilder::from_copy(&builder);
+                let _ = handle_inspect(
+                    copied_builder,
+                    file_path_option,
+                    &action_type,
+                    &action_feature,
+                    &action_flag,
+                    action_menu_options.clone(),
+                )
+                .await;
+            }
+            "3" => {
+                let copied_builder = CsvBuilder::from_copy(&builder);
+                let (new_builder, modified) = match handle_tinker(
+                    copied_builder,
+                    file_path_option,
+                    &action_type,
+                    &action_feature,
+                    &action_flag,
+                    action_menu_options.clone(),
+                )
+                .await
+                {
+                    Ok(result) => result,
+                    Err(e) => {
+                        println!("Error during tinker: {}", e);
+                        return retry_invoked;
+                    }
+                };
+
+                // Update the original builder with the new one
+                if modified {
+                    println!("The builder has been modified.");
+                    match apply_builder_changes_menu(
+                        new_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                }
+            }
+            "4" => {
+                let copied_builder = CsvBuilder::from_copy(&builder);
+                let (new_builder, modified) = match handle_transform(
+                    copied_builder,
+                    file_path_option,
+                    &action_type,
+                    &action_feature,
+                    &action_flag,
+                    action_menu_options.clone(),
+                )
+                .await
+                {
+                    Ok(result) => result,
+                    Err(e) => {
+                        println!("Error during search: {}", e);
+                        return retry_invoked;
+                    }
+                };
+                // Update the original builder with the new one
+                if modified {
+                    println!("The builder has been modified.");
+                    match apply_builder_changes_menu(
+                        new_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                }
+            }
+            "5" => {
+                let copied_builder = CsvBuilder::from_copy(&builder);
+                let (new_builder, modified) = match handle_append(
+                    copied_builder,
+                    file_path_option,
+                    &action_type,
+                    &action_feature,
+                    &action_flag,
+                    action_menu_options.clone(),
+                )
+                .await
+                {
+                    Ok(result) => result,
+                    Err(e) => {
+                        println!("Error during search: {}", e);
+                        return retry_invoked;
+                    }
+                };
+                // Update the original builder with the new one
+                if modified {
+                    println!("The builder has been modified.");
+                    match apply_builder_changes_menu(
+                        new_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                }
+            }
+            "6" => {
+                let copied_builder = CsvBuilder::from_copy(&builder);
+                let (new_builder, modified) = match handle_join(
+                    copied_builder,
+                    file_path_option,
+                    &action_type,
+                    &action_feature,
+                    &action_flag,
+                    action_menu_options.clone(),
+                )
+                .await
+                {
+                    Ok(result) => result,
+                    Err(e) => {
+                        println!("Error during search: {}", e);
+                        return retry_invoked;
+                    }
+                };
+
+                // Update the original builder with the new one
+                if modified {
+                    println!("The builder has been modified.");
+                    match apply_builder_changes_menu(
+                        new_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                }
+            }
+            "7" => {
+                let copied_builder = CsvBuilder::from_copy(&builder);
+                let (new_builder, modified) = match handle_predict(
+                    copied_builder,
+                    file_path_option,
+                    &action_type,
+                    &action_feature,
+                    &action_flag,
+                    action_menu_options.clone(),
+                )
+                .await
+                {
+                    Ok(result) => result,
+                    Err(e) => {
+                        println!("Error during search: {}", e);
+                        return retry_invoked;
+                    }
+                };
+                // Update the original builder with the new one
+                if modified {
+                    println!("The builder has been modified.");
+                    match apply_builder_changes_menu(
+                        new_builder,
+                        &prev_iteration_builder,
+                        &original_csv_builder,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("{}", e);
+                            continue; // Ask for the choice again if there was an error
+                        }
+                    }
+                }
+            }
+
+            _ => print_insight("That's not on the menu, man!"),
+        }
+        is_first_iteration = false;
+    }
+    retry_invoked
 }
 
 pub fn apply_builder_changes_menu(
@@ -642,7 +918,7 @@ pub fn apply_builder_changes_menu(
         "Load original data from point of import",
     ];
     print_insight_level_2("Apply changes?");
-    print_list_level_2(&menu_options);
+    print_list(&menu_options);
 
     let choice = get_user_input_level_2("Enter your choice: ").to_lowercase();
     let selected_option = determine_action_as_number(&menu_options, &choice);

@@ -10,8 +10,10 @@ use std::fs;
 pub async fn handle_transform(
     mut csv_builder: CsvBuilder,
     _file_path_option: Option<&str>,
+    action_type: &str,
     action_feature: &str,
     action_flag: &str,
+    action_menu_options: Vec<&str>,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
     fn get_pivot_input() -> Result<Piv, Box<dyn std::error::Error>> {
         let pivot_syntax = r#"{
@@ -107,10 +109,8 @@ Note the implication of params in the Json Query:
 
     match action_feature {
         "" => {
-            print_insight_level_2("Here's the TRANSFORM feature menu ... ");
-            let menu_options = vec!["GROUP", "GROUPED SPLIT", "PIVOT"];
-
-            print_list_level_2(&menu_options);
+            let action_sub_menu_options = vec!["GROUP", "GROUPED SPLIT", "PIVOT"];
+            print_list_level_2(&action_menu_options, &action_sub_menu_options, &action_type);
 
             return Ok((csv_builder, false));
         }

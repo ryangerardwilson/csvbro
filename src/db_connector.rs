@@ -1,6 +1,6 @@
 // db_connector.rs
 use crate::config::{Config, DbPreset, GoogleBigQueryPreset};
-use crate::csv_manager::chain_builder;
+use crate::csv_manager::query_chain_builder;
 use crate::user_experience::{
     handle_back_flag, handle_cancel_flag, handle_query_retry_flag, handle_query_special_flag,
     handle_quit_flag,
@@ -967,6 +967,11 @@ DIRECTIVES SYNTAX
         }
 
         let csv_builder_copy = CsvBuilder::from_copy(&csv_builder);
-        chain_builder(csv_builder_copy, None).await;
+        let retry_invoked = query_chain_builder(csv_builder_copy, choice, None).await;
+
+        if retry_invoked {
+            confirmation = "@r".to_string();
+            continue;
+        }
     }
 }

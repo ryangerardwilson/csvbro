@@ -59,8 +59,10 @@ impl ExpStore {
 pub async fn handle_append(
     mut csv_builder: CsvBuilder,
     _file_path_option: Option<&str>,
+    action_type: &str,
     action_feature: &str,
     action_flag: &str,
+    action_menu_options: Vec<&str>,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
     fn get_append_boolean_expression(
         data_store: &mut ExpStore,
@@ -1071,8 +1073,7 @@ Note the implications of the params in the JSON query:
 
     match action_feature {
         "" => {
-            print_insight_level_2("Here's the TINKER feature menu ... ");
-            let menu_options = vec![
+            let action_sub_menu_options = vec![
         "APPEND DERIVED BOOLEAN COLUMN",
         "APPEND DERIVED CATEGORY COLUMN",
         "APPEND INCLUSIVE-EXCLUSIVE (NUMERICAL) INTERVAL CATEGORY COLUMN",
@@ -1091,7 +1092,7 @@ Note the implications of the params in the JSON query:
         "APPEND LINEAR REGRESSION COLUMN",
             ];
 
-            print_list_level_2(&menu_options);
+            print_list_level_2(&action_menu_options, &action_sub_menu_options, &action_type);
 
             return Ok((csv_builder, false));
         }

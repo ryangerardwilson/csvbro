@@ -6,13 +6,14 @@ use rgwml::csv_utils::CsvBuilder;
 pub async fn handle_search(
     mut csv_builder: CsvBuilder,
     _file_path_option: Option<&str>,
+    action_type: &str,
     action_feature: &str,
     action_flag: &str,
+    action_menu_options: Vec<&str>,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
     match action_feature {
         "" => {
-            print_insight_level_2("Here's the SEARCH feature menu ... ");
-            let menu_options = vec![
+            let action_sub_menu_options = vec![
                 "CONTAINS search",
                 "CONTAINS (NOT) search",
                 "STARTS WITH search",
@@ -21,7 +22,7 @@ pub async fn handle_search(
                 "LEVENSHTEIN VECTORIZED search",
             ];
 
-            print_list_level_2(&menu_options);
+            print_list_level_2(&action_menu_options, &action_sub_menu_options, &action_type);
 
             return Ok((csv_builder, false));
         }

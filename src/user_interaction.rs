@@ -161,69 +161,54 @@ pub fn print_list(options: &Vec<&str>) {
                                     // ANSI escape code to reset formatting
     let reset = "\x1b[0m";
 
-    // Calculate the length of the longest option to ensure neat box sizing
-    let max_length = options.iter().map(|o| o.len()).max().unwrap_or(0) + 14; // Adjusted for padding and border
-
-    println!("{} +{}+{}", bold_yellow, "-".repeat(max_length), reset);
-    println!("{} +{}+{}", bold_yellow, "-".repeat(max_length), reset);
+    println!();
     for (index, option) in options.iter().enumerate() {
-        // Format each item with padding to align within the ASCII art box, ensuring the index is included correctly
-
-        if index < 9 {
-            let padded_option = format!(
-                "  | {:<width$} |",
-                format!("{}.  {}", index + 1, option),
-                width = max_length - 4
-            );
-            println!("{}{}{}", bold_yellow, padded_option, reset);
+        // Format each item with the index and option text, ensuring the index is included correctly
+        let prefix = if index < 9 {
+            format!("├── {}.  ", index + 1)
         } else {
-            let padded_option = format!(
-                "  | {:<width$} |",
-                format!("{}. {}", index + 1, option),
-                width = max_length - 4
-            );
-            println!("{}{}{}", bold_yellow, padded_option, reset);
-        }
-        // println!("{}{}{}", bold_yellow, padded_option, reset);
+            format!("├── {}. ", index + 1)
+        };
+
+        let formatted_option = format!("{}{}", prefix, option);
+        println!("{}{}{}", bold_yellow, formatted_option, reset);
     }
-    println!("{} +{}+{}", bold_yellow, "-".repeat(max_length), reset);
-    println!("{} +{}+{}", bold_yellow, "-".repeat(max_length), reset);
+    println!();
 }
 
-pub fn print_list_level_2(options: &Vec<&str>) {
-    // ANSI escape code for bold yellow font
+pub fn print_list_level_2(main_menu: &Vec<&str>, sub_menu: &Vec<&str>, numerical: &str) {
     let yellow = "\x1b[38;5;227m"; // Bold yellow
-                                   // ANSI escape code to reset formatting
+    let bold = "\x1b[1m"; // Bold
     let reset = "\x1b[0m";
 
-    // Calculate the length of the longest option to ensure neat box sizing
-    let max_length = options
-        .iter()
-        .flat_map(|o| o.lines())
-        .map(|line| line.len())
-        .max()
-        .unwrap_or(0)
-        + 14; // Adjusted for padding and border
-
-    println!("{} +{}+{}", yellow, "-".repeat(max_length), reset);
-    for (index, option) in options.iter().enumerate() {
+    let numerical_index: usize = numerical.parse().expect("Invalid numerical index");
+    println!();
+    for (index, option) in main_menu.iter().enumerate() {
         let lines: Vec<&str> = option.lines().collect();
         for (i, line) in lines.iter().enumerate() {
             let prefix = if i == 0 {
-                format!("{}. ", index + 1)
+                format!("├── {}. ", index + 1)
             } else {
-                "  ".to_string()
+                "│   ".to_string()
             };
-            let padded_option = format!(
-                " | {}{:width$}   |",
-                prefix,
-                line,
-                width = max_length - 4 - prefix.len()
-            );
-            println!("{}{}{}", yellow, padded_option, reset);
+            println!("{}{}{}{}", bold, yellow, prefix + line, reset);
+        }
+
+        if index + 1 == numerical_index {
+            for (sub_index, sub_option) in sub_menu.iter().enumerate() {
+                let sub_lines: Vec<&str> = sub_option.lines().collect();
+                for (i, line) in sub_lines.iter().enumerate() {
+                    let prefix = if i == 0 {
+                        format!("│   ├── {}.{}. ", numerical_index, sub_index + 1)
+                    } else {
+                        "│   │       ".to_string()
+                    };
+                    println!("{}{}{}", yellow, prefix + line, reset);
+                }
+            }
         }
     }
-    println!("{} +{}+{}", yellow, "-".repeat(max_length), reset);
+    println!();
 }
 
 pub fn determine_action_as_text(menu_options: &[&str], choice: &str) -> Option<String> {
@@ -276,7 +261,7 @@ pub fn determine_action_type_feature_and_flag(choice: &str) -> (String, String, 
     let choice = choice.to_lowercase();
 
     // Find positions of 'f' and 'd'
-    let f_pos = choice.find('f');
+    let f_pos = choice.find('.');
     let d_pos = choice.find('d');
 
     // Initialize the action_type, action_feature, and action_flag with empty strings

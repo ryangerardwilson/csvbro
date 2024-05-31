@@ -53,8 +53,10 @@ impl ExpStore {
 pub async fn handle_tinker(
     mut csv_builder: CsvBuilder,
     _file_path_option: Option<&str>,
+    action_type: &str,
     action_feature: &str,
     action_flag: &str,
+    action_menu_options: Vec<&str>,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
     fn get_filter_expressions(
         data_store: &mut ExpStore,
@@ -342,8 +344,7 @@ Note the implications of the limit_type value:
 
     match action_feature {
         "" => {
-            print_insight_level_2("Here's the TINKER feature menu ... ");
-            let menu_options = vec![
+            let action_sub_menu_options = vec![
                 "SET HEADERS",
                 "UPDATE HEADERS",
                 "ADD ROWS",
@@ -362,7 +363,7 @@ Note the implications of the limit_type value:
                 "CLEAN DATA BY COLUMN PARSE",
             ];
 
-            print_list_level_2(&menu_options);
+            print_list_level_2(&action_menu_options, &action_sub_menu_options, &action_type);
 
             return Ok((csv_builder, false));
         }

@@ -17,8 +17,10 @@ use std::path::PathBuf;
 pub async fn handle_predict(
     mut csv_builder: CsvBuilder,
     _file_path_option: Option<&str>,
+    action_type: &str,
     action_feature: &str,
     action_flag: &str,
+    action_menu_options: Vec<&str>,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
     fn get_xgb_model_input(
     ) -> Result<(String, String, String, String, XgbConfig), Box<dyn std::error::Error>> {
@@ -463,8 +465,7 @@ SYNTAX
 
     match action_feature {
         "" => {
-            print_insight_level_2("Here's the TINKER feature menu ... ");
-            let menu_options = vec![
+            let action_sub_menu_options = vec![
                 "APPEND XGB_TYPE LABEL COLUMN BY RATIO",
                 "CREATE XGB MODEL",
                 "LIST XGB MODELS",
@@ -472,7 +473,7 @@ SYNTAX
                 "APPEND XGB MODEL PREDICTIONS COLUMN",
             ];
 
-            print_list_level_2(&menu_options);
+            print_list_level_2(&action_menu_options, &action_sub_menu_options, &action_type);
 
             return Ok((csv_builder, false));
         }

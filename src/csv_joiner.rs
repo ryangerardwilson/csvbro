@@ -12,8 +12,10 @@ use std::path::PathBuf;
 pub async fn handle_join(
     mut csv_builder: CsvBuilder,
     _file_path_option: Option<&str>,
+    action_type: &str,
     action_feature: &str,
     action_flag: &str,
+    action_menu_options: Vec<&str>,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
     fn get_csv_db_path() -> String {
         let home_dir = env::var("HOME").expect("Unable to determine user home directory");
@@ -115,8 +117,7 @@ pub async fn handle_join(
 
     match action_feature {
         "" => {
-            print_insight_level_2("Here's the JOIN feature menu ... ");
-            let menu_options = vec![
+            let action_sub_menu_options = vec![
                 "UNION",
                 "UNION (BAG)",
                 "UNION (LEFT JOIN/ OUTER LEFT JOIN)",
@@ -128,7 +129,7 @@ pub async fn handle_join(
                 "DIFFERENCE (SYMMETRIC)",
             ];
 
-            print_list_level_2(&menu_options);
+            print_list_level_2(&action_menu_options, &action_sub_menu_options, &action_type);
 
             return Ok((csv_builder, false));
         }
