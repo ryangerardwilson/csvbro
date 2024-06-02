@@ -12,7 +12,7 @@ mod user_experience;
 mod user_interaction;
 
 use crate::config::edit_config;
-use crate::csv_manager::{chain_builder, delete_csv_file, import, open_csv_file};
+use crate::csv_manager::{chain_builder, delete_csv_file, import, import_from_url, open_csv_file};
 use crate::db_connector::query;
 use crate::user_experience::{handle_quit_flag, handle_special_flag_without_builder};
 use crate::user_interaction::{
@@ -24,7 +24,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::{self, Command};
 
-const BRO_VERSION: &str = "1.2.8";
+const BRO_VERSION: &str = "1.2.9";
 
 #[tokio::main]
 async fn main() {
@@ -169,7 +169,15 @@ async fn main() {
 "#
     );
 
-    let menu_options = vec!["NEW", "OPEN", "IMPORT", "QUERY", "DELETE", "CONFIG"];
+    let menu_options = vec![
+        "NEW",
+        "OPEN (FROM CSV_DB)",
+        "IMPORT (FROM LOCAL FILE SYSTEM)",
+        "IMPORT (FROM URL)",
+        "QUERY",
+        "DELETE",
+        "CONFIG",
+    ];
 
     loop {
         let _builder = loop {
@@ -203,7 +211,7 @@ async fn main() {
                         let _ = csv_builder.save_as(file_path.to_str().unwrap());
                         chain_builder(csv_builder, file_path_str).await;
                     }
-                    Some(ref action) if action == "OPEN" => {
+                    Some(ref action) if action == "OPEN (FROM CSV_DB)" => {
                         match open_csv_file(&csv_db_path_buf) {
                             Some((csv_builder, file_path)) => {
                                 if let Some(path_str) = file_path.to_str() {
@@ -217,13 +225,22 @@ async fn main() {
                             None => continue,
                         }
                     }
-                    Some(ref action) if action == "IMPORT" => {
+                    Some(ref action) if action == "IMPORT (FROM LOCAL FILE SYSTEM)" => {
                         match import(&desktop_path_buf, &downloads_path_buf) {
                             Some(csv_builder) => chain_builder(csv_builder, None).await,
                             //Some(csv_builder) => break csv_builder,
                             None => continue,
                         }
                     }
+
+                    Some(ref action) if action == "IMPORT (FROM URL)" => {
+                        match import_from_url().await {
+                            Some(csv_builder) => chain_builder(csv_builder, None).await,
+                            //Some(csv_builder) => break csv_builder,
+                            None => continue,
+                        }
+                    }
+
                     Some(ref action) if action == "QUERY" => match query(&csv_db_path_buf).await {
                         Ok(csv_builder) => break csv_builder,
                         Err(e) => {

@@ -540,6 +540,19 @@ pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBui
     None
 }
 
+pub async fn import_from_url() -> Option<CsvBuilder> {
+    let url = get_user_input("Enter URL to import data from: ");
+
+    if !url.starts_with("https://docs.google.com/spreadsheets") {
+        print_insight("Hey there, we only support Google Sheets URLs for now. Cool?");
+        return None;
+    }
+
+    let builder = CsvBuilder::from_publicly_viewable_google_sheet(&url).await;
+
+    Some(builder)
+}
+
 pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
     //let current_file_path: Option<PathBuf> = file_path_option.map(PathBuf::from);
 
