@@ -14,10 +14,10 @@ use crate::user_interaction::{
     determine_action_as_number, determine_action_type_feature_and_flag, get_user_input,
     get_user_input_level_2, print_insight, print_insight_level_2, print_list,
 };
-use calamine::{open_workbook, Reader, Xls};
 use chrono::{DateTime, Local};
 use fuzzywuzzy::fuzz;
 use rgwml::csv_utils::CsvBuilder;
+use rgwml::dc_utils::DataContainer;
 use std::collections::HashMap;
 use std::fs::{self};
 use std::io;
@@ -25,13 +25,17 @@ use std::path::PathBuf;
 use std::time::SystemTime;
 
 pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
-    fn list_csv_files(path: &PathBuf) -> io::Result<Vec<PathBuf>> {
+    fn list_data_files(path: &PathBuf) -> io::Result<Vec<PathBuf>> {
         let mut files = Vec::new();
         for entry in fs::read_dir(path)? {
             let entry = entry?;
             let path = entry.path();
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("csv") {
-                files.push(path);
+            if path.is_file() {
+                if let Some(extension) = path.extension().and_then(|s| s.to_str()) {
+                    if ["csv", "xls", "xlsx", "h5"].contains(&extension) {
+                        files.push(path);
+                    }
+                }
             }
         }
         Ok(files)
@@ -40,7 +44,7 @@ pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
     let csv_db_path_str = csv_db_path.to_str().unwrap();
 
     let mut csv_builder =
-        CsvBuilder::get_all_csv_files(csv_db_path_str).expect("Failed to load CSV files");
+        DataContainer::get_all_data_files(csv_db_path_str).expect("Failed to load Data files");
 
     csv_builder
         .add_column_header("id")
@@ -63,7 +67,7 @@ pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
         .collect();
 
     loop {
-        match list_csv_files(&csv_db_path) {
+        match list_data_files(&csv_db_path) {
             Ok(files) => {
                 if files.is_empty() {
                     println!("No files in sight, bro.");
@@ -89,10 +93,125 @@ pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
                         if let Some(file_path) = file_path {
                             if file_path.is_file() {
                                 print_insight_level_2(&format!("Opening {}", file_name));
-                                return Some((
-                                    CsvBuilder::from_csv(file_path.to_str().unwrap()),
-                                    file_path.clone(),
-                                ));
+                                let file_ext = file_path.extension().and_then(|s| s.to_str());
+
+                                match file_ext {
+                                    Some("csv") => {
+                                        return Some((
+                                            CsvBuilder::from_csv(file_path.to_str().unwrap()),
+                                            file_path.clone(),
+                                        ));
+                                    }
+                                    Some("xls") | Some("xlsx") => {
+                                        let sheet_names = if file_ext == Some("xls") {
+                                            DataContainer::get_xls_sheet_names(
+                                                file_path.to_str().unwrap(),
+                                            )
+                                        } else {
+                                            DataContainer::get_xlsx_sheet_names(
+                                                file_path.to_str().unwrap(),
+                                            )
+                                        }
+                                        .expect("Failed to get sheet names");
+
+                                        let sheet_names_slices: Vec<&str> =
+                                            sheet_names.iter().map(String::as_str).collect();
+                                        println!();
+                                        print_insight("Available Sheets:");
+                                        print_list(&sheet_names_slices);
+
+                                        /*
+                                        println!("Available sheets:");
+                                        for (i, sheet) in sheet_names.iter().enumerate() {
+                                            println!("{}: {}", i + 1, sheet);
+                                        }
+                                        */
+
+                                        let sheet_choice = get_user_input_level_2(
+                                            "Enter the sheet name or index to open: ",
+                                        )
+                                        .trim()
+                                        .to_string();
+
+                                        let csv_builder =
+                                            if sheet_choice.chars().all(char::is_numeric) {
+                                                //let sheet_index = sheet_choice.parse::<usize>().unwrap();
+                                                if file_ext == Some("xls") {
+                                                    CsvBuilder::from_xls(
+                                                        file_path.to_str().unwrap(),
+                                                        &sheet_choice,
+                                                        "SHEET_ID",
+                                                    )
+                                                } else {
+                                                    CsvBuilder::from_xlsx(
+                                                        file_path.to_str().unwrap(),
+                                                        &sheet_choice,
+                                                        "SHEET_ID",
+                                                    )
+                                                }
+                                            } else {
+                                                if file_ext == Some("xls") {
+                                                    CsvBuilder::from_xls(
+                                                        file_path.to_str().unwrap(),
+                                                        &sheet_choice,
+                                                        "SHEET_NAME",
+                                                    )
+                                                } else {
+                                                    CsvBuilder::from_xlsx(
+                                                        file_path.to_str().unwrap(),
+                                                        &sheet_choice,
+                                                        "SHEET_NAME",
+                                                    )
+                                                }
+                                            };
+
+                                        return Some((csv_builder, file_path.clone()));
+                                    }
+                                    Some("h5") => {
+                                        let dataset_names = DataContainer::get_h5_dataset_names(
+                                            file_path.to_str().unwrap(),
+                                        )
+                                        .expect("Failed to get dataset names");
+
+                                        /*
+                                        println!("Available datasets:");
+                                        for (i, dataset) in dataset_names.iter().enumerate() {
+                                            println!("{}: {}", i + 1, dataset);
+                                        }
+                                        */
+                                        let dataset_names_slices: Vec<&str> =
+                                            dataset_names.iter().map(String::as_str).collect();
+                                        println!();
+                                        print_insight("Available Datasets:");
+                                        print_list(&dataset_names_slices);
+
+                                        let dataset_choice = get_user_input_level_2(
+                                            "Enter the dataset name or index to open: ",
+                                        )
+                                        .trim()
+                                        .to_string();
+
+                                        let csv_builder =
+                                            if dataset_choice.chars().all(char::is_numeric) {
+                                                CsvBuilder::from_h5(
+                                                    file_path.to_str().unwrap(),
+                                                    &dataset_choice,
+                                                    "DATASET_ID",
+                                                )
+                                            } else {
+                                                CsvBuilder::from_h5(
+                                                    file_path.to_str().unwrap(),
+                                                    &dataset_choice,
+                                                    "DATASET_NAME",
+                                                )
+                                            };
+
+                                        return Some((csv_builder, file_path.clone()));
+                                    }
+                                    _ => {
+                                        print_insight_level_2("Unsupported file type.");
+                                    }
+                                }
                             }
                         } else {
                             print_insight_level_2("File not found for the provided ID.");
@@ -113,13 +232,17 @@ pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
 }
 
 pub fn delete_csv_file(csv_db_path: &PathBuf) {
-    fn list_csv_files(path: &PathBuf) -> io::Result<Vec<PathBuf>> {
+    fn list_data_files(path: &PathBuf) -> io::Result<Vec<PathBuf>> {
         let mut files = Vec::new();
         for entry in fs::read_dir(path)? {
             let entry = entry?;
             let path = entry.path();
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("csv") {
-                files.push(path);
+            if path.is_file() {
+                if let Some(extension) = path.extension().and_then(|s| s.to_str()) {
+                    if ["csv", "xls", "xlsx", "h5"].contains(&extension) {
+                        files.push(path);
+                    }
+                }
             }
         }
         Ok(files)
@@ -146,13 +269,11 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
             .collect()
     }
 
-    //let models_path = csv_db_path.join("xgb_models");
     let csv_db_path_str = csv_db_path.to_str().unwrap();
 
     let mut csv_builder =
-        CsvBuilder::get_all_csv_files(csv_db_path_str).expect("Failed to load CSV files");
+        DataContainer::get_all_data_files(csv_db_path_str).expect("Failed to load data files");
 
-    //let models_path = csv_db_path.join("xgb_models");
     csv_builder
         .add_column_header("id")
         .order_columns(vec!["id", "..."])
@@ -161,7 +282,7 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
         .print_table_all_rows();
     println!();
 
-    // Extract IDs and corresponding file names from xgb_models_builder
+    // Extract IDs and corresponding file names from csv_builder
     let binding = Vec::new();
     let data = csv_builder.get_data().unwrap_or(&binding);
     let id_to_file_map: HashMap<usize, &str> = data
@@ -174,7 +295,7 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
         .collect();
 
     loop {
-        match list_csv_files(&csv_db_path) {
+        match list_data_files(&csv_db_path) {
             Ok(files) => {
                 if files.is_empty() {
                     println!("No files in sight, bro.");
@@ -220,10 +341,9 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
                     }
                 }
 
-                let mut csv_builder_2 = CsvBuilder::get_all_csv_files(csv_db_path_str)
-                    .expect("Failed to load CSV files");
+                let mut csv_builder_2 = DataContainer::get_all_data_files(csv_db_path_str)
+                    .expect("Failed to load data files");
 
-                //let models_path = csv_db_path.join("xgb_models");
                 csv_builder_2
                     .add_column_header("id")
                     .order_columns(vec!["id", "..."])
@@ -253,7 +373,7 @@ pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBui
             let path = entry.path();
             if path.is_file() {
                 if let Some(extension) = path.extension().and_then(|s| s.to_str()) {
-                    if extension == "csv" || extension == "xls" {
+                    if ["csv", "xls", "xlsx", "h5"].contains(&extension) {
                         if let Ok(metadata) = entry.metadata() {
                             if let Ok(modified) = metadata.modified() {
                                 files.push((path, modified));
@@ -269,7 +389,7 @@ pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBui
     let mut files = list_files(desktop_path).unwrap_or_default();
     files.extend(list_files(downloads_path).unwrap_or_default());
 
-    // Assuming `files` is a Vec<(PathBuf, SystemTime)> or similar
+    // Sort files by modified date
     files.sort_by(|a, b| b.1.cmp(&a.1));
 
     // Create a vector to hold formatted strings for each file
@@ -289,6 +409,7 @@ pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBui
     // Convert Vec<String> to Vec<&str> for `print_list`
     let mut file_info_slices: Vec<&str> = file_infos.iter().map(AsRef::as_ref).collect();
     file_info_slices.push("BACK");
+
     // Call `print_list` with the vector of file information
     print_list(&file_info_slices);
 
@@ -302,7 +423,7 @@ pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBui
         .map_or(false, |num| num == back_option_serial)
     {
         print_insight("Bailed on that. Heading back to the last menu, bro.");
-        return None; // Assuming this is within a function that allows for an early return
+        return None;
     } else {
         // Fuzzy match logic for 'back'
         let options = &["back"];
@@ -322,37 +443,94 @@ pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBui
             print_insight("Bailed on that. Heading back to the last menu, bro.");
             return None;
         }
-        // Continue with additional logic for handling other inputs or choices
     }
 
     if let Ok(serial) = choice.parse::<usize>() {
         if serial > 0 && serial <= files.len() {
             let (file_path, _) = &files[serial - 1];
-            return if file_path.extension().and_then(|s| s.to_str()) == Some("csv") {
-                //dbg!(&file_path);
-                //let b = CsvBuilder::from_csv(&file_path.to_str().unwrap());
-                //dbg!(&b);
-                Some(CsvBuilder::from_csv(file_path.to_str().unwrap()))
-            } else {
-                // Additional logic for XLS files
-                let workbook = open_workbook::<Xls<_>, _>(file_path.to_str().unwrap()).unwrap();
-                let sheet_names = workbook.sheet_names();
-                if sheet_names.len() > 1 {
-                    print_insight("Multiple sheets found. Please select one: ");
-                    for (index, name) in sheet_names.iter().enumerate() {
-                        print_insight(&format!("{}: {}", index + 1, name));
+            let file_extension = file_path.extension().and_then(|s| s.to_str());
+
+            return match file_extension {
+                Some("csv") => Some(CsvBuilder::from_csv(file_path.to_str().unwrap())),
+                Some("xls") | Some("xlsx") => {
+                    let sheet_names = if file_extension == Some("xls") {
+                        DataContainer::get_xls_sheet_names(file_path.to_str().unwrap())
+                    } else {
+                        DataContainer::get_xlsx_sheet_names(file_path.to_str().unwrap())
                     }
-                    let sheet_choice = get_user_input("Enter the sheet number: ");
-                    if let Ok(sheet_index) = sheet_choice.parse::<usize>() {
-                        Some(CsvBuilder::from_xls(
+                    .expect("Failed to get sheet names");
+
+                    println!("Available sheets:");
+                    for (i, sheet) in sheet_names.iter().enumerate() {
+                        println!("{}: {}", i + 1, sheet);
+                    }
+
+                    let sheet_choice = get_user_input("Enter the sheet name or index to open: ")
+                        .trim()
+                        .to_string();
+
+                    if sheet_choice.chars().all(char::is_numeric) {
+                        if file_extension == Some("xls") {
+                            Some(CsvBuilder::from_xls(
+                                file_path.to_str().unwrap(),
+                                &sheet_choice,
+                                "SHEET_ID",
+                            ))
+                        } else {
+                            Some(CsvBuilder::from_xlsx(
+                                file_path.to_str().unwrap(),
+                                &sheet_choice,
+                                "SHEET_ID",
+                            ))
+                        }
+                    } else {
+                        if file_extension == Some("xls") {
+                            Some(CsvBuilder::from_xls(
+                                file_path.to_str().unwrap(),
+                                &sheet_choice,
+                                "SHEET_NAME",
+                            ))
+                        } else {
+                            Some(CsvBuilder::from_xlsx(
+                                file_path.to_str().unwrap(),
+                                &sheet_choice,
+                                "SHEET_NAME",
+                            ))
+                        }
+                    }
+                }
+                Some("h5") => {
+                    let dataset_names =
+                        DataContainer::get_h5_dataset_names(file_path.to_str().unwrap())
+                            .expect("Failed to get dataset names");
+
+                    println!("Available datasets:");
+                    for (i, dataset) in dataset_names.iter().enumerate() {
+                        println!("{}: {}", i + 1, dataset);
+                    }
+
+                    let dataset_choice =
+                        get_user_input("Enter the dataset name or index to open: ")
+                            .trim()
+                            .to_string();
+
+                    if dataset_choice.chars().all(char::is_numeric) {
+                        Some(CsvBuilder::from_h5(
                             file_path.to_str().unwrap(),
-                            sheet_index - 1,
+                            &dataset_choice,
+                            "DATASET_ID",
                         ))
                     } else {
-                        None
+                        Some(CsvBuilder::from_h5(
+                            file_path.to_str().unwrap(),
+                            &dataset_choice,
+                            "DATASET_NAME",
+                        ))
                     }
-                } else {
-                    Some(CsvBuilder::from_xls(file_path.to_str().unwrap(), 1))
+                }
+                _ => {
+                    print_insight("Unsupported file type.");
+                    None
                 }
             };
         }
