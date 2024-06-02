@@ -109,13 +109,30 @@ Note the implication of params in the Json Query:
 
     match action_feature {
         "" => {
-            let action_sub_menu_options = vec!["GROUP", "GROUPED SPLIT", "PIVOT"];
+            let action_sub_menu_options = vec!["TRANSPOSE", "GROUP", "GROUPED SPLIT", "PIVOT"];
             print_list_level_2(&action_menu_options, &action_sub_menu_options, &action_type);
 
             return Ok((csv_builder, false));
         }
 
         "1" => {
+            if action_flag == "d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
+
+"#,
+                );
+                return Ok((csv_builder, false));
+            }
+
+            csv_builder.transpose_transform();
+            if csv_builder.has_data() {
+                csv_builder.print_table();
+                println!();
+            }
+        }
+
+        "2" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -266,7 +283,7 @@ The following feature flags can be used to perform different types of calculatio
             }
         }
 
-        "2" => {
+        "3" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -323,7 +340,7 @@ Total rows: 4
             return Ok((csv_builder, false));
         }
 
-        "3" => {
+        "4" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
