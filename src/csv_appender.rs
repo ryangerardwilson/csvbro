@@ -1148,18 +1148,23 @@ SYNTAX
         "APPEND INCLUSIVE-EXCLUSIVE (NUMERICAL) INTERVAL CATEGORY COLUMN",
         "APPEND INCLUSIVE-EXCLUSIVE (DATE) INTERVAL CATEGORY COLUMN",
         "APPEND DERIVED CONCATENATION COLUMN",
-        "APPEND CATEGORY COLUMNS BY SPLITTING DATE/TIMESTAMP COLUMN",
-        "APPEND COUNT OF COMMA SEPARATED TIMESTAMP COLUMN OF VALUES *AFTER* ANOTHER TIMESTAMP PARSEABLE",
-        "APPEND COUNT OF COMMA SEPARATED TIMESTAMP COLUMN OF VALUES *BEFORE* ANOTHER TIMESTAMP PARSEABLE",
-        "APPEND FUZZAI ANALYSIS COLUMN",
-        "APPEND FUZZAI ANALYSIS COLUMN WHERE",
+        "DTM/ APPEND CATEGORY COLUMNS BY SPLITTING DATE/TIMESTAMP COLUMN",
+        "DTM/ APPEND COMMA SEPARATED TIMESTAMP COUNT *AFTER* TIMESTAMP PARSEABLE COLUMN",
+        "DTM/ APPEND COMMA SEPARATED TIMESTAMP COUNT *BEFORE* TIMESTAMP PARSEABLE COLUMN",
+        "DTM/ APPEND *ADDED* DAYS COLUMN",
+        "DTM/ APPEND *SUBTRACTED* DAYS COLUMN",
+        "DTM/ APPEND *ADDED* DAYS COLUMN RELATIVE TO ADJACENT TIMESTAMP PARSEABLE COLUMN",
+        "DTM/ APPEND *SUBTRACTED* DAYS COLUMN RELATIVE TO ADJACENT TIMESTAMP PARSEABLE COLUMN",
+        "DTM/ APPEND DAYS DIFFERENCE COLUMN",
+        "FUZZAI/ APPEND ANALYSIS COLUMN",
+        "FUZZAI/ APPEND ANALYSIS COLUMN WHERE",
         "OPENAI /SYNC APPEND ANALYSIS COLUMNS",
         "OPENAI/ SEND COLUMNS FOR ASYNC BATCH ANALYSIS",
         "OPENAI/ LIST BATCHES",
         "OPENAI/ CANCEL BATCH",
         "OPENAI/ APPEND BATCH ANALYSIS COLUMNS",
-        "APPEND LINEAR REGRESSION COLUMN",
-        "APPEND CLUSTER COLUMN"
+        "SMART-CORE/ APPEND LINEAR REGRESSION COLUMN",
+        "SCIKIT-LEARN/ APPEND CLUSTER COLUMN"
             ];
 
             print_list_level_2(&action_menu_options, &action_sub_menu_options, &action_type);
@@ -1710,6 +1715,244 @@ Appends a new column with the count of timestamps in a comma separated timestamp
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
+Appends a new timestamp column ADDING a specified number of days to another timestamp parseable column
+
+"#,
+                );
+                return Ok((csv_builder, false));
+            }
+
+            let date_column_name_str = get_user_input_level_2(
+                "Enter the name of the timestamp parseable column to which days need to be ADDED: ",
+            );
+
+            if handle_cancel_flag(&date_column_name_str) {
+                return Ok((csv_builder, false));
+            }
+
+            let number_of_days_to_add_str = get_user_input_level_2(
+                "Enter the number of days to ADD across all values in that column: ",
+            );
+
+            if handle_cancel_flag(&number_of_days_to_add_str) {
+                return Ok((csv_builder, false));
+            }
+
+            let new_column_name_str =
+                get_user_input_level_2("Enter the name of the newly created column: ");
+
+            if handle_cancel_flag(&new_column_name_str) {
+                return Ok((csv_builder, false));
+            }
+
+            csv_builder.append_added_days_column(
+                &date_column_name_str,
+                &number_of_days_to_add_str,
+                &new_column_name_str,
+            );
+
+            if csv_builder.has_data() {
+                csv_builder.print_table();
+                println!();
+            }
+        }
+
+        "10" => {
+            if action_flag == "d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
+
+Appends a new timestamp column SUBTRACTING a specified number of days FROM another timestamp parseable column
+
+"#,
+                );
+                return Ok((csv_builder, false));
+            }
+
+            let date_column_name_str = get_user_input_level_2(
+                "Enter the name of the timestamp parseable column to which days need to be SUBTRACTED: ",
+            );
+
+            if handle_cancel_flag(&date_column_name_str) {
+                return Ok((csv_builder, false));
+            }
+
+            let number_of_days_to_subtract_str = get_user_input_level_2(
+                "Enter the number of days to SUBTRACT across all values in that column: ",
+            );
+
+            if handle_cancel_flag(&number_of_days_to_subtract_str) {
+                return Ok((csv_builder, false));
+            }
+
+            let new_column_name_str =
+                get_user_input_level_2("Enter the name of the newly created column: ");
+
+            if handle_cancel_flag(&new_column_name_str) {
+                return Ok((csv_builder, false));
+            }
+
+            csv_builder.append_subtracted_days_column(
+                &date_column_name_str,
+                &number_of_days_to_subtract_str,
+                &new_column_name_str,
+            );
+
+            if csv_builder.has_data() {
+                csv_builder.print_table();
+                println!();
+            }
+        }
+
+        "11" => {
+            if action_flag == "d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
+
+Appends a new timestamp column ADDING a specified number of days (set out in a specific column) to another timestamp parseable column
+
+"#,
+                );
+                return Ok((csv_builder, false));
+            }
+
+            let date_column_name_str = get_user_input_level_2(
+                "Enter the name of the timestamp parseable column to which days need to be ADDED: ",
+            );
+
+            if handle_cancel_flag(&date_column_name_str) {
+                return Ok((csv_builder, false));
+            }
+
+            let number_of_days_to_add_column_str = get_user_input_level_2(
+                "Enter the name of the column specifying the number of days to ADD: ",
+            );
+
+            if handle_cancel_flag(&number_of_days_to_add_column_str) {
+                return Ok((csv_builder, false));
+            }
+
+            let new_column_name_str =
+                get_user_input_level_2("Enter the name of the newly created column: ");
+
+            if handle_cancel_flag(&new_column_name_str) {
+                return Ok((csv_builder, false));
+            }
+
+            csv_builder.append_added_days_column_relative_to_adjacent_column(
+                &date_column_name_str,
+                &number_of_days_to_add_column_str,
+                &new_column_name_str,
+            );
+
+            if csv_builder.has_data() {
+                csv_builder.print_table();
+                println!();
+            }
+        }
+
+        "12" => {
+            if action_flag == "d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
+
+Appends a new timestamp column SUBTRACTING a specified number of days (set out in a specific column) to another timestamp parseable column
+
+"#,
+                );
+                return Ok((csv_builder, false));
+            }
+
+            let date_column_name_str = get_user_input_level_2(
+                "Enter the name of the timestamp parseable column from which days need to be SUBTRACTED: ",
+            );
+
+            if handle_cancel_flag(&date_column_name_str) {
+                return Ok((csv_builder, false));
+            }
+
+            let number_of_days_to_subtract_column_str = get_user_input_level_2(
+                "Enter the name of the column specifying the number of days to SUBTRACT: ",
+            );
+
+            if handle_cancel_flag(&number_of_days_to_subtract_column_str) {
+                return Ok((csv_builder, false));
+            }
+
+            let new_column_name_str =
+                get_user_input_level_2("Enter the name of the newly created column: ");
+
+            if handle_cancel_flag(&new_column_name_str) {
+                return Ok((csv_builder, false));
+            }
+
+            csv_builder.append_subtracted_days_column_relative_to_adjacent_column(
+                &date_column_name_str,
+                &number_of_days_to_subtract_column_str,
+                &new_column_name_str,
+            );
+
+            if csv_builder.has_data() {
+                csv_builder.print_table();
+                println!();
+            }
+        }
+
+        "13" => {
+            if action_flag == "d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
+
+Appends a new column specifying the difference in days between two timestamp parseable columns
+
+"#,
+                );
+                return Ok((csv_builder, false));
+            }
+
+            let column_names_str = get_user_input_level_2(
+                "Enter the names of the two timestamp parseable columns whose DIFFERENCE_IN_DAYS needs to be calculated: ",
+            );
+
+            if handle_cancel_flag(&column_names_str) {
+                return Ok((csv_builder, false));
+            }
+
+            let new_column_name_str =
+                get_user_input_level_2("Enter the name of the newly created column: ");
+
+            if handle_cancel_flag(&new_column_name_str) {
+                return Ok((csv_builder, false));
+            }
+
+            // Split the input string by commas and trim whitespaces
+            let column_names: Vec<&str> = column_names_str.split(',').map(|s| s.trim()).collect();
+
+            if column_names.len() != 2 {
+                println!("Please enter exactly two column names separated by a comma.");
+                return Ok((csv_builder, false));
+            }
+
+            let date_column_1_name_str = column_names[0];
+            let date_column_2_name_str = column_names[1];
+
+            csv_builder.append_day_difference_column(
+                &date_column_1_name_str,
+                &date_column_2_name_str,
+                &new_column_name_str,
+            );
+
+            if csv_builder.has_data() {
+                csv_builder.print_table();
+                println!();
+            }
+        }
+
+        "14" => {
+            if action_flag == "d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
+
 Creates category flags upon doing a fuzzy analysis on column values vis-a-vis specified training data.
 |id |item    |value |type  |item_type     |
 -------------------------------------------
@@ -1797,7 +2040,7 @@ Note the implications of the params in the JSON query:
             }
         }
 
-        "10" => {
+        "15" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1917,7 +2160,7 @@ Note the implications of the params in the JSON query:
             }
         }
 
-        "11" => {
+        "16" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -2039,7 +2282,7 @@ Total rows: 3
             }
         }
 
-        "12" => {
+        "17" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -2126,7 +2369,7 @@ Total rows: 3
             }
         }
 
-        "13" => {
+        "18" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -2193,7 +2436,7 @@ Total rows: 2
             return Ok((csv_builder, false));
         }
 
-        "14" => {
+        "19" => {
             if action_flag == "d" {
                 //if choice.to_lowercase() == "14d" {
                 print_insight_level_2(
@@ -2271,7 +2514,7 @@ Total rows: 2
             return Ok((csv_builder, false));
         }
 
-        "15" => {
+        "20" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -2327,7 +2570,7 @@ Total rows: 3
             println!();
         }
 
-        "16" => {
+        "21" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -2464,7 +2707,7 @@ Total rows: 5
                     }
 
                     // Append the new derived linear regression column
-                    csv_builder.append_derived_linear_regression_column(
+                    csv_builder.append_derived_smartcore_linear_regression_column(
                         &new_column_name,
                         training_predictors,
                         training_outputs,
@@ -2488,7 +2731,7 @@ Total rows: 5
             }
         }
 
-        "17" => {
+        "22" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -2527,7 +2770,7 @@ Appends a cluster column.
         }
 
         _ => {
-            println!("Invalid option. Please enter a number from 1 to 16.");
+            println!("Invalid option. Please enter a number from 1 to 22.");
             return Ok((csv_builder, false));
         }
     }
