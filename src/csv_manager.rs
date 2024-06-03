@@ -24,7 +24,7 @@ use std::io;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
-pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
+pub async fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
     fn list_data_files(path: &PathBuf) -> io::Result<Vec<PathBuf>> {
         let mut files = Vec::new();
         for entry in fs::read_dir(path)? {
@@ -179,6 +179,7 @@ pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
                                             println!("{}: {}", i + 1, dataset);
                                         }
                                         */
+                                        /*
                                         let dataset_names_slices: Vec<&str> =
                                             dataset_names.iter().map(String::as_str).collect();
                                         println!();
@@ -205,6 +206,36 @@ pub fn open_csv_file(csv_db_path: &PathBuf) -> Option<(CsvBuilder, PathBuf)> {
                                                     "DATASET_NAME",
                                                 )
                                             };
+                                        */
+let dataset_names_slices: Vec<&str> = dataset_names.iter().map(String::as_str).collect();
+println!();
+print_insight("Available Datasets:");
+print_list(&dataset_names_slices);
+
+let dataset_choice = get_user_input_level_2(
+    "Enter the dataset ID to open (starting from 1): ",
+)
+.trim()
+.to_string();
+
+let csv_builder = if let Ok(id) = dataset_choice.parse::<usize>() {
+    if id > 0 && id <= dataset_names.len() {
+        let adjusted_id = id - 1;
+
+        
+        CsvBuilder::from_h5(
+            file_path.to_str().unwrap(),
+            &dataset_names[adjusted_id],
+            "DATASET_NAME",
+        ).await
+    } else {
+        panic!("Invalid dataset ID");
+    }
+} else {
+    panic!("Please enter a valid numeric ID");
+};
+
+
 
                                         return Some((csv_builder, file_path.clone()));
                                     }
@@ -360,7 +391,7 @@ pub fn delete_csv_file(csv_db_path: &PathBuf) {
     }
 }
 
-pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBuilder> {
+pub async fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBuilder> {
     fn system_time_to_date_time(system_time: SystemTime) -> DateTime<Local> {
         let datetime: DateTime<Local> = system_time.into();
         datetime
@@ -500,10 +531,13 @@ pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBui
                     }
                 }
                 Some("h5") => {
+
+
                     let dataset_names =
                         DataContainer::get_h5_dataset_names(file_path.to_str().unwrap())
                             .expect("Failed to get dataset names");
 
+                    /*
                     println!("Available datasets:");
                     for (i, dataset) in dataset_names.iter().enumerate() {
                         println!("{}: {}", i + 1, dataset);
@@ -527,6 +561,37 @@ pub fn import(desktop_path: &PathBuf, downloads_path: &PathBuf) -> Option<CsvBui
                             "DATASET_NAME",
                         ))
                     }
+                    */
+    let dataset_names_slices: Vec<&str> = dataset_names.iter().map(String::as_str).collect();
+    println!();
+    print_insight("Available Datasets:");
+    print_list(&dataset_names_slices);
+
+    let dataset_choice = get_user_input_level_2(
+        "Enter the dataset ID to open (starting from 1): ",
+    )
+    .trim()
+    .to_string();
+
+    let csv_builder = if let Ok(id) = dataset_choice.parse::<usize>() {
+        if id > 0 && id <= dataset_names.len() {
+            let adjusted_id = id - 1;
+            CsvBuilder::from_h5(
+                file_path.to_str().unwrap(),
+                &dataset_names[adjusted_id],
+                "DATASET_NAME",
+            ).await
+        } else {
+            panic!("Invalid dataset ID");
+        }
+    } else {
+        panic!("Please enter a valid numeric ID");
+    };
+
+    Some(csv_builder)
+
+
+
                 }
                 _ => {
                     print_insight("Unsupported file type.");

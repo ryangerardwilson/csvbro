@@ -24,7 +24,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::{self, Command};
 
-const BRO_VERSION: &str = "1.3.2";
+const BRO_VERSION: &str = "1.3.3";
 
 #[tokio::main]
 async fn main() {
@@ -212,7 +212,7 @@ async fn main() {
                         chain_builder(csv_builder, file_path_str).await;
                     }
                     Some(ref action) if action == "OPEN (FROM CSV_DB)" => {
-                        match open_csv_file(&csv_db_path_buf) {
+                        match open_csv_file(&csv_db_path_buf).await {
                             Some((csv_builder, file_path)) => {
                                 if let Some(path_str) = file_path.to_str() {
                                     chain_builder(csv_builder, Some(path_str)).await;
@@ -226,7 +226,7 @@ async fn main() {
                         }
                     }
                     Some(ref action) if action == "IMPORT (FROM LOCAL FILE SYSTEM)" => {
-                        match import(&desktop_path_buf, &downloads_path_buf) {
+                        match import(&desktop_path_buf, &downloads_path_buf).await {
                             Some(csv_builder) => chain_builder(csv_builder, None).await,
                             //Some(csv_builder) => break csv_builder,
                             None => continue,
