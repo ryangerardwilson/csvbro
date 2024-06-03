@@ -24,7 +24,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::{self, Command};
 
-const BRO_VERSION: &str = "1.3.4";
+const BRO_VERSION: &str = "1.3.5";
 
 #[tokio::main]
 async fn main() {
@@ -64,6 +64,7 @@ async fn main() {
                 ("scikit-learn", "sklearn"),
                 ("numpy", "numpy"),
                 ("h5py", "h5py"),
+                ("tables", "tables"),
             ];
 
             let mut missing_packages = Vec::new();
