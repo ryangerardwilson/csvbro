@@ -342,10 +342,69 @@ Note the implications of the limit_type value:
         Ok(())
     }
 
+    fn get_clean_by_replace_input() -> Result<(Vec<String>, Vec<(String, String)>), Box<dyn Error>>
+    {
+        let clean_by_replace_input_syntax = r#"{
+    "target_column_names": [],
+    "replacement_rules": {
+      "": "",
+    }
+}
+
+SYNTAX
+======
+{
+    "target_column_names": [],  // Specify ["*"] to target all columns
+    "replacement_rules": {
+      ",": "",
+      " ": "_"
+    }
+}
+    "#;
+
+        let user_input = get_edited_user_json_input(clean_by_replace_input_syntax.to_string());
+
+        if handle_cancel_flag(&user_input) {
+            return Err("Operation canceled".into());
+        }
+
+        let parsed_json: Value = serde_json::from_str(&user_input)?;
+
+        let target_column_names = parsed_json["target_column_names"]
+            .as_array()
+            .ok_or("target_column_names is not an array")?
+            .iter()
+            .map(|v| {
+                v.as_str()
+                    .ok_or("target_column_names contains non-string values")
+            })
+            .collect::<Result<Vec<&str>, _>>()?
+            .into_iter()
+            .map(String::from)
+            .collect();
+
+        let replacement_rules = parsed_json["replacement_rules"]
+            .as_object()
+            .ok_or("replacement_rules is not an object")?
+            .iter()
+            .map(|(k, v)| {
+                let key = k.as_str().to_string();
+                let value = v
+                    .as_str()
+                    .ok_or("replacement_rules values are not strings")?
+                    .to_string();
+                Ok((key, value))
+            })
+            .collect::<Result<Vec<(String, String)>, Box<dyn Error>>>()?;
+
+        Ok((target_column_names, replacement_rules))
+    }
+
     match action_feature {
         "" => {
             let action_sub_menu_options = vec![
                 "SET HEADERS",
+                "REPLACE HEADER WHITESPACES WITH UNDERSCORES",
                 "UPDATE HEADERS",
                 "ADD ROWS",
                 "UPDATE ROW",
@@ -360,6 +419,7 @@ Note the implications of the limit_type value:
                 "REORDER COLUMNS",
                 "SET INDEX COLUMN",
                 "CASCADE SORT",
+                "CLEAN DATA BY CHARACTER REPLACE",
                 "CLEAN DATA BY COLUMN PARSE",
             ];
 
@@ -439,6 +499,25 @@ Total rows: 0
         }
 
         "2" => {
+            if action_flag == "d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
+
+Replaces header whitespaces with an underscore.
+"#,
+                );
+                return Ok((csv_builder, false));
+            }
+
+            csv_builder.replace_header_whitespaces_with_underscores();
+
+            if csv_builder.has_data() {
+                csv_builder.print_table();
+                println!();
+            }
+        }
+
+        "3" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -534,7 +613,7 @@ Total rows: 5
             }
         }
 
-        "3" => {
+        "4" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -680,7 +759,7 @@ SYNTAX
             }
         }
 
-        "4" => {
+        "5" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -848,7 +927,8 @@ Total rows: 6
             csv_builder.print_table();
             println!();
         }
-        "5" => {
+
+        "6" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1034,7 +1114,7 @@ SYNTAX
             println!();
         }
 
-        "6" => {
+        "7" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1221,7 +1301,7 @@ SYNTAX
             println!();
         }
 
-        "7" => {
+        "8" => {
             if action_flag == "d" {
                 //if choice.to_lowercase() == "7d" {
                 print_insight_level_2(
@@ -1319,7 +1399,7 @@ Total rows: 3
             println!();
         }
 
-        "8" => {
+        "9" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1409,7 +1489,7 @@ Total rows: 4
             }
         }
 
-        "9" => {
+        "10" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1523,7 +1603,7 @@ Note the implications of the limit_type value:
             };
         }
 
-        "10" => {
+        "11" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1699,7 +1779,7 @@ SYNTAX
             }
         }
 
-        "11" => {
+        "12" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1736,7 +1816,8 @@ Total rows: 3
 
             csv_builder.drop_columns(columns).print_table();
         }
-        "12" => {
+
+        "13" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1778,7 +1859,7 @@ Total rows: 5
             csv_builder.retain_columns(columns).print_table();
         }
 
-        "13" => {
+        "14" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1869,7 +1950,7 @@ Total rows: 11
             csv_builder.order_columns(new_columns_order).print_table();
         }
 
-        "14" => {
+        "15" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1966,7 +2047,7 @@ Total rows: 10
                 .print_table();
         }
 
-        "15" => {
+        "16" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1994,9 +2075,9 @@ Total rows: 10
 {
     "sort_orders": [
         {"column": "value", "order": "ASC"},
-	    {"column": "date", "order": "DESC"},
-	    {"column": "interest", "order": "ASC"},
-	    {"column": "id", "order": "DESC"}
+	{"column": "date", "order": "DESC"},
+	{"column": "interest", "order": "ASC"},
+	{"column": "id", "order": "DESC"}
     ]
 }
 
@@ -2079,7 +2160,38 @@ SYNTAX
             }
         }
 
-        "16" => {
+        "17" => {
+            if action_flag == "d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
+
+
+"#,
+                );
+                return Ok((csv_builder, false));
+            }
+
+            match get_clean_by_replace_input() {
+                Ok((target_column_names, replacement_rules)) => {
+                    csv_builder
+                        .replace_all(target_column_names, replacement_rules)
+                        .print_table();
+
+                    println!();
+                }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
+
+                Err(e) => {
+                    println!("Error getting pivot details: {}", e);
+                    return Ok((csv_builder, false));
+                }
+            }
+        }
+
+        "18" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -2190,10 +2302,11 @@ SYNTAX
                     }
                 }
 
+                //dbg!(&rules);
                 println!();
                 // Invoke the cleanliness report function with the collected rules
                 csv_builder
-                    .print_cleanliness_report_by_column_parse(rules.clone())
+                    //.print_cleanliness_report_by_column_parse(rules.clone())
                     .clean_by_column_parse(rules.clone());
 
                 if csv_builder.has_data() {
@@ -2204,7 +2317,7 @@ SYNTAX
         }
 
         _ => {
-            println!("Invalid option. Please enter a number from 1 to 16.");
+            println!("Invalid option. Please enter a number from 1 to 18.");
             return Ok((csv_builder, false));
         }
     }
