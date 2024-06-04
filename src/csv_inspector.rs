@@ -246,9 +246,9 @@ SYNTAX
     match action_feature {
         "" => {
             let action_sub_menu_options = vec![
-                "PRINT FIRST ROW",
-                "PRINT LAST ROW",
-                "PRINT ROWS (JSON)",
+                "PRINT FIRST N ROWS",
+                "PRINT LAST N ROWS",
+                "PRINT ROW RANGE (JSON)",
                 "PRINT ALL ROWS (JSON)",
                 "PRINT ALL ROWS (TABULATED)",
                 "PRINT CLEANLINESS REPORT",
@@ -305,7 +305,13 @@ First row:
                 return Ok((csv_builder, false));
             }
 
-            csv_builder.print_first_row();
+            let n_str = get_user_input_level_2("Enter the 'n' value: ");
+
+            if handle_cancel_flag(&n_str) {
+                return Ok((csv_builder, false));
+            }
+
+            csv_builder.print_first_n_rows(&n_str);
         }
         "2" => {
             if action_flag == "d" {
@@ -342,7 +348,13 @@ Last row:
                 return Ok((csv_builder, false));
             }
 
-            csv_builder.print_last_row();
+            let n_str = get_user_input_level_2("Enter the 'n' value: ");
+
+            if handle_cancel_flag(&n_str) {
+                return Ok((csv_builder, false));
+            }
+
+            csv_builder.print_last_n_rows(&n_str);
         }
         "3" => {
             if action_flag == "d" {

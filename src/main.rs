@@ -24,7 +24,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::{self, Command};
 
-const BRO_VERSION: &str = "1.3.5";
+const BRO_VERSION: &str = "1.3.6";
 
 #[tokio::main]
 async fn main() {
@@ -55,6 +55,25 @@ async fn main() {
         let is_executed_from_target = current_exe_path == target_binary_path;
 
         if !is_executed_from_target && !is_cargo_run {
+            let base_dependencies = vec![
+                vec!["sudo", "apt-get", "update"],
+                vec!["sudo", "apt-get", "install", "-y", "python3-pip"],
+                vec!["sudo", "apt-get", "install", "-y", "libxgboost-dev"],
+                vec!["sudo", "apt-get", "install", "-y", "libhdf5-dev"],
+            ];
+
+            for dependency in base_dependencies {
+                let status = Command::new(dependency[0])
+                    .args(&dependency[1..])
+                    .status()
+                    .expect("Failed to execute process");
+
+                if !status.success() {
+                    eprintln!("Failed to install base dependencies.");
+                    process::exit(1);
+                }
+            }
+
             // Install pip dependencies to bare metal
             let packages: Vec<(&str, &str)> = vec![
                 ("google-cloud-bigquery", "google.cloud.bigquery"),
