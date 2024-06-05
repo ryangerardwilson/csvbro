@@ -24,7 +24,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::{self, Command};
 
-const BRO_VERSION: &str = "1.3.7";
+const BRO_VERSION: &str = "1.3.8";
 
 #[tokio::main]
 async fn main() {
@@ -84,6 +84,8 @@ async fn main() {
                 ("numpy", "numpy"),
                 ("h5py", "h5py"),
                 ("tables", "tables"),
+                ("dask", "dask"),
+                ("dask[dataframe]", "dask.dataframe")
             ];
 
             let mut missing_packages = Vec::new();

@@ -1149,8 +1149,8 @@ SYNTAX
         "APPEND INCLUSIVE-EXCLUSIVE (DATE) INTERVAL CATEGORY COLUMN",
         "APPEND DERIVED CONCATENATION COLUMN",
         "DTM/ APPEND CATEGORY COLUMNS BY SPLITTING DATE/TIMESTAMP COLUMN",
-        "DTM/ APPEND COMMA SEPARATED TIMESTAMP COUNT *AFTER* TIMESTAMP PARSEABLE COLUMN",
-        "DTM/ APPEND COMMA SEPARATED TIMESTAMP COUNT *BEFORE* TIMESTAMP PARSEABLE COLUMN",
+        "DTM/ APPEND SEMI-COLON SEPARATED TIMESTAMP COUNT *AFTER* TIMESTAMP PARSEABLE COLUMN",
+        "DTM/ APPEND SEMI-COLON SEPARATED TIMESTAMP COUNT *BEFORE* TIMESTAMP PARSEABLE COLUMN",
         "DTM/ APPEND *ADDED* DAYS COLUMN",
         "DTM/ APPEND *SUBTRACTED* DAYS COLUMN",
         "DTM/ APPEND *ADDED* DAYS COLUMN RELATIVE TO ADJACENT TIMESTAMP PARSEABLE COLUMN",
@@ -1621,7 +1621,7 @@ The following value formats can be processed by this feature:
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
-Appends a new column with the count of timestamps in a comma separated timestamp column after the timestamp value of another column                        
+Appends a new column with the count of timestamps in a semi-colon separated timestamp column after the timestamp value of another column                        
 
 "#,
                 );
@@ -1629,7 +1629,7 @@ Appends a new column with the count of timestamps in a comma separated timestamp
             }
 
             let comma_separated_timestamp_column_name_str = get_user_input_level_2(
-                "Enter the name of the column with comma separated timestamp values: ",
+                "Enter the name of the column with semi-colon separated timestamp values: ",
             );
 
             if handle_cancel_flag(&comma_separated_timestamp_column_name_str) {
@@ -1651,7 +1651,7 @@ Appends a new column with the count of timestamps in a comma separated timestamp
                 return Ok((csv_builder, false));
             }
 
-            csv_builder.append_comma_separated_timestamp_count_after_date_column(
+            csv_builder.append_semi_colon_separated_timestamp_count_after_date_column(
                 &comma_separated_timestamp_column_name_str,
                 &relative_timestamp_column_name_str,
                 &new_column_name_str,
@@ -1668,7 +1668,7 @@ Appends a new column with the count of timestamps in a comma separated timestamp
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
-Appends a new column with the count of timestamps in a comma separated timestamp column before the timestamp value of another column                        
+Appends a new column with the count of timestamps in a semi-colon separated timestamp column before the timestamp value of another column                        
 
 "#,
                 );
@@ -1676,7 +1676,7 @@ Appends a new column with the count of timestamps in a comma separated timestamp
             }
 
             let comma_separated_timestamp_column_name_str = get_user_input_level_2(
-                "Enter the name of the column with comma separated timestamp values: ",
+                "Enter the name of the column with semi-colon separated timestamp values: ",
             );
 
             if handle_cancel_flag(&comma_separated_timestamp_column_name_str) {
@@ -1698,7 +1698,7 @@ Appends a new column with the count of timestamps in a comma separated timestamp
                 return Ok((csv_builder, false));
             }
 
-            csv_builder.append_comma_separated_timestamp_count_before_date_column(
+            csv_builder.append_semi_colon_separated_timestamp_count_before_date_column(
                 &comma_separated_timestamp_column_name_str,
                 &relative_timestamp_column_name_str,
                 &new_column_name_str,

@@ -4,7 +4,9 @@ use crate::user_interaction::{
     get_edited_user_json_input, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
 use rgwml::csv_utils::{CsvBuilder, Piv};
+use rgwml::dask_utils::DaskGrouperConfig;
 use serde_json::Value;
+use std::collections::HashMap;
 use std::fs;
 
 pub async fn handle_transform(
@@ -149,8 +151,7 @@ Total rows: 4
 
   @LILbro: Executing this JSON query:
 {
-  "group_by_column": "item",
-  "grouped_column_name": "history",
+  "group_by_column_name": "item",
   "feature_flags": {
     "id": "",
     "item": "",
@@ -188,8 +189,7 @@ The following feature flags can be used to perform different types of calculatio
             if let Some(headers) = csv_builder.get_headers() {
                 let mut json_str = "{\n".to_string();
 
-                json_str.push_str(&format!("  \"group_by_column\": \"\",\n"));
-                json_str.push_str(&format!("  \"grouped_column_name\": \"\",\n"));
+                json_str.push_str(&format!("  \"group_by_column_name\": \"\",\n"));
 
                 json_str.push_str("  \"feature_flags\": {\n");
 
@@ -210,8 +210,7 @@ SYNTAX
 ======
 
 {
-  "group_by_column": "item",                              // The column to GROUP BY with
-  "grouped_column_name": "history",                       // The name of the column compressing all row data
+  "group_by_column_name": "item",                              // The column to GROUP BY with
   "feature_flags": {
     "id": [""],
     "item": [""],                                         // Leave blank to exclude
@@ -246,35 +245,52 @@ The following feature flags can be used to perform different types of calculatio
                     serde_json::from_str(&edited_json).expect("Invalid JSON format");
 
                 // Extract values from the edited JSON
-                let group_by_column = edited_value["group_by_column"]
+                let group_by_column_name = edited_value["group_by_column_name"]
                     .as_str()
-                    .expect("group_by_column is not a string");
-                let grouped_column_name = edited_value["grouped_column_name"]
-                    .as_str()
-                    .expect("grouped_column_name is not a string");
+                    .expect("group_by_column_name is not a string");
 
-                let mut feature_flags: Vec<(String, String)> = Vec::new();
-                if let Value::Object(map) = &edited_value["feature_flags"] {
-                    for (key, value) in map.iter() {
-                        if let Value::Array(arr) = value {
-                            for val in arr {
-                                if let Value::String(feature_flag) = val {
-                                    if !feature_flag.is_empty() {
-                                        feature_flags.push((key.clone(), feature_flag.clone()));
-                                    }
-                                }
-                            }
+    let mut feature_flags: HashMap<String, Vec<String>> = HashMap::new();
+    if let Value::Object(map) = &edited_value["feature_flags"] {
+        for (key, value) in map.iter() {
+            if let Value::Array(arr) = value {
+                for val in arr {
+                    if let Value::String(feature_flag) = val {
+                        if !feature_flag.is_empty() {
+                            feature_flags
+                                .entry(feature_flag.clone())
+                                .or_insert_with(Vec::new)
+                                .push(key.clone());
                         }
                     }
                 }
+            }
+        }
+    }
 
-                // dbg!(&group_by_column, &grouped_column_name, &feature_flags);
+    // Join column names into comma-separated strings for each feature flag
+    let join_columns = |columns: &Vec<String>| -> String {
+        columns.join(",")
+    };
+
+    let dask_grouper_config = DaskGrouperConfig {
+        group_by_column_name: group_by_column_name.to_string(),
+        count_unique_agg_columns: join_columns(&feature_flags.get("COUNT_UNIQUE").unwrap_or(&Vec::new())),
+        numerical_max_agg_columns: join_columns(&feature_flags.get("NUMERICAL_MAX").unwrap_or(&Vec::new())),
+        numerical_min_agg_columns: join_columns(&feature_flags.get("NUMERICAL_MIN").unwrap_or(&Vec::new())),
+        numerical_sum_agg_columns: join_columns(&feature_flags.get("NUMERICAL_SUM").unwrap_or(&Vec::new())),
+        numerical_mean_agg_columns: join_columns(&feature_flags.get("NUMERICAL_MEAN").unwrap_or(&Vec::new())),
+        numerical_median_agg_columns: join_columns(&feature_flags.get("NUMERICAL_MEDIAN").unwrap_or(&Vec::new())),
+        numerical_std_deviation_agg_columns: join_columns(&feature_flags.get("NUMERICAL_STANDARD_DEVIATION").unwrap_or(&Vec::new())),
+        mode_agg_columns: join_columns(&feature_flags.get("MODE").unwrap_or(&Vec::new())),
+        datetime_max_agg_columns: join_columns(&feature_flags.get("DATETIME_MAX").unwrap_or(&Vec::new())),
+        datetime_min_agg_columns: join_columns(&feature_flags.get("DATETIME_MIN").unwrap_or(&Vec::new())),
+        datetime_semi_colon_separated_agg_columns: join_columns(&feature_flags.get("DATETIME_COMMA_SEPARATED").unwrap_or(&Vec::new())),
+        bool_percent_agg_columns: join_columns(&feature_flags.get("BOOL_PERCENT").unwrap_or(&Vec::new())),
+    };
 
                 csv_builder.grouped_index_transform(
-                    &group_by_column,
-                    &grouped_column_name,
-                    feature_flags,
-                );
+                    dask_grouper_config
+                ).await;
             }
 
             if csv_builder.has_data() {
