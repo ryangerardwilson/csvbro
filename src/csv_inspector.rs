@@ -4,6 +4,7 @@ use crate::user_interaction::{
     get_edited_user_json_input, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
 use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal};
+use rgwml::dask_utils::DaskCleanerConfig;
 use serde_json::Value;
 
 // Assuming CsvBuilder, Exp, and ExpVal are updated as per your implementation
@@ -251,7 +252,6 @@ SYNTAX
                 "PRINT ROW RANGE (JSON)",
                 "PRINT ALL ROWS (JSON)",
                 "PRINT ALL ROWS (TABULATED)",
-                "PRINT CLEANLINESS REPORT",
                 "PRINT ROWS WHERE",
                 "PRINT NUMERICAL ANALYSIS",
                 "PRINT FREQ OF MULTIPLE COLUMN VALUES (LINEAR)",
@@ -263,7 +263,7 @@ SYNTAX
                 "PRINT DOT CHART (CUMULATIVE)",
                 "PRINT SMOOTH LINE CHART (NORMAL)",
                 "PRINT SMOOTH LINE CHART (CUMULATIVE)",
-                "PRINT CLEANLINESS REPORT BY COLUMN PARSE",
+                "PRINT TEST CLEAN REPORT/ BY ELIMINATING ROWS SUBJECT TO COLUMN PARSE RULES",
             ];
 
             print_list_level_2(&action_menu_options, &action_sub_menu_options, &action_type);
@@ -553,122 +553,6 @@ Total rows: 12
 
         "6" => {
             if action_flag == "d" {
-                print_insight_level_2(
-                    r#"DOCUMENTATION
-
-// Prints the scope to cleans data by parsing columns with preset rules.
-  @LILbro: Executing this JSON query:
-{
-    "mobile": ["HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER", "HAS_LENGTH:10"],
-    "price": [],
-    "paid_on": ["IS_DATETIME_PARSEABLE"],
-}
-
-### AVAILABLE RULES
-
-- "HAS_ONLY_NUMERICAL_VALUES"
-- "HAS_ONLY_POSITIVE_NUMERICAL_VALUES"
-- "HAS_LENGTH:10"
-- "HAS_MIN_LENGTH:7"
-- "HAS_MAX_LENGTH:12"
-- "HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"
-- "HAS_NO_EMPTY_STRINGS"
-- "IS_DATETIME_PARSEABLE"
-"#,
-                );
-                return Ok((csv_builder, false));
-            }
-
-            if let Some(headers) = csv_builder.get_headers() {
-                let mut json_array_str = "{\n".to_string();
-
-                // Loop through headers and append them as keys in the JSON array string, excluding auto-computed columns
-                for (i, header) in headers.iter().enumerate() {
-                    if header != "id" && header != "c@" && header != "u@" {
-                        json_array_str.push_str(&format!("    \"{}\": []", header));
-                        if i < headers.len() - 1 {
-                            json_array_str.push_str(",\n");
-                        }
-                    }
-                }
-
-                // Close the first JSON object and start the syntax explanation
-                json_array_str.push_str("\n}");
-
-                let syntax_explanation = r#"
-
-SYNTAX
-======
-
-### Example
-
-{
-  "column1": ["HAS_ONLY_POSITIVE_NUMERICAL_VALUES", "HAS_NO_EMPTY_STRINGS"],
-  "column2": [],
-  "column3": ["HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"],
-  "column4": [],
-  "column5": [],
-  "column6": ["IS_DATETIME_PARSEABLE"],
-  "column7": ["IS_DATETIME_PARSEABLE"]
-}
-
-### AVAILABLE RULES
-- "HAS_ONLY_NUMERICAL_VALUES"
-- "HAS_ONLY_POSITIVE_NUMERICAL_VALUES"
-- "HAS_LENGTH:10"
-- "HAS_MIN_LENGTH:7"
-- "HAS_MAX_LENGTH:12"
-- "HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"
-- "HAS_NO_EMPTY_STRINGS"
-- "IS_DATETIME_PARSEABLE"
-"#;
-
-                let full_syntax = json_array_str + syntax_explanation;
-
-                // Get user input
-                let rows_json_str = get_edited_user_json_input(full_syntax);
-                //dbg!(&rows_json_str);
-                if handle_cancel_flag(&rows_json_str) {
-                    return Ok((csv_builder, false));
-                }
-
-                // Parse the user input
-                let rows_json: Value = match serde_json::from_str(&rows_json_str) {
-                    Ok(json) => json,
-                    Err(e) => {
-                        eprintln!("Error parsing JSON string: {}", e);
-                        return Ok((csv_builder, false));
-                    }
-                };
-
-                // Collect rules from user input
-                let mut rules = Vec::new();
-                if let Some(obj) = rows_json.as_object() {
-                    for (key, value) in obj {
-                        if let Some(rules_array) = value.as_array() {
-                            let mut column_rules = Vec::new();
-                            for rule in rules_array {
-                                if let Some(rule_str) = rule.as_str() {
-                                    if !rule_str.is_empty() {
-                                        column_rules.push(rule_str.to_string());
-                                    }
-                                }
-                            }
-                            if !column_rules.is_empty() {
-                                rules.push((key.clone(), column_rules));
-                            }
-                        }
-                    }
-                }
-
-                println!();
-                // Invoke the cleanliness report function with the collected rules
-                csv_builder.print_cleanliness_report_by_column_parse(rules);
-            }
-        }
-
-        "7" => {
-            if action_flag == "d" {
                 // if choice.to_lowercase() == "7d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -774,7 +658,7 @@ Total rows printed: 4
                 }
             }
         }
-        "8" => {
+        "7" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -841,7 +725,7 @@ Analysis for column 'gst':
             csv_builder.print_column_numerical_analysis(columns);
         }
 
-        "9" => {
+        "8" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -892,7 +776,7 @@ Frequency for column 'interest':
             let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
             csv_builder.print_freq(columns);
         }
-        "10" => {
+        "9" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -967,7 +851,7 @@ Frequency for column 'type':
             csv_builder.print_freq_cascading(columns);
         }
 
-        "11" => {
+        "10" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1003,7 +887,7 @@ Unique values in 'value': 200, 1000, 20000, 1500, 2000, 300, 1100
             csv_builder.print_unique(&column_name.trim());
         }
 
-        "12" => {
+        "11" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1051,7 +935,7 @@ Statistics for column 'interest':
             csv_builder.print_unique_values_stats(columns);
         }
 
-        "13" => {
+        "12" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1117,7 +1001,7 @@ Count: 7
                 }
             }
         }
-        "14" => {
+        "13" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1203,7 +1087,7 @@ Total rows: 10
                 csv_builder.print_dot_chart(x_axis_column, y_axis_column);
             }
         }
-        "15" => {
+        "14" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1285,7 +1169,7 @@ Total rows: 10
             }
         }
 
-        "16" => {
+        "15" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1372,7 +1256,7 @@ Total rows: 10
             }
         }
 
-        "17" => {
+        "16" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1454,28 +1338,32 @@ Total rows: 10
             }
         }
 
-        "18" => {
+        "17" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
 // Prints a cleanliness report if rows were to be cleaned by parsing columns with preset rules. Rows that do not conform to any of the stipulated rules are discarded.
   @LILbro: Executing this JSON query:
+
 {
-    "mobile": ["HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER", "HAS_LENGTH:10"],
-    "price": [],
-    "paid_on": ["IS_DATETIME_PARSEABLE"],
+    "rules": [
+        "mobile": ["IS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER", "IS_LENGTH:10"],
+        "price": [],
+        "paid_on": ["IS_DATETIME_PARSEABLE"],
+    ],
+    "show_unclean_values_in_report": "TRUE" // Also available: FALSE
 }
 
 ### AVAILABLE RULES
 
-- "HAS_ONLY_NUMERICAL_VALUES"
-- "HAS_ONLY_POSITIVE_NUMERICAL_VALUES"
-- "HAS_LENGTH:10"
-- "HAS_MIN_LENGTH:7"
-- "HAS_MAX_LENGTH:12"
-- "HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"
-- "HAS_NO_EMPTY_STRINGS"
+- "IS_NUMERICAL_VALUE"
+- "IS_POSITIVE_NUMERICAL_VALUE"
+- "IS_LENGTH:10"
+- "IS_MIN_LENGTH:7"
+- "IS_MAX_LENGTH:12"
+- "IS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"
+- "IS_NOT_AN_EMPTY_STRING"
 - "IS_DATETIME_PARSEABLE"
 "#,
                 );
@@ -1483,6 +1371,7 @@ Total rows: 10
             }
 
             if let Some(headers) = csv_builder.get_headers() {
+                /*
                 let mut json_array_str = "{\n".to_string();
 
                 // Loop through headers and append them as keys in the JSON array string, excluding auto-computed columns
@@ -1497,6 +1386,26 @@ Total rows: 10
 
                 // Close the first JSON object and start the syntax explanation
                 json_array_str.push_str("\n}");
+                */
+                let mut json_array_str = "{\n".to_string();
+                json_array_str.push_str("    \"rules\": {\n");
+
+                // Loop through headers and append them as keys in the JSON array string, excluding auto-computed columns
+                for (i, header) in headers.iter().enumerate() {
+                    if header != "id" && header != "c@" && header != "u@" {
+                        json_array_str.push_str(&format!("        \"{}\": []", header));
+                        if i < headers.len() - 1 {
+                            json_array_str.push_str(",\n");
+                        }
+                    }
+                }
+
+                // Close the JSON rules object
+                json_array_str.push_str("\n    },\n");
+
+                // Add the show_unclean_values_in_report field
+                json_array_str.push_str("    \"show_unclean_values_in_report\": \"FALSE\"\n");
+                json_array_str.push_str("}");
 
                 let syntax_explanation = r#"
 
@@ -1506,23 +1415,26 @@ SYNTAX
 ### Example
 
 {
-  "column1": ["HAS_ONLY_POSITIVE_NUMERICAL_VALUES", "HAS_NO_EMPTY_STRINGS"],
-  "column2": [],
-  "column3": ["HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"],
-  "column4": [],
-  "column5": [],
-  "column6": ["IS_DATETIME_PARSEABLE"],
-  "column7": ["IS_DATETIME_PARSEABLE"]
+    "rules": [
+        "column1": ["IS_POSITIVE_NUMERICAL_VALUE", "IS_NOT_AN_EMPTY_STRING"],
+        "column2": [],
+        "column3": ["IS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"],
+        "column4": [],
+        "column5": [],
+        "column6": ["IS_DATETIME_PARSEABLE"],
+        "column7": ["IS_DATETIME_PARSEABLE"]
+        ],
+    "show_unclean_values_in_report": "TRUE" // Also available: FALSE"
 }
 
 ### AVAILABLE RULES
-- "HAS_ONLY_NUMERICAL_VALUES"
-- "HAS_ONLY_POSITIVE_NUMERICAL_VALUES"
-- "HAS_LENGTH:10"
-- "HAS_MIN_LENGTH:7"
-- "HAS_MAX_LENGTH:12"
-- "HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"
-- "HAS_NO_EMPTY_STRINGS"
+- "IS_NUMERICAL_VALUE"
+- "IS_POSITIVE_NUMERICAL_VALUE"
+- "IS_LENGTH:10"
+- "IS_MIN_LENGTH:7"
+- "IS_MAX_LENGTH:12"
+- "IS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"
+- "IS_NOT_AN_EMPTY_STRING"
 - "IS_DATETIME_PARSEABLE"
 
 "#;
@@ -1547,39 +1459,68 @@ SYNTAX
 
                 // Collect rules from user input
                 let mut rules = Vec::new();
+                let mut show_unclean_values_in_report = "FALSE".to_string();
                 if let Some(obj) = rows_json.as_object() {
-                    for (key, value) in obj {
-                        if let Some(rules_array) = value.as_array() {
-                            let mut column_rules = Vec::new();
-                            for rule in rules_array {
-                                if let Some(rule_str) = rule.as_str() {
-                                    if !rule_str.is_empty() {
-                                        column_rules.push(rule_str.to_string());
+                    if let Some(rules_obj) = obj.get("rules").and_then(|r| r.as_object()) {
+                        for (key, value) in rules_obj {
+                            if let Some(rules_array) = value.as_array() {
+                                let mut column_rules = Vec::new();
+                                for rule in rules_array {
+                                    if let Some(rule_str) = rule.as_str() {
+                                        if !rule_str.is_empty() {
+                                            column_rules.push(rule_str.to_string());
+                                        }
                                     }
                                 }
-                            }
-                            if !column_rules.is_empty() {
-                                rules.push((key.clone(), column_rules));
+                                if !column_rules.is_empty() {
+                                    rules.push((key.clone(), column_rules));
+                                }
                             }
                         }
                     }
+                    if let Some(show_unclean) = obj
+                        .get("show_unclean_values_in_report")
+                        .and_then(|v| v.as_str())
+                    {
+                        show_unclean_values_in_report = show_unclean.to_string();
+                    }
                 }
+
+                let formatted_rules = rules
+                    .into_iter()
+                    .map(|(col, rules_list)| format!("{}:{}", col, rules_list.join(",")))
+                    .collect::<Vec<String>>()
+                    .join(";");
+
+                let dask_cleaner_config = DaskCleanerConfig {
+                    rules: formatted_rules,
+                    action: "ANALYZE".to_string(),
+                    show_unclean_values_in_report: show_unclean_values_in_report,
+                };
 
                 //dbg!(&rules);
                 println!();
                 // Invoke the cleanliness report function with the collected rules
-                csv_builder.print_cleanliness_report_by_column_parse(rules.clone());
+                //dbg!(&dask_cleaner_config);
+                println!();
+                csv_builder
+                    .clean_or_test_clean_by_eliminating_rows_subject_to_column_parse_rules(
+                        dask_cleaner_config,
+                    )
+                    .await;
                 //  .clean_by_column_parse(rules.clone());
 
+                /*
                 if csv_builder.has_data() {
                     csv_builder.print_table();
                     println!();
                 }
+                */
             }
         }
 
         _ => {
-            println!("Invalid option. Please enter a number from 1 to 18.");
+            println!("Invalid option. Please enter a number from 1 to 17.");
             return Ok((csv_builder, false));
         }
     }

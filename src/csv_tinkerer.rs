@@ -5,6 +5,7 @@ use crate::user_interaction::{
     print_insight_level_2, print_list_level_2,
 };
 use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal};
+use rgwml::dask_utils::DaskCleanerConfig;
 use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::error::Error;
@@ -419,8 +420,8 @@ SYNTAX
                 "REORDER COLUMNS",
                 "SET INDEX COLUMN",
                 "CASCADE SORT",
-                "CLEAN DATA BY CHARACTER REPLACE",
-                "CLEAN DATA BY COLUMN PARSE",
+                "CLEAN/ BY CHARACTER REPLACE",
+                "CLEAN/ BY ELIMINATING ROWS SUBJECT TO COLUMN PARSE RULES",
             ];
 
             print_list_level_2(&action_menu_options, &action_sub_menu_options, &action_type);
@@ -2199,20 +2200,24 @@ SYNTAX
 // Cleans data by parsing columns with preset rules. Rows that do not conform to any of the stipulated rules are discarded
   @LILbro: Executing this JSON query:
 {
-    "mobile": ["HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER", "HAS_LENGTH:10"],
-    "price": [],
-    "paid_on": ["IS_DATETIME_PARSEABLE"],
+    "rules": [
+        "mobile": ["IS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER", "IS_LENGTH:10"],
+        "price": [],
+        "paid_on": ["IS_DATETIME_PARSEABLE"],
+    ],
+    "show_cleaning_report": "TRUE", // Also available: FALSE
+    "show_unclean_values_in_report": "TRUE" // Also available: FALSE
 }
 
 ### AVAILABLE RULES
 
-- "HAS_ONLY_NUMERICAL_VALUES"
-- "HAS_ONLY_POSITIVE_NUMERICAL_VALUES"
-- "HAS_LENGTH:10"
-- "HAS_MIN_LENGTH:7"
-- "HAS_MAX_LENGTH:12"
-- "HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"
-- "HAS_NO_EMPTY_STRINGS"
+- "IS_NUMERICAL_VALUE"
+- "IS_POSITIVE_NUMERICAL_VALUE"
+- "IS_LENGTH:10"
+- "IS_MIN_LENGTH:7"
+- "IS_MAX_LENGTH:12"
+- "IS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"
+- "IS_NOT_AN_EMPTY_STRING"
 - "IS_DATETIME_PARSEABLE"
 "#,
                 );
@@ -2221,19 +2226,23 @@ SYNTAX
 
             if let Some(headers) = csv_builder.get_headers() {
                 let mut json_array_str = "{\n".to_string();
+                json_array_str.push_str("    \"rules\": {\n");
 
                 // Loop through headers and append them as keys in the JSON array string, excluding auto-computed columns
                 for (i, header) in headers.iter().enumerate() {
                     if header != "id" && header != "c@" && header != "u@" {
-                        json_array_str.push_str(&format!("    \"{}\": []", header));
+                        json_array_str.push_str(&format!("        \"{}\": []", header));
                         if i < headers.len() - 1 {
                             json_array_str.push_str(",\n");
                         }
                     }
                 }
 
-                // Close the first JSON object and start the syntax explanation
-                json_array_str.push_str("\n}");
+                // Close the JSON rules object and add additional fields
+                json_array_str.push_str("\n    },\n");
+                json_array_str.push_str("    \"show_cleaning_report\": \"FALSE\",\n");
+                json_array_str.push_str("    \"show_unclean_values_in_report\": \"FALSE\"\n");
+                json_array_str.push_str("}");
 
                 let syntax_explanation = r#"
 
@@ -2243,25 +2252,28 @@ SYNTAX
 ### Example
 
 {
-  "column1": ["HAS_ONLY_POSITIVE_NUMERICAL_VALUES", "HAS_NO_EMPTY_STRINGS"],
-  "column2": [],
-  "column3": ["HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"],
-  "column4": [],
-  "column5": [],
-  "column6": ["IS_DATETIME_PARSEABLE"],
-  "column7": ["IS_DATETIME_PARSEABLE"]
+    "rules": [
+        "column1": ["IS_POSITIVE_NUMERICAL_VALUE", "IS_NOT_AN_EMPTY_STRING"],
+        "column2": [],
+        "column3": ["IS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"],
+        "column4": [],
+        "column5": [],
+        "column6": ["IS_DATETIME_PARSEABLE"],
+        "column7": ["IS_DATETIME_PARSEABLE"]
+        ],
+    "show_cleaning_report": "TRUE", // Also available: FALSE
+    "show_unclean_values_in_report": "TRUE" // Also available: FALSE
 }
 
 ### AVAILABLE RULES
-- "HAS_ONLY_NUMERICAL_VALUES"
-- "HAS_ONLY_POSITIVE_NUMERICAL_VALUES"
-- "HAS_LENGTH:10"
-- "HAS_MIN_LENGTH:7"
-- "HAS_MAX_LENGTH:12"
-- "HAS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"
-- "HAS_NO_EMPTY_STRINGS"
+- "IS_NUMERICAL_VALUE"
+- "IS_POSITIVE_NUMERICAL_VALUE"
+- "IS_LENGTH:10"
+- "IS_MIN_LENGTH:7"
+- "IS_MAX_LENGTH:12"
+- "IS_VALID_TEN_DIGIT_INDIAN_MOBILE_NUMBER"
+- "IS_NOT_AN_EMPTY_STRING"
 - "IS_DATETIME_PARSEABLE"
-
 "#;
 
                 let full_syntax = json_array_str + syntax_explanation;
@@ -2284,30 +2296,63 @@ SYNTAX
 
                 // Collect rules from user input
                 let mut rules = Vec::new();
+                let mut action = "CLEAN".to_string();
+                //let mut show_cleaning_report = "FALSE".to_string();
+                let mut show_unclean_values_in_report = "FALSE".to_string();
                 if let Some(obj) = rows_json.as_object() {
-                    for (key, value) in obj {
-                        if let Some(rules_array) = value.as_array() {
-                            let mut column_rules = Vec::new();
-                            for rule in rules_array {
-                                if let Some(rule_str) = rule.as_str() {
-                                    if !rule_str.is_empty() {
-                                        column_rules.push(rule_str.to_string());
+                    if let Some(rules_obj) = obj.get("rules").and_then(|r| r.as_object()) {
+                        for (key, value) in rules_obj {
+                            if let Some(rules_array) = value.as_array() {
+                                let mut column_rules = Vec::new();
+                                for rule in rules_array {
+                                    if let Some(rule_str) = rule.as_str() {
+                                        if !rule_str.is_empty() {
+                                            column_rules.push(rule_str.to_string());
+                                        }
                                     }
                                 }
-                            }
-                            if !column_rules.is_empty() {
-                                rules.push((key.clone(), column_rules));
+                                if !column_rules.is_empty() {
+                                    rules.push((key.clone(), column_rules));
+                                }
                             }
                         }
                     }
+                    if let Some(show_cleaning) =
+                        obj.get("show_cleaning_report").and_then(|v| v.as_str())
+                    {
+                        //show_cleaning_report = show_cleaning.to_string();
+                        if show_cleaning == "TRUE".to_string() {
+                            action = "ANALYZE_AND_CLEAN".to_string()
+                        }
+                    }
+                    if let Some(show_unclean) = obj
+                        .get("show_unclean_values_in_report")
+                        .and_then(|v| v.as_str())
+                    {
+                        show_unclean_values_in_report = show_unclean.to_string();
+                    }
                 }
+
+                let formatted_rules = rules
+                    .into_iter()
+                    .map(|(col, rules_list)| format!("{}:{}", col, rules_list.join(",")))
+                    .collect::<Vec<String>>()
+                    .join(";");
+
+                let dask_cleaner_config = DaskCleanerConfig {
+                    rules: formatted_rules,
+                    action: action,
+                    show_unclean_values_in_report: show_unclean_values_in_report,
+                };
 
                 //dbg!(&rules);
                 println!();
                 // Invoke the cleanliness report function with the collected rules
                 csv_builder
-                    //.print_cleanliness_report_by_column_parse(rules.clone())
-                    .clean_by_column_parse(rules.clone());
+                    .clean_or_test_clean_by_eliminating_rows_subject_to_column_parse_rules(
+                        dask_cleaner_config,
+                    )
+                    .await;
 
                 if csv_builder.has_data() {
                     csv_builder.print_table();
