@@ -540,7 +540,7 @@ dependencies = [
 
 [[package]]
 name = "csvbro"
-version = "1.3.7"
+version = "1.3.8"
 dependencies = [
  "calamine 0.23.1",
  "chrono",
@@ -2221,7 +2221,7 @@ dependencies = [
 
 [[package]]
 name = "rgwml"
-version = "1.3.43"
+version = "1.3.50"
 dependencies = [
  "anyhow",
  "calamine 0.24.0",

@@ -3,8 +3,8 @@ use crate::user_experience::handle_cancel_flag;
 use crate::user_interaction::{
     get_edited_user_json_input, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
-use rgwml::csv_utils::{CsvBuilder, Piv};
-use rgwml::dask_utils::DaskGrouperConfig;
+use rgwml::csv_utils::CsvBuilder;
+use rgwml::dask_utils::{DaskGrouperConfig, DaskPivoterConfig};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
@@ -17,14 +17,12 @@ pub async fn handle_transform(
     action_flag: &str,
     action_menu_options: Vec<&str>,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
-    fn get_pivot_input() -> Result<Piv, Box<dyn std::error::Error>> {
+    fn get_pivot_input() -> Result<DaskPivoterConfig, Box<dyn std::error::Error>> {
         let pivot_syntax = r#"{
-    "index_at": "",
-    "values_from": "",
+    "group_by_column_name": "",
+    "values_to_aggregate_column_name": "",
     "operation": "",
-    "seggregate_by": [
-        {"column": "", "type": ""}
-    ]
+    "segregate_by_column_names": ""
 }
 
 SYNTAX
@@ -33,34 +31,12 @@ SYNTAX
 Unlike a broad grouping, a pivot is grouping that emphasizes aggregating numerical values, and segregating those aggregates.
 
 {
-    "index_at": "Date",      // Name of the column to index/ group by
-    "values_from": "Sales",
-    "operation": "MEDIAN", // Also "COUNT", "COUNT_UNIQUE", "NUMERICAL_MIN", "NUMERICAL_MAX", "NUMERICAL_SUM", "NUMERICAL_MEAN", "NUMERICAL_MEDIAN", "NUMERICAL_STANDARD_DEVIATION", "BOOL_PERCENT" (assuming column values of 0 or 1 in 'values_from', calculates the % of 1 values for the segment)
-    "seggregate_by": [  // Leave as empty [] if seggregation is not required
-        {"column": "Category", "type": "AS_CATEGORY"},
-        {"column": "IsPromotion", "type": "AS_BOOLEAN"}
-    ],
+    "group_by_column_name": "month",
+    "values_to_aggregate_column_name": "sales",
+    "operation": "NUMERICAL_MEAN", // Options: COUNT, COUNT_UNIQUE, NUMERICAL_MAX, NUMERICAL_MIN, NUMERICAL_SUM, NUMERICAL_MEAN, NUMERICAL_MEDIAN, NUMERICAL_STANDARD_DEVIATION, BOOL_PERCENT
+    "segregate_by_column_names": "is_csutomer, division"
 }
 
-Note the implication of params in the Json Query:
-1. "index_at": This parameter determines the primary key column of the pivot table, or the field by which the data will be grouped vertically (row labels). It's the main dimension of analysis. This can be either a text or a number, depending on the data you are grouping by. For example, if you are grouping sales data by region, index_at could be the name of the region (text). If you are grouping by year, it could be the year (number).
-2. "values_from": Specifies the column(s) from which to retrieve the values that will be summarized or aggregated in the pivot table. This would be a column with numerical data since you are usually performing operations like sums, averages, counts, etc.
-3. "operation": Defines the type of aggregation or summarization to perform on the values_from data across the grouped index_at categories. These include:
-
- - `COUNT_UNIQUE` - Counts the unique values in the column.
- - `NUMERICAL_MAX` - Finds the maximum numerical value in the column.
- - `NUMERICAL_MIN` - Finds the minimum numerical value in the column.
- - `NUMERICAL_SUM` - Calculates the sum of numerical values in the column.
- - `NUMERICAL_MEAN` - Calculates the mean (average) of numerical values in the column, rounded to two decimal places.
- - `NUMERICAL_MEDIAN` - Calculates the median of numerical values in the column, rounded to two decimal places.
- - `NUMERICAL_STANDARD_DEVIATION` - Calculates the standard deviation of numerical values in the column, rounded to two decimal places.
- - `BOOL_PERCENT` - Calculates the percentage of `1`s in the column, assuming the values are either `1` or `0`, rounded to two decimal places.
-
-4. "seggregate_by": This parameter allows for additional segmentation of data within the primary grouping defined by index_at. Each segment within seggregate_by can further divide the data based on the specified column and the type of segmentation (like categorical grouping or binning numerical data into ranges).
-- 4.1. Column: Can be both text or number, similar to index_at, depending on what additional dimension you want to segment the data by.
-- 4.2. Type: Is text, indicating how the segmentation should be applied. The column specified can have a type of "AS_CATEGORY", or "AS_BOOLEAN"
-  - 4.2.1. AS_CATEGORY: It means that each unique value in the specified seggregation column will create a separate subgroup within each primary group. This is appropriate for text data or numerical data that represent distinct categories or groups rather than values to be aggregated.
-  - 4.2.2. AS_BOOLEAN: By setting the type to "AS_BOOLEAN", it's understood that the specified seggregation column contains boolean values (1/0). The data will be segmented into two groups based on these boolean values. This type is particularly useful for flag columns that indicate the presence or absence of a particular condition or attribute.
 "#;
 
         let user_input = get_edited_user_json_input(pivot_syntax.to_string());
@@ -71,11 +47,11 @@ Note the implication of params in the Json Query:
 
         let parsed_json: Value = serde_json::from_str(&user_input)?;
 
-        let index_at = parsed_json["index_at"]
+        let group_by_column_name = parsed_json["group_by_column_name"]
             .as_str()
             .unwrap_or_default()
             .to_string();
-        let values_from = parsed_json["values_from"]
+        let values_to_aggregate_column_name = parsed_json["values_to_aggregate_column_name"]
             .as_str()
             .unwrap_or_default()
             .to_string();
@@ -83,29 +59,16 @@ Note the implication of params in the Json Query:
             .as_str()
             .unwrap_or_default()
             .to_string();
+        let segregate_by_column_names = parsed_json["segregate_by_column_names"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
 
-        let seggregate_by: Vec<(String, String)> = parsed_json["seggregate_by"]
-            .as_array()
-            .map_or_else(Vec::new, |items| {
-                items
-                    .iter()
-                    .filter_map(|item| {
-                        let column = item["column"].as_str().unwrap_or("").to_string();
-                        let type_ = item["type"].as_str().unwrap_or("").to_string();
-                        if column.is_empty() || type_.is_empty() {
-                            None // Exclude items where either column or type is empty
-                        } else {
-                            Some((column, type_)) // Include valid segregation criteria
-                        }
-                    })
-                    .collect()
-            });
-
-        Ok(Piv {
-            index_at,
-            values_from,
+        Ok(DaskPivoterConfig {
+            group_by_column_name,
+            values_to_aggregate_column_name,
             operation,
-            seggregate_by,
+            segregate_by_column_names,
         })
     }
 
@@ -249,48 +212,74 @@ The following feature flags can be used to perform different types of calculatio
                     .as_str()
                     .expect("group_by_column_name is not a string");
 
-    let mut feature_flags: HashMap<String, Vec<String>> = HashMap::new();
-    if let Value::Object(map) = &edited_value["feature_flags"] {
-        for (key, value) in map.iter() {
-            if let Value::Array(arr) = value {
-                for val in arr {
-                    if let Value::String(feature_flag) = val {
-                        if !feature_flag.is_empty() {
-                            feature_flags
-                                .entry(feature_flag.clone())
-                                .or_insert_with(Vec::new)
-                                .push(key.clone());
+                let mut feature_flags: HashMap<String, Vec<String>> = HashMap::new();
+                if let Value::Object(map) = &edited_value["feature_flags"] {
+                    for (key, value) in map.iter() {
+                        if let Value::Array(arr) = value {
+                            for val in arr {
+                                if let Value::String(feature_flag) = val {
+                                    if !feature_flag.is_empty() {
+                                        feature_flags
+                                            .entry(feature_flag.clone())
+                                            .or_insert_with(Vec::new)
+                                            .push(key.clone());
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-            }
-        }
-    }
 
-    // Join column names into comma-separated strings for each feature flag
-    let join_columns = |columns: &Vec<String>| -> String {
-        columns.join(",")
-    };
+                // Join column names into comma-separated strings for each feature flag
+                let join_columns = |columns: &Vec<String>| -> String { columns.join(",") };
 
-    let dask_grouper_config = DaskGrouperConfig {
-        group_by_column_name: group_by_column_name.to_string(),
-        count_unique_agg_columns: join_columns(&feature_flags.get("COUNT_UNIQUE").unwrap_or(&Vec::new())),
-        numerical_max_agg_columns: join_columns(&feature_flags.get("NUMERICAL_MAX").unwrap_or(&Vec::new())),
-        numerical_min_agg_columns: join_columns(&feature_flags.get("NUMERICAL_MIN").unwrap_or(&Vec::new())),
-        numerical_sum_agg_columns: join_columns(&feature_flags.get("NUMERICAL_SUM").unwrap_or(&Vec::new())),
-        numerical_mean_agg_columns: join_columns(&feature_flags.get("NUMERICAL_MEAN").unwrap_or(&Vec::new())),
-        numerical_median_agg_columns: join_columns(&feature_flags.get("NUMERICAL_MEDIAN").unwrap_or(&Vec::new())),
-        numerical_std_deviation_agg_columns: join_columns(&feature_flags.get("NUMERICAL_STANDARD_DEVIATION").unwrap_or(&Vec::new())),
-        mode_agg_columns: join_columns(&feature_flags.get("MODE").unwrap_or(&Vec::new())),
-        datetime_max_agg_columns: join_columns(&feature_flags.get("DATETIME_MAX").unwrap_or(&Vec::new())),
-        datetime_min_agg_columns: join_columns(&feature_flags.get("DATETIME_MIN").unwrap_or(&Vec::new())),
-        datetime_semi_colon_separated_agg_columns: join_columns(&feature_flags.get("DATETIME_COMMA_SEPARATED").unwrap_or(&Vec::new())),
-        bool_percent_agg_columns: join_columns(&feature_flags.get("BOOL_PERCENT").unwrap_or(&Vec::new())),
-    };
+                let dask_grouper_config = DaskGrouperConfig {
+                    group_by_column_name: group_by_column_name.to_string(),
+                    count_unique_agg_columns: join_columns(
+                        &feature_flags.get("COUNT_UNIQUE").unwrap_or(&Vec::new()),
+                    ),
+                    numerical_max_agg_columns: join_columns(
+                        &feature_flags.get("NUMERICAL_MAX").unwrap_or(&Vec::new()),
+                    ),
+                    numerical_min_agg_columns: join_columns(
+                        &feature_flags.get("NUMERICAL_MIN").unwrap_or(&Vec::new()),
+                    ),
+                    numerical_sum_agg_columns: join_columns(
+                        &feature_flags.get("NUMERICAL_SUM").unwrap_or(&Vec::new()),
+                    ),
+                    numerical_mean_agg_columns: join_columns(
+                        &feature_flags.get("NUMERICAL_MEAN").unwrap_or(&Vec::new()),
+                    ),
+                    numerical_median_agg_columns: join_columns(
+                        &feature_flags.get("NUMERICAL_MEDIAN").unwrap_or(&Vec::new()),
+                    ),
+                    numerical_std_deviation_agg_columns: join_columns(
+                        &feature_flags
+                            .get("NUMERICAL_STANDARD_DEVIATION")
+                            .unwrap_or(&Vec::new()),
+                    ),
+                    mode_agg_columns: join_columns(
+                        &feature_flags.get("MODE").unwrap_or(&Vec::new()),
+                    ),
+                    datetime_max_agg_columns: join_columns(
+                        &feature_flags.get("DATETIME_MAX").unwrap_or(&Vec::new()),
+                    ),
+                    datetime_min_agg_columns: join_columns(
+                        &feature_flags.get("DATETIME_MIN").unwrap_or(&Vec::new()),
+                    ),
+                    datetime_semi_colon_separated_agg_columns: join_columns(
+                        &feature_flags
+                            .get("DATETIME_COMMA_SEPARATED")
+                            .unwrap_or(&Vec::new()),
+                    ),
+                    bool_percent_agg_columns: join_columns(
+                        &feature_flags.get("BOOL_PERCENT").unwrap_or(&Vec::new()),
+                    ),
+                };
 
-                csv_builder.grouped_index_transform(
-                    dask_grouper_config
-                ).await;
+                csv_builder
+                    .grouped_index_transform(dask_grouper_config)
+                    .await;
             }
 
             if csv_builder.has_data() {
@@ -462,8 +451,9 @@ Note the implication of params in the Json Query:
 
             // This matches the case in your project's workflow for the pivot operation
             match get_pivot_input() {
-                Ok(piv) => {
-                    csv_builder.pivot_as(piv).print_table();
+                Ok(dask_pivot_config) => {
+                    csv_builder.pivot(dask_pivot_config).await;
+                    csv_builder.print_table();
                     println!();
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
