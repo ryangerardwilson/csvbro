@@ -20,11 +20,12 @@ use crate::user_interaction::{
 };
 use rgwml::csv_utils::CsvBuilder;
 use std::env;
+use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::{self, Command};
 
-const BRO_VERSION: &str = "1.4.1";
+const BRO_VERSION: &str = "1.4.2";
 
 #[tokio::main]
 async fn main() {
@@ -39,6 +40,12 @@ async fn main() {
         let desktop_path = Path::new(&home_dir).join("Desktop");
         let downloads_path = Path::new(&home_dir).join("Downloads");
         let csv_db_path = desktop_path.join("csv_db");
+
+        // Create the csv_db directory if it does not exist
+        if !csv_db_path.exists() {
+            fs::create_dir_all(&csv_db_path)?;
+            println!("Created directory: {}", csv_db_path.display());
+        }
 
         // Define the target path for moving the binary
         let target_binary_path = Path::new("/usr/local/bin/csvbro");
@@ -88,30 +95,12 @@ async fn main() {
                 ("dask[dataframe]", "dask.dataframe"),
             ];
 
-            let mut missing_packages = Vec::new();
-
-            for (package_name, import_name) in &packages {
-                // Check if the package can be imported
-                let check_package_status = Command::new("python3")
-                    .arg("-c")
-                    .arg(format!("import {}", import_name))
-                    .status();
-
-                // If the package is missing, add it to the list of missing packages
-                if check_package_status.is_err() || !check_package_status.unwrap().success() {
-                    missing_packages.push(*package_name);
-                }
-            }
-
-            // Install missing packages if any
-            if !missing_packages.is_empty() {
-                let pip_install_status = Command::new("pip3")
-                    .args(&["install"])
-                    .args(&missing_packages)
-                    .status()?;
-                if !pip_install_status.success() {
-                    return Err("Failed to install packages".into());
-                }
+            let pip_install_status = Command::new("pip3")
+                .args(&["install"])
+                .args(&missing_packages)
+                .status()?;
+            if !pip_install_status.success() {
+                return Err("Failed to install packages".into());
             }
 
             // Move the binary to the target path using 'sudo mv'

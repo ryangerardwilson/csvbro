@@ -908,10 +908,12 @@ pub async fn query_chain_builder(
 ) -> bool {
     //let current_file_path: Option<PathBuf> = file_path_option.map(PathBuf::from);
 
+    /*
     if builder.has_data() {
         let _ = builder.print_table();
         println!();
     }
+    */
 
     let action_menu_options = vec![
         "SEARCH",

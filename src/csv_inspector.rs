@@ -247,11 +247,12 @@ SYNTAX
     match action_feature {
         "" => {
             let action_sub_menu_options = vec![
+                "PRINT TABLE (TABULATED SUMMARY)",
+                "PRINT TABLE (TABULATED ALL ROWS)",
+                "PRINT TABLE (JSON-IFIED ALL ROWS)",
                 "PRINT FIRST N ROWS",
                 "PRINT LAST N ROWS",
                 "PRINT ROW RANGE (JSON)",
-                "PRINT ALL ROWS (JSON)",
-                "PRINT ALL ROWS (TABULATED)",
                 "PRINT ROWS WHERE",
                 "PRINT NUMERICAL ANALYSIS",
                 "PRINT FREQ OF MULTIPLE COLUMN VALUES (LINEAR)",
@@ -275,235 +276,15 @@ SYNTAX
                 print_insight_level_2(
                     r#"DOCUMENTATION
 
-Prints the first row in JSON format.
-|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
----------------------------------------------------------------------------
-|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
-|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
-|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
-|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
-|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
-|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
-|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
-|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
-|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
-|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
-Total rows: 10
-
-First row:
-{
-  "id": "1",
-  "item": "books",
-  "value": "1000",
-  "type": "OTHER",
-  "date": "2024-01-21",
-  "relates_to_travel": "0",
-  "date_YEAR_MONTH": "Y2024-M01",
-}
 "#,
                 );
                 return Ok((csv_builder, false));
             }
 
-            let n_str = get_user_input_level_2("Enter the 'n' value: ");
-
-            if handle_cancel_flag(&n_str) {
-                return Ok((csv_builder, false));
-            }
-
-            csv_builder.print_first_n_rows(&n_str);
+            csv_builder.print_table();
         }
+
         "2" => {
-            if action_flag == "d" {
-                print_insight_level_2(
-                    r#"DOCUMENTATION
-
-Prints the last row in JSON format.
-|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
----------------------------------------------------------------------------
-|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
-|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
-|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
-|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
-|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
-|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
-|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
-|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
-|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
-|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
-Total rows: 10
-
-Last row:
-{
-  "id": "10",
-  "item": "movies",
-  "value": "1500",
-  "type": "OTHER",
-  "date": "2024-01-25",
-  "relates_to_travel": "0",
-  "date_YEAR_MONTH": "Y2024-M01",
-}
-"#,
-                );
-                return Ok((csv_builder, false));
-            }
-
-            let n_str = get_user_input_level_2("Enter the 'n' value: ");
-
-            if handle_cancel_flag(&n_str) {
-                return Ok((csv_builder, false));
-            }
-
-            csv_builder.print_last_n_rows(&n_str);
-        }
-        "3" => {
-            if action_flag == "d" {
-                print_insight_level_2(
-                    r#"DOCUMENTATION
-
-Prints a range of rows in JSON format.
-|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
----------------------------------------------------------------------------
-|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
-|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
-|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
-|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
-|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
-|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
-|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
-|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
-|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
-|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
-Total rows: 10
-
-  @LILbro: Enter the start row number: 2
-  @LILbro: Enter the end row number: 4
-
-Row 2:
-{
-  "id": "2",
-  "item": "snacks",
-  "value": "200",
-  "type": "FOOD",
-  "date": "2024-02-22",
-  "relates_to_travel": "0",
-  "date_YEAR_MONTH": "Y2024-M02",
-}
-Row 3:
-{
-  "id": "3",
-  "item": "cab fare",
-  "value": "300",
-  "type": "TRAVEL",
-  "date": "2024-03-23",
-  "relates_to_travel": "1",
-  "date_YEAR_MONTH": "Y2024-M03",
-}
-Row 4:
-{
-  "id": "4",
-  "item": "rent",
-  "value": "20000",
-  "type": "OTHER",
-  "date": "2024-01-24",
-  "relates_to_travel": "0",
-  "date_YEAR_MONTH": "Y2024-M01",
-}
-"#,
-                );
-                return Ok((csv_builder, false));
-            }
-
-            let start_str = get_user_input_level_2("Enter the start row number: ");
-
-            if handle_cancel_flag(&start_str) {
-                return Ok((csv_builder, false));
-            }
-
-            let start = start_str
-                .parse::<usize>()
-                .map_err(|_| "Invalid start row number")?;
-
-            let end_str = get_user_input_level_2("Enter the end row number: ");
-
-            if handle_cancel_flag(&end_str) {
-                return Ok((csv_builder, false));
-            }
-
-            let end = end_str
-                .parse::<usize>()
-                .map_err(|_| "Invalid start row number")?;
-
-            csv_builder.print_rows_range(start, end);
-        }
-
-        "4" => {
-            if action_flag == "d" {
-                print_insight_level_2(
-                    r#"DOCUMENTATION
-
-Prints all rows in JSON format.
-|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
----------------------------------------------------------------------------
-|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
-|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
-|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
-|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
-|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
-|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
-|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
-|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
-|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
-|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
-Total rows: 10
-
-Row 1: 
-{
-  "id": "1",
-  "item": "books",
-  "value": "1000",
-  "type": "OTHER",
-  "date": "2024-01-21",
-  "relates_to_travel": "0",
-  "date_YEAR_MONTH": "Y2024-M01",
-}
-Row 2: 
-{
-  "id": "2",
-  "item": "snacks",
-  "value": "200",
-  "type": "FOOD",
-  "date": "2024-02-22",
-  "relates_to_travel": "0",
-  "date_YEAR_MONTH": "Y2024-M02",
-}
-.
-.
-.
-Row 10: 
-{
-  "id": "10",
-  "item": "movies",
-  "value": "1500",
-  "type": "OTHER",
-  "date": "2024-01-25",
-  "relates_to_travel": "0",
-  "date_YEAR_MONTH": "Y2024-M01",
-}
-
-Total rows: 10
-"#,
-                );
-                return Ok((csv_builder, false));
-            }
-
-            if csv_builder.has_data() {
-                csv_builder.print_rows();
-                println!();
-            }
-        }
-
-        "5" => {
             if action_flag == "d" {
                 // if choice.to_lowercase() == "5d" {
                 print_insight_level_2(
@@ -551,7 +332,7 @@ Total rows: 12
             }
         }
 
-        "6" => {
+        "3" => {
             if action_flag == "d" {
                 // if choice.to_lowercase() == "7d" {
                 print_insight_level_2(
@@ -658,7 +439,241 @@ Total rows printed: 4
                 }
             }
         }
+
+        "4" => {
+            if action_flag == "d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
+
+Prints the first row in JSON format.
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
+|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+Total rows: 10
+
+First row:
+{
+  "id": "1",
+  "item": "books",
+  "value": "1000",
+  "type": "OTHER",
+  "date": "2024-01-21",
+  "relates_to_travel": "0",
+  "date_YEAR_MONTH": "Y2024-M01",
+}
+"#,
+                );
+                return Ok((csv_builder, false));
+            }
+
+            let n_str = get_user_input_level_2("Enter the 'n' value: ");
+
+            if handle_cancel_flag(&n_str) {
+                return Ok((csv_builder, false));
+            }
+
+            csv_builder.print_first_n_rows(&n_str);
+        }
+        "5" => {
+            if action_flag == "d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
+
+Prints the last row in JSON format.
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
+|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+Total rows: 10
+
+Last row:
+{
+  "id": "10",
+  "item": "movies",
+  "value": "1500",
+  "type": "OTHER",
+  "date": "2024-01-25",
+  "relates_to_travel": "0",
+  "date_YEAR_MONTH": "Y2024-M01",
+}
+"#,
+                );
+                return Ok((csv_builder, false));
+            }
+
+            let n_str = get_user_input_level_2("Enter the 'n' value: ");
+
+            if handle_cancel_flag(&n_str) {
+                return Ok((csv_builder, false));
+            }
+
+            csv_builder.print_last_n_rows(&n_str);
+        }
+        "6" => {
+            if action_flag == "d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
+
+Prints a range of rows in JSON format.
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
+|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+Total rows: 10
+
+  @LILbro: Enter the start row number: 2
+  @LILbro: Enter the end row number: 4
+
+Row 2:
+{
+  "id": "2",
+  "item": "snacks",
+  "value": "200",
+  "type": "FOOD",
+  "date": "2024-02-22",
+  "relates_to_travel": "0",
+  "date_YEAR_MONTH": "Y2024-M02",
+}
+Row 3:
+{
+  "id": "3",
+  "item": "cab fare",
+  "value": "300",
+  "type": "TRAVEL",
+  "date": "2024-03-23",
+  "relates_to_travel": "1",
+  "date_YEAR_MONTH": "Y2024-M03",
+}
+Row 4:
+{
+  "id": "4",
+  "item": "rent",
+  "value": "20000",
+  "type": "OTHER",
+  "date": "2024-01-24",
+  "relates_to_travel": "0",
+  "date_YEAR_MONTH": "Y2024-M01",
+}
+"#,
+                );
+                return Ok((csv_builder, false));
+            }
+
+            let start_str = get_user_input_level_2("Enter the start row number: ");
+
+            if handle_cancel_flag(&start_str) {
+                return Ok((csv_builder, false));
+            }
+
+            let start = start_str
+                .parse::<usize>()
+                .map_err(|_| "Invalid start row number")?;
+
+            let end_str = get_user_input_level_2("Enter the end row number: ");
+
+            if handle_cancel_flag(&end_str) {
+                return Ok((csv_builder, false));
+            }
+
+            let end = end_str
+                .parse::<usize>()
+                .map_err(|_| "Invalid start row number")?;
+
+            csv_builder.print_rows_range(start, end);
+        }
+
         "7" => {
+            if action_flag == "d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
+
+Prints all rows in JSON format.
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+|6  |books   |1000  |OTHER |2024-03-21|0                 |Y2024-M03       |
+|7  |snacks  |200   |FOOD  |2024-01-22|0                 |Y2024-M01       |
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+Total rows: 10
+
+Row 1: 
+{
+  "id": "1",
+  "item": "books",
+  "value": "1000",
+  "type": "OTHER",
+  "date": "2024-01-21",
+  "relates_to_travel": "0",
+  "date_YEAR_MONTH": "Y2024-M01",
+}
+Row 2: 
+{
+  "id": "2",
+  "item": "snacks",
+  "value": "200",
+  "type": "FOOD",
+  "date": "2024-02-22",
+  "relates_to_travel": "0",
+  "date_YEAR_MONTH": "Y2024-M02",
+}
+.
+.
+.
+Row 10: 
+{
+  "id": "10",
+  "item": "movies",
+  "value": "1500",
+  "type": "OTHER",
+  "date": "2024-01-25",
+  "relates_to_travel": "0",
+  "date_YEAR_MONTH": "Y2024-M01",
+}
+
+Total rows: 10
+"#,
+                );
+                return Ok((csv_builder, false));
+            }
+
+            if csv_builder.has_data() {
+                csv_builder.print_rows();
+                println!();
+            }
+        }
+
+        "8" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -725,7 +740,7 @@ Analysis for column 'gst':
             csv_builder.print_column_numerical_analysis(columns);
         }
 
-        "8" => {
+        "9" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -776,7 +791,7 @@ Frequency for column 'interest':
             let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
             csv_builder.print_freq(columns);
         }
-        "9" => {
+        "10" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -851,7 +866,7 @@ Frequency for column 'type':
             csv_builder.print_freq_cascading(columns);
         }
 
-        "10" => {
+        "11" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -887,7 +902,7 @@ Unique values in 'value': 200, 1000, 20000, 1500, 2000, 300, 1100
             csv_builder.print_unique(&column_name.trim());
         }
 
-        "11" => {
+        "12" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -935,7 +950,7 @@ Statistics for column 'interest':
             csv_builder.print_unique_values_stats(columns);
         }
 
-        "12" => {
+        "13" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1001,7 +1016,7 @@ Count: 7
                 }
             }
         }
-        "13" => {
+        "14" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1087,7 +1102,7 @@ Total rows: 10
                 csv_builder.print_dot_chart(x_axis_column, y_axis_column);
             }
         }
-        "14" => {
+        "15" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1169,7 +1184,7 @@ Total rows: 10
             }
         }
 
-        "15" => {
+        "16" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1256,7 +1271,7 @@ Total rows: 10
             }
         }
 
-        "16" => {
+        "17" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1338,7 +1353,7 @@ Total rows: 10
             }
         }
 
-        "17" => {
+        "18" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1371,28 +1386,12 @@ Total rows: 10
             }
 
             if let Some(headers) = csv_builder.get_headers() {
-                /*
-                let mut json_array_str = "{\n".to_string();
-
-                // Loop through headers and append them as keys in the JSON array string, excluding auto-computed columns
-                for (i, header) in headers.iter().enumerate() {
-                    if header != "id" && header != "c@" && header != "u@" {
-                        json_array_str.push_str(&format!("    \"{}\": []", header));
-                        if i < headers.len() - 1 {
-                            json_array_str.push_str(",\n");
-                        }
-                    }
-                }
-
-                // Close the first JSON object and start the syntax explanation
-                json_array_str.push_str("\n}");
-                */
                 let mut json_array_str = "{\n".to_string();
                 json_array_str.push_str("    \"rules\": {\n");
 
                 // Loop through headers and append them as keys in the JSON array string, excluding auto-computed columns
                 for (i, header) in headers.iter().enumerate() {
-                    if header != "id" && header != "c@" && header != "u@" {
+                    if header != "c@" && header != "u@" {
                         json_array_str.push_str(&format!("        \"{}\": []", header));
                         if i < headers.len() - 1 {
                             json_array_str.push_str(",\n");
@@ -1520,7 +1519,7 @@ SYNTAX
         }
 
         _ => {
-            println!("Invalid option. Please enter a number from 1 to 17.");
+            println!("Invalid option. Please enter a number from 1 to 18.");
             return Ok((csv_builder, false));
         }
     }

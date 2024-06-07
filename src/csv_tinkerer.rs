@@ -2230,7 +2230,7 @@ SYNTAX
 
                 // Loop through headers and append them as keys in the JSON array string, excluding auto-computed columns
                 for (i, header) in headers.iter().enumerate() {
-                    if header != "id" && header != "c@" && header != "u@" {
+                    if header != "c@" && header != "u@" {
                         json_array_str.push_str(&format!("        \"{}\": []", header));
                         if i < headers.len() - 1 {
                             json_array_str.push_str(",\n");

@@ -33,10 +33,19 @@ Unlike a broad grouping, a pivot is grouping that emphasizes aggregating numeric
 {
     "group_by_column_name": "month",
     "values_to_aggregate_column_name": "sales",
-    "operation": "NUMERICAL_MEAN", // Options: COUNT, COUNT_UNIQUE, NUMERICAL_MAX, NUMERICAL_MIN, NUMERICAL_SUM, NUMERICAL_MEAN, NUMERICAL_MEDIAN, NUMERICAL_STANDARD_DEVIATION, BOOL_PERCENT
-    "segregate_by_column_names": "is_csutomer, division"
+    "operation": "NUMERICAL_MEAN", // See options listed below.
+    "segregate_by_column_names": "is_customer, division"
 }
 
+ - `COUNT` - Counts all values
+ - `COUNT_UNIQUE` - Counts the unique values
+ - `NUMERICAL_MAX` - Finds the maximum numerical value.
+ - `NUMERICAL_MIN` - Finds the minimum numerical value.
+ - `NUMERICAL_SUM` - Calculates the sum of numerical values.
+ - `NUMERICAL_MEAN` - Calculates the mean (average) of numerical values, rounded to two decimal places.
+ - `NUMERICAL_MEDIAN` - Calculates the median of numerical values, rounded to two decimal places.
+ - `NUMERICAL_STANDARD_DEVIATION` - Calculates the standard deviation of numerical values in the column, rounded to two decimal places.
+ - `BOOL_PERCENT` - Calculates the percentage of `1`s, assuming the values are either `1` or `0`, rounded to two decimal places.
 "#;
 
         let user_input = get_edited_user_json_input(pivot_syntax.to_string());
@@ -142,7 +151,7 @@ The following feature flags can be used to perform different types of calculatio
  - `DATETIME_MAX` - Finds the maximum datetime value in the column, based on specified formats.
  - `DATETIME_MIN` - Finds the minimum datetime value in the column, based on specified formats.
  - `DATETIME_COMMA_SEPARATED` - Comma separates datetime values in the columns
-- `MODE` - Finds the most frequent value in the column.
+ - `MODE` - Finds the most frequent value in the column.
  - `BOOL_PERCENT` - Calculates the percentage of `1`s in the column, assuming the values are either `1` or `0`, rounded to two decimal places.
 "#,
                 );
@@ -196,7 +205,8 @@ The following feature flags can be used to perform different types of calculatio
  - `DATETIME_COMMA_SEPARATED` - Comma separates datetime values in the columns
  - `MODE` - Finds the most frequent value in the column.
  - `BOOL_PERCENT` - Calculates the percentage of `1`s in the column, assuming the values are either `1` or `0`, rounded to two decimal places.
-                "#;
+
+    "#;
 
                 json_str.push_str(syntax);
 
@@ -430,14 +440,15 @@ Note the implication of params in the Json Query:
 2. "values_from": Specifies the column(s) from which to retrieve the values that will be summarized or aggregated in the pivot table. This would be a column with numerical data since you are usually performing operations like sums, averages, counts, etc.
 3. "operation": Defines the type of aggregation or summarization to perform on the values_from data across the grouped index_at categories. These include:
 
- - `COUNT_UNIQUE` - Counts the unique values in the column.
- - `NUMERICAL_MAX` - Finds the maximum numerical value in the column.
- - `NUMERICAL_MIN` - Finds the minimum numerical value in the column.
- - `NUMERICAL_SUM` - Calculates the sum of numerical values in the column.
- - `NUMERICAL_MEAN` - Calculates the mean (average) of numerical values in the column, rounded to two decimal places.
- - `NUMERICAL_MEDIAN` - Calculates the median of numerical values in the column, rounded to two decimal places.
+ - `COUNT` - Counts all values
+ - `COUNT_UNIQUE` - Counts the unique values
+ - `NUMERICAL_MAX` - Finds the maximum numerical value.
+ - `NUMERICAL_MIN` - Finds the minimum numerical value.
+ - `NUMERICAL_SUM` - Calculates the sum of numerical values.
+ - `NUMERICAL_MEAN` - Calculates the mean (average) of numerical values, rounded to two decimal places.
+ - `NUMERICAL_MEDIAN` - Calculates the median of numerical values, rounded to two decimal places.
  - `NUMERICAL_STANDARD_DEVIATION` - Calculates the standard deviation of numerical values in the column, rounded to two decimal places.
- - `BOOL_PERCENT` - Calculates the percentage of `1`s in the column, assuming the values are either `1` or `0`, rounded to two decimal places.
+ - `BOOL_PERCENT` - Calculates the percentage of `1`s, assuming the values are either `1` or `0`, rounded to two decimal places.
 
 4. "seggregate_by": This parameter allows for additional segmentation of data within the primary grouping defined by index_at. Each segment within seggregate_by can further divide the data based on the specified column and the type of segmentation (like categorical grouping or binning numerical data into ranges).
 - 4.1. Column: Can be both text or number, similar to index_at, depending on what additional dimension you want to segment the data by.
