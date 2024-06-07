@@ -58,10 +58,10 @@ SYNTAX
 {
     "param_columns": "",
     "target_column": "",
-    "prediction_column_name": "", // Leave blank for binary classification, use "reg:squarederror" for linear regression
+    "prediction_column_name": "",
     "save_model_as": "",
     "xgb_config": {
-        "objective": "", 
+        "objective": "",  // Leave blank for binary classification, use "reg:squarederror" for linear regression
         "max_depth": "",
         "learning_rate": "",
         "n_estimators": "",
