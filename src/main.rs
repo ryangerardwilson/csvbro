@@ -81,27 +81,28 @@ async fn main() {
                 }
             }
 
-            // Install pip dependencies to bare metal
-            let packages: Vec<(&str, &str)> = vec![
-                ("google-cloud-bigquery", "google.cloud.bigquery"),
-                ("clickhouse-driver", "clickhouse_driver"),
-                ("pandas", "pandas"),
-                ("xgboost", "xgboost"),
-                ("scikit-learn", "sklearn"),
-                ("numpy", "numpy"),
-                ("h5py", "h5py"),
-                ("tables", "tables"),
-                ("dask", "dask"),
-                ("dask[dataframe]", "dask.dataframe"),
-            ];
+    let packages: Vec<&str> = vec![
+        "google-cloud-bigquery",
+        "clickhouse-driver",
+        "pandas",
+        "xgboost",
+        "scikit-learn",
+        "numpy",
+        "h5py",
+        "tables",
+        "dask",
+        "dask[dataframe]",
+    ];
 
-            let pip_install_status = Command::new("pip3")
-                .args(&["install"])
-                .args(&missing_packages)
-                .status()?;
-            if !pip_install_status.success() {
-                return Err("Failed to install packages".into());
-            }
+    let mut install_args = vec!["install"];
+    install_args.extend(packages.iter().map(|&pkg| pkg));
+
+    let pip_install_status = Command::new("pip3")
+        .args(&install_args)
+        .status()?;
+    if !pip_install_status.success() {
+        return Err("Failed to install packages".into());
+    }
 
             // Move the binary to the target path using 'sudo mv'
             let status = Command::new("sudo")
