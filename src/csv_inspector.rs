@@ -4,7 +4,7 @@ use crate::user_interaction::{
     get_edited_user_json_input, get_user_input_level_2, print_insight_level_2, print_list_level_2,
 };
 use rgwml::csv_utils::{CsvBuilder, Exp, ExpVal};
-use rgwml::dask_utils::DaskCleanerConfig;
+use rgwml::dask_utils::{DaskCleanerConfig, DaskFreqLinearConfig, DaskFreqCascadingConfig};
 use serde_json::Value;
 
 // Assuming CsvBuilder, Exp, and ExpVal are updated as per your implementation
@@ -245,6 +245,120 @@ SYNTAX
         Ok((expression_names, result_expression))
     }
 
+
+    fn get_dask_freq_linear_input(
+    ) -> Result<DaskFreqLinearConfig, Box<dyn std::error::Error>> {
+        let dask_freq_linear_input_syntax = r#"{
+    "column_names_where_freq_is_required": "",
+    "order_by": "", 
+    "limit": ""
+}
+
+SYNTAX
+======
+{
+    "column_names_where_freq_is_required": "",
+    "order_by": "",     // Options: ASC, DESC, FREQ_ASC, FREQ_DESC
+    "limit": ""
+}
+"#;
+
+        let user_input = get_edited_user_json_input(dask_freq_linear_input_syntax.to_string());
+
+        if handle_cancel_flag(&user_input) {
+            return Err("Operation canceled".into());
+        }
+
+        let parsed_json: Value = serde_json::from_str(&user_input)?;
+
+        let column_names = parsed_json["column_names_where_freq_is_required"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let order_by = parsed_json["order_by"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let limit = parsed_json["limit"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+
+        Ok(
+            DaskFreqLinearConfig {
+                column_names: column_names,
+                order_by: order_by,
+                limit: limit
+            })
+
+        }
+
+
+    fn get_dask_freq_cascading_input(
+    ) -> Result<DaskFreqCascadingConfig, Box<dyn std::error::Error>> {
+        let dask_freq_cascading_input_syntax = r#"{
+    "column_names_where_freq_is_required": "",
+    "order_by": "", 
+    "limit": ""
+}
+
+SYNTAX
+======
+{
+    "column_names_where_freq_is_required": "",
+    "order_by": "",     // Options: ASC, DESC, FREQ_ASC, FREQ_DESC
+    "limit": ""
+}
+"#;
+
+        let user_input = get_edited_user_json_input(dask_freq_cascading_input_syntax.to_string());
+
+        if handle_cancel_flag(&user_input) {
+            return Err("Operation canceled".into());
+        }
+
+        let parsed_json: Value = serde_json::from_str(&user_input)?;
+
+        let column_names = parsed_json["column_names_where_freq_is_required"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let order_by = parsed_json["order_by"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let limit = parsed_json["limit"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+
+        Ok(
+            DaskFreqCascadingConfig {
+                column_names: column_names,
+                order_by: order_by,
+                limit: limit
+            })
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     match action_feature {
         "" => {
             let action_sub_menu_options = vec![
@@ -258,8 +372,8 @@ SYNTAX
                 "PRINT NUMERICAL ANALYSIS",
                 "PRINT FREQ OF MULTIPLE COLUMN VALUES (LINEAR)",
                 "PRINT FREQ OF MULTIPLE COLUMN VALUES (CASCADING)",
+                "PRINT FREQ STATS OF UNIQUE COLUMN VALUES",
                 "PRINT UNIQUE COLUMN VALUES",
-                "PRINT STATS OF UNIQUE VALUE FREQ",
                 "PRINT COUNT WHERE",
                 "PRINT DOT CHART (NORMAL)",
                 "PRINT DOT CHART (CUMULATIVE)",
@@ -956,14 +1070,35 @@ Frequency for column 'interest':
                 return Ok((csv_builder, false));
             }
 
+            /*
             let column_names = get_user_input_level_2("Enter column names separated by commas: ");
 
             if handle_cancel_flag(&column_names) {
                 return Ok((csv_builder, false));
             }
 
-            let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
-            csv_builder.print_freq(columns);
+            //let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+            csv_builder.print_freq(columns).await;
+            */
+
+            match get_dask_freq_linear_input() {
+                Ok(dask_freq_linear_config)
+                    => {
+                    csv_builder.print_freq(dask_freq_linear_config).await;
+                   println!();
+                }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
+
+                Err(e) => {
+                    println!("Error getting pivot details: {}", e);
+                    return Ok((csv_builder, false));
+                }
+            }
+
+
         }
         "10" => {
             if action_flag == "d" {
@@ -1029,6 +1164,7 @@ Frequency for column 'type':
                 return Ok((csv_builder, false));
             }
 
+            /*
             let column_names = get_user_input_level_2("Enter column names separated by commas: ");
 
             if handle_cancel_flag(&column_names) {
@@ -1038,45 +1174,30 @@ Frequency for column 'type':
             let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
             println!();
             csv_builder.print_freq_cascading(columns);
+            */
+            match get_dask_freq_cascading_input() {
+                Ok(dask_freq_cascading_config)
+                    => {
+                    csv_builder.print_freq_cascading(dask_freq_cascading_config).await;
+                   println!();
+                }
+                Err(e) if e.to_string() == "Operation canceled" => {
+                    //continue;
+                    return Ok((csv_builder, false));
+                }
+
+                Err(e) => {
+                    println!("Error getting pivot details: {}", e);
+                    return Ok((csv_builder, false));
+                }
+            }
+
+
+
         }
+
 
         "11" => {
-            if action_flag == "d" {
-                print_insight_level_2(
-                    r#"DOCUMENTATION
-
-Prints the unique values in the specified column.
-|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
----------------------------------------------------------------------------
-|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
-|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
-|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
-|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
-|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
-<<+2 rows>>
-|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
-|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
-|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
-|11 |concert |2000  |OTHER |2024-03-27|0                 |Y2024-M03       |
-|12 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
-Total rows: 12
-
-  @LILbro: Enter the column name: value
-Unique values in 'value': 200, 1000, 20000, 1500, 2000, 300, 1100
-"#,
-                );
-                return Ok((csv_builder, false));
-            }
-
-            let column_name = get_user_input_level_2("Enter the column name: ");
-            if handle_cancel_flag(&column_name) {
-                return Ok((csv_builder, false));
-            }
-
-            csv_builder.print_unique(&column_name.trim());
-        }
-
-        "12" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1120,9 +1241,46 @@ Statistics for column 'interest':
                 return Ok((csv_builder, false));
             }
 
-            let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
-            csv_builder.print_unique_values_stats(columns);
+            //let columns: Vec<&str> = column_names.split(',').map(|s| s.trim()).collect();
+            csv_builder.print_unique_values_stats(&column_names).await;
         }
+
+        "12" => {
+            if action_flag == "d" {
+                print_insight_level_2(
+                    r#"DOCUMENTATION
+
+Prints the unique values in the specified column.
+|id |item    |value |type  |date      |relates_to_travel |date_YEAR_MONTH |
+---------------------------------------------------------------------------
+|1  |books   |1000  |OTHER |2024-01-21|0                 |Y2024-M01       |
+|2  |snacks  |200   |FOOD  |2024-02-22|0                 |Y2024-M02       |
+|3  |cab fare|300   |TRAVEL|2024-03-23|1                 |Y2024-M03       |
+|4  |rent    |20000 |OTHER |2024-01-24|0                 |Y2024-M01       |
+|5  |movies  |1500  |OTHER |2024-02-25|0                 |Y2024-M02       |
+<<+2 rows>>
+|8  |cab fare|300   |TRAVEL|2024-02-23|1                 |Y2024-M02       |
+|9  |rent    |20000 |OTHER |2024-03-24|0                 |Y2024-M03       |
+|10 |movies  |1500  |OTHER |2024-01-25|0                 |Y2024-M01       |
+|11 |concert |2000  |OTHER |2024-03-27|0                 |Y2024-M03       |
+|12 |alcohol |1100  |OTHER |2024-03-28|0                 |Y2024-M03       |
+Total rows: 12
+
+  @LILbro: Enter the column name: value
+Unique values in 'value': 200, 1000, 20000, 1500, 2000, 300, 1100
+"#,
+                );
+                return Ok((csv_builder, false));
+            }
+
+            let column_name = get_user_input_level_2("Enter the column name: ");
+            if handle_cancel_flag(&column_name) {
+                return Ok((csv_builder, false));
+            }
+
+            csv_builder.print_unique(&column_name.trim());
+        }
+
 
         "13" => {
             if action_flag == "d" {
