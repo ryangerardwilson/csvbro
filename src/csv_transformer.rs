@@ -16,6 +16,7 @@ pub async fn handle_transform(
     action_feature: &str,
     action_flag: &str,
     action_menu_options: Vec<&str>,
+    big_file_threshold: &str,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
     fn get_pivot_input() -> Result<DaskPivoterConfig, Box<dyn std::error::Error>> {
         let pivot_syntax = r#"{
@@ -101,7 +102,7 @@ Unlike a broad grouping, a pivot is grouping that emphasizes aggregating numeric
 
             csv_builder.transpose_transform();
             if csv_builder.has_data() {
-                csv_builder.print_table().await;
+                csv_builder.print_table(&big_file_threshold).await;
                 println!();
             }
         }
@@ -293,7 +294,7 @@ The following feature flags can be used to perform different types of calculatio
             }
 
             if csv_builder.has_data() {
-                csv_builder.print_table().await;
+                csv_builder.print_table(&big_file_threshold).await;
                 println!();
             }
         }
@@ -464,7 +465,7 @@ Note the implication of params in the Json Query:
             match get_pivot_input() {
                 Ok(dask_pivot_config) => {
                     csv_builder.pivot(dask_pivot_config).await;
-                    csv_builder.print_table().await;
+                    csv_builder.print_table(&big_file_threshold).await;
                     println!();
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {

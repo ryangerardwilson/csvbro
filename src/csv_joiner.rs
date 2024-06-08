@@ -16,6 +16,7 @@ pub async fn handle_join(
     action_feature: &str,
     action_flag: &str,
     action_menu_options: Vec<&str>,
+    big_file_threshold: &str,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
     fn get_csv_db_path() -> String {
         let home_dir = env::var("HOME").expect("Unable to determine user home directory");
@@ -239,7 +240,7 @@ Total rows: 7
             let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
             if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
                 CsvBuilder::from_csv(&chosen_file_path_for_join)
-                    .print_table()
+                    .print_table(&big_file_threshold)
                     .await;
 
                 let join_at_choice = get_user_input_level_2(
@@ -261,7 +262,7 @@ Total rows: 7
 
                 sort_csv_by_id_if_needed(&mut csv_builder);
 
-                csv_builder.print_table().await;
+                csv_builder.print_table(&big_file_threshold).await;
             }
         }
 
@@ -333,7 +334,7 @@ Total rows: 22
 
             if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
                 CsvBuilder::from_csv(&chosen_file_path_for_join)
-                    .print_table()
+                    .print_table(&big_file_threshold)
                     .await;
                 println!();
                 print_insight_level_2("Now, computing the bag union with the above ...");
@@ -341,7 +342,7 @@ Total rows: 22
 
                 sort_csv_by_id_if_needed(&mut csv_builder);
 
-                csv_builder.print_table().await;
+                csv_builder.print_table(&big_file_threshold).await;
             }
         }
 
@@ -405,7 +406,7 @@ Total rows: 10
             let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
             if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
                 CsvBuilder::from_csv(&chosen_file_path_for_join)
-                    .print_table()
+                    .print_table(&big_file_threshold)
                     .await;
                 let left_join_at_choice = get_user_input_level_2(
                         "Enter comma-separated column name/names from your above selected csv to LEFT JOIN at: ",
@@ -426,7 +427,7 @@ Total rows: 10
                         "UNION_TYPE:LEFT_JOIN",
                         column_names,
                     )
-                    .print_table()
+                    .print_table(&big_file_threshold)
                     .await;
             }
         }
@@ -492,7 +493,7 @@ Total rows: 10
             let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
             if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
                 CsvBuilder::from_csv(&chosen_file_path_for_join)
-                    .print_table()
+                    .print_table(&big_file_threshold)
                     .await;
                 let right_join_at_choice = get_user_input_level_2(
                         "Enter comma separated column name/ names from your above selected csv to RIGHT JOIN at: ",
@@ -512,7 +513,7 @@ Total rows: 10
                         "UNION_TYPE:RIGHT_JOIN",
                         column_names,
                     )
-                    .print_table()
+                    .print_table(&big_file_threshold)
                     .await;
             }
         }
@@ -581,7 +582,7 @@ Total rows: 11
 
             if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
                 let _ = CsvBuilder::from_csv(&chosen_file_path_for_join)
-                    .print_table()
+                    .print_table(&big_file_threshold)
                     .await;
                 println!();
             }
@@ -616,7 +617,7 @@ Total rows: 11
                             "UNION_TYPE:OUTER_FULL_JOIN",
                             key_columns,
                         )
-                        .print_table()
+                        .print_table(&big_file_threshold)
                         .await;
                 }
             }
@@ -742,7 +743,7 @@ Total rows: 3
 
             if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
                 let _ = CsvBuilder::from_csv(&chosen_file_path_for_join)
-                    .print_table()
+                    .print_table(&big_file_threshold)
                     .await;
                 println!();
             }
@@ -777,7 +778,7 @@ Total rows: 3
                             key_columns,
                             "INTERSECTION_TYPE:NORMAL",
                         )
-                        .print_table()
+                        .print_table(&big_file_threshold)
                         .await;
                 }
             }
@@ -882,7 +883,7 @@ Total rows: 3
 
             if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
                 let _ = CsvBuilder::from_csv(&chosen_file_path_for_join)
-                    .print_table()
+                    .print_table(&big_file_threshold)
                     .await;
                 println!();
             }
@@ -917,7 +918,7 @@ Total rows: 3
                             key_columns,
                             "INTERSECTION_TYPE:INNER_JOIN",
                         )
-                        .print_table()
+                        .print_table(&big_file_threshold)
                         .await;
                 }
             }
@@ -1044,7 +1045,7 @@ Total rows: 3
 
             if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
                 let _ = CsvBuilder::from_csv(&chosen_file_path_for_join)
-                    .print_table()
+                    .print_table(&big_file_threshold)
                     .await;
                 println!();
             }
@@ -1079,7 +1080,7 @@ Total rows: 3
                             "DIFFERENCE_TYPE:NORMAL",
                             key_columns,
                         )
-                        .print_table()
+                        .print_table(&big_file_threshold)
                         .await;
                 }
             }
@@ -1217,7 +1218,7 @@ Total rows: 6
 
             if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
                 let _ = CsvBuilder::from_csv(&chosen_file_path_for_join)
-                    .print_table()
+                    .print_table(&big_file_threshold)
                     .await;
                 println!();
             }
@@ -1253,7 +1254,7 @@ Total rows: 6
                             "DIFFERENCE_TYPE:SYMMETRIC",
                             key_columns,
                         )
-                        .print_table()
+                        .print_table(&big_file_threshold)
                         .await;
                 }
             }

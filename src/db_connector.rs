@@ -13,8 +13,10 @@ use regex::Regex;
 use rgwml::csv_utils::CsvBuilder;
 use rgwml::db_utils::DbConnect;
 use serde_json::from_str;
+use std::env;
 use std::error::Error;
 use std::fs::read_to_string;
+use std::path::Path;
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -26,7 +28,7 @@ enum DbType {
 }
 
 #[allow(unused_assignments)]
-pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::error::Error>> {
+pub async fn query(_csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::error::Error>> {
     fn get_db_type(
         csv_db_path: &PathBuf,
     ) -> Result<(DbType, Option<DbPreset>, Option<GoogleBigQueryPreset>), Box<dyn std::error::Error>>
@@ -112,6 +114,18 @@ pub async fn query(csv_db_path: &PathBuf) -> Result<CsvBuilder, Box<dyn std::err
         )) as Box<dyn Error>)
     }
 
+    let home_dir = env::var("HOME").expect("Unable to determine user home directory");
+    let desktop_path = Path::new(&home_dir).join("Desktop");
+    let csv_db_path = desktop_path.join("csv_db");
+    let config_path = PathBuf::from(csv_db_path.clone()).join("bro.config");
+    let file_contents = read_to_string(config_path)?;
+    let valid_json_part = file_contents
+        .split("SYNTAX")
+        .next()
+        .ok_or("Invalid configuration format")?;
+    let config: Config = from_str(valid_json_part)?;
+    let big_file_threshold = &config.big_file_threshold_in_megabytes;
+
     let syntax = r#"
 
 DIRECTIVES SYNTAX
@@ -136,7 +150,7 @@ DIRECTIVES SYNTAX
 @bro_describe::your_table_name
         "#;
 
-    let (db_type, db_preset_option, google_preset_option) = match get_db_type(csv_db_path) {
+    let (db_type, db_preset_option, google_preset_option) = match get_db_type(&csv_db_path) {
         Ok(db) => db,
         Err(e) => {
             if e.to_string() == "return_to_main" {
@@ -202,7 +216,7 @@ DIRECTIVES SYNTAX
             DbType::MsSql => {
                 // Existing connection logic for i2e1
                 if special_confirmations.contains(&confirmation.as_str()) {
-                    csv_builder.print_table().await;
+                    csv_builder.print_table(&big_file_threshold).await;
                     confirmation = String::new();
                 } else {
                     let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
@@ -391,7 +405,7 @@ DIRECTIVES SYNTAX
                         if is_table_description {
                             csv_builder.print_table_all_rows();
                         } else if csv_builder.has_data() && csv_builder.has_headers() {
-                            csv_builder.print_table().await; // Print the table on success
+                            csv_builder.print_table(&big_file_threshold).await; // Print the table on success
                         }
                         println!("Executiom Time: {:?}", elapsed_time);
                         confirmation = String::new(); // Reset confirmation for the next loop iteration
@@ -402,7 +416,7 @@ DIRECTIVES SYNTAX
             DbType::MySql => {
                 // Existing connection logic for i2e1
                 if special_confirmations.contains(&confirmation.as_str()) {
-                    csv_builder.print_table().await;
+                    csv_builder.print_table(&big_file_threshold).await;
                     confirmation = String::new();
                 } else {
                     let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
@@ -573,7 +587,7 @@ DIRECTIVES SYNTAX
                         if is_table_description {
                             csv_builder.print_table_all_rows();
                         } else if csv_builder.has_data() && csv_builder.has_headers() {
-                            csv_builder.print_table().await; // Print the table on success
+                            csv_builder.print_table(&big_file_threshold).await; // Print the table on success
                         }
 
                         //csv_builder.print_table().await; // Print the table on success
@@ -586,7 +600,7 @@ DIRECTIVES SYNTAX
             DbType::ClickHouse => {
                 // Existing connection logic for i2e1
                 if special_confirmations.contains(&confirmation.as_str()) {
-                    csv_builder.print_table().await;
+                    csv_builder.print_table(&big_file_threshold).await;
                     confirmation = String::new();
                 } else {
                     let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
@@ -754,7 +768,7 @@ DIRECTIVES SYNTAX
                         if is_table_description {
                             csv_builder.print_table_all_rows();
                         } else if csv_builder.has_data() && csv_builder.has_headers() {
-                            csv_builder.print_table().await; // Print the table on success
+                            csv_builder.print_table(&big_file_threshold).await; // Print the table on success
                         }
 
                         //csv_builder.print_table().await; // Print the table on success
@@ -767,7 +781,7 @@ DIRECTIVES SYNTAX
             DbType::GoogleBigQuery => {
                 // Existing connection logic for i2e1
                 if special_confirmations.contains(&confirmation.as_str()) {
-                    csv_builder.print_table().await;
+                    csv_builder.print_table(&big_file_threshold).await;
                     confirmation = String::new();
                 } else {
                     let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
@@ -934,7 +948,7 @@ DIRECTIVES SYNTAX
                         if is_table_description {
                             csv_builder.print_table_all_rows();
                         } else if csv_builder.has_data() && csv_builder.has_headers() {
-                            csv_builder.print_table().await; // Print the table on success
+                            csv_builder.print_table(&big_file_threshold).await; // Print the table on success
                         }
 
                         //csv_builder.print_table().await; // Print the table on success

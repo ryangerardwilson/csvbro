@@ -21,6 +21,7 @@ pub async fn handle_predict(
     action_feature: &str,
     action_flag: &str,
     action_menu_options: Vec<&str>,
+    big_file_threshold: &str,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
     fn get_xgb_model_input(
     ) -> Result<(String, String, String, String, XgbConfig), Box<dyn std::error::Error>> {
@@ -501,7 +502,7 @@ Appends a XGB_TYPE model column labelling rows as TRAIN, VALIDATE, or TEST, as p
             csv_builder.append_xgb_label_by_ratio_column(&xgb_ratio_str);
 
             if csv_builder.has_data() {
-                csv_builder.print_table().await;
+                csv_builder.print_table(&big_file_threshold).await;
                 println!();
             }
         }
@@ -706,7 +707,7 @@ Total rows: 20
                         .await;
 
                     // Print the updated table
-                    updated_csv_builder.print_table().await;
+                    updated_csv_builder.print_table(&big_file_threshold).await;
                     println!();
 
                     print_insight_level_2("Yo, here's the lowdown on the model's performance:");
@@ -828,7 +829,7 @@ Appends a predictions column leveraging an XGB Model.
                         )
                         .await;
 
-                    csv_builder.print_table().await;
+                    csv_builder.print_table(&big_file_threshold).await;
                     println!();
                 }
                 Err(e) => {

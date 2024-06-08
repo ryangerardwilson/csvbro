@@ -1,4 +1,5 @@
 // csv_manager.rs
+use crate::config::Config;
 use crate::csv_appender::handle_append;
 use crate::csv_inspector::handle_inspect;
 use crate::csv_joiner::handle_join;
@@ -18,9 +19,13 @@ use chrono::{DateTime, Local};
 use fuzzywuzzy::fuzz;
 use rgwml::csv_utils::CsvBuilder;
 use rgwml::dc_utils::DataContainer;
+use serde_json::from_str;
 use std::collections::HashMap;
+use std::env;
+use std::fs::read_to_string;
 use std::fs::{self};
 use std::io;
+use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
@@ -615,10 +620,47 @@ pub async fn import_from_url() -> Option<CsvBuilder> {
 }
 
 pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&str>) {
+    let home_dir = match env::var("HOME") {
+        Ok(dir) => dir,
+        Err(e) => {
+            eprintln!("Unable to determine user home directory: {}", e);
+            return;
+        }
+    };
+    let desktop_path = Path::new(&home_dir).join("Desktop");
+    let csv_db_path = desktop_path.join("csv_db");
+    let config_path = PathBuf::from(csv_db_path).join("bro.config");
+
+    let file_contents = match read_to_string(&config_path) {
+        Ok(contents) => contents,
+        Err(e) => {
+            eprintln!("Failed to read config file: {}", e);
+            return;
+        }
+    };
+
+    let valid_json_part = match file_contents.split("SYNTAX").next() {
+        Some(part) => part,
+        None => {
+            eprintln!("Invalid configuration format");
+            return;
+        }
+    };
+
+    let config: Config = match from_str(valid_json_part) {
+        Ok(config) => config,
+        Err(e) => {
+            eprintln!("Failed to parse configuration: {}", e);
+            return;
+        }
+    };
+
+    let big_file_threshold = &config.big_file_threshold_in_megabytes;
+
     //let current_file_path: Option<PathBuf> = file_path_option.map(PathBuf::from);
 
     if builder.has_data() {
-        let _ = builder.print_table().await;
+        let _ = builder.print_table(&big_file_threshold).await;
         println!();
     }
 
@@ -669,6 +711,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     &action_feature,
                     &action_flag,
                     action_menu_options.clone(),
+                    &big_file_threshold,
                 )
                 .await
                 {
@@ -688,6 +731,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
+                        &big_file_threshold,
                     )
                     .await
                     {
@@ -708,6 +752,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     &action_feature,
                     &action_flag,
                     action_menu_options.clone(),
+                    &big_file_threshold,
                 )
                 .await
                 {
@@ -728,6 +773,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     &action_feature,
                     &action_flag,
                     action_menu_options.clone(),
+                    &big_file_threshold,
                 )
                 .await
                 {
@@ -746,6 +792,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
+                        &big_file_threshold,
                     )
                     .await
                     {
@@ -766,6 +813,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     &action_feature,
                     &action_flag,
                     action_menu_options.clone(),
+                    &big_file_threshold,
                 )
                 .await
                 {
@@ -782,6 +830,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
+                        &big_file_threshold,
                     )
                     .await
                     {
@@ -802,6 +851,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     &action_feature,
                     &action_flag,
                     action_menu_options.clone(),
+                    &big_file_threshold,
                 )
                 .await
                 {
@@ -821,6 +871,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
+                        &big_file_threshold,
                     )
                     .await
                     {
@@ -841,6 +892,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     &action_feature,
                     &action_flag,
                     action_menu_options.clone(),
+                    &big_file_threshold,
                 )
                 .await
                 {
@@ -859,6 +911,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
+                        &big_file_threshold,
                     )
                     .await
                     {
@@ -879,6 +932,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                     &action_feature,
                     &action_flag,
                     action_menu_options.clone(),
+                    &big_file_threshold,
                 )
                 .await
                 {
@@ -896,6 +950,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
+                        &big_file_threshold,
                     )
                     .await
                     {
@@ -918,14 +973,42 @@ pub async fn query_chain_builder(
     mut choice: String,
     file_path_option: Option<&str>,
 ) -> bool {
-    //let current_file_path: Option<PathBuf> = file_path_option.map(PathBuf::from);
+    let home_dir = match env::var("HOME") {
+        Ok(dir) => dir,
+        Err(e) => {
+            eprintln!("Unable to determine user home directory: {}", e);
+            return false;
+        }
+    };
+    let desktop_path = Path::new(&home_dir).join("Desktop");
+    let csv_db_path = desktop_path.join("csv_db");
+    let config_path = PathBuf::from(csv_db_path).join("bro.config");
 
-    /*
-    if builder.has_data() {
-        let _ = builder.print_table().await;
-        println!();
-    }
-    */
+    let file_contents = match read_to_string(&config_path) {
+        Ok(contents) => contents,
+        Err(e) => {
+            eprintln!("Failed to read config file: {}", e);
+            return false;
+        }
+    };
+
+    let valid_json_part = match file_contents.split("SYNTAX").next() {
+        Some(part) => part,
+        None => {
+            eprintln!("Invalid configuration format");
+            return false;
+        }
+    };
+
+    let config: Config = match from_str(valid_json_part) {
+        Ok(config) => config,
+        Err(e) => {
+            eprintln!("Failed to parse configuration: {}", e);
+            return false;
+        }
+    };
+
+    let big_file_threshold = &config.big_file_threshold_in_megabytes;
 
     let action_menu_options = vec![
         "SEARCH",
@@ -971,6 +1054,7 @@ pub async fn query_chain_builder(
                     &action_feature,
                     &action_flag,
                     action_menu_options.clone(),
+                    &big_file_threshold,
                 )
                 .await
                 {
@@ -988,6 +1072,7 @@ pub async fn query_chain_builder(
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
+                        &big_file_threshold,
                     )
                     .await
                     {
@@ -1008,6 +1093,7 @@ pub async fn query_chain_builder(
                     &action_feature,
                     &action_flag,
                     action_menu_options.clone(),
+                    &big_file_threshold,
                 )
                 .await
                 {
@@ -1027,6 +1113,7 @@ pub async fn query_chain_builder(
                     &action_feature,
                     &action_flag,
                     action_menu_options.clone(),
+                    &big_file_threshold,
                 )
                 .await
                 {
@@ -1044,6 +1131,7 @@ pub async fn query_chain_builder(
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
+                        &big_file_threshold,
                     )
                     .await
                     {
@@ -1064,6 +1152,7 @@ pub async fn query_chain_builder(
                     &action_feature,
                     &action_flag,
                     action_menu_options.clone(),
+                    &big_file_threshold,
                 )
                 .await
                 {
@@ -1080,6 +1169,7 @@ pub async fn query_chain_builder(
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
+                        &big_file_threshold,
                     )
                     .await
                     {
@@ -1100,6 +1190,7 @@ pub async fn query_chain_builder(
                     &action_feature,
                     &action_flag,
                     action_menu_options.clone(),
+                    &big_file_threshold,
                 )
                 .await
                 {
@@ -1116,6 +1207,7 @@ pub async fn query_chain_builder(
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
+                        &big_file_threshold,
                     )
                     .await
                     {
@@ -1136,6 +1228,7 @@ pub async fn query_chain_builder(
                     &action_feature,
                     &action_flag,
                     action_menu_options.clone(),
+                    &big_file_threshold,
                 )
                 .await
                 {
@@ -1153,6 +1246,7 @@ pub async fn query_chain_builder(
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
+                        &big_file_threshold,
                     )
                     .await
                     {
@@ -1173,6 +1267,7 @@ pub async fn query_chain_builder(
                     &action_feature,
                     &action_flag,
                     action_menu_options.clone(),
+                    &big_file_threshold,
                 )
                 .await
                 {
@@ -1189,6 +1284,7 @@ pub async fn query_chain_builder(
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
+                        &big_file_threshold,
                     )
                     .await
                     {
@@ -1212,6 +1308,7 @@ pub async fn apply_builder_changes_menu(
     csv_builder: &mut CsvBuilder,
     prev_iteration_builder: &CsvBuilder,
     original_csv_builder: &CsvBuilder,
+    big_file_threshold: &str,
 ) -> Result<(), String> {
     let menu_options = vec![
         "Continue with modified builder",
@@ -1227,7 +1324,7 @@ pub async fn apply_builder_changes_menu(
     match selected_option {
         Some(1) => {
             print_insight_level_2("Continuing with modified_builder");
-            csv_builder.print_table().await;
+            csv_builder.print_table(&big_file_threshold).await;
             // Implement the logic for continuing with filtered data
             Ok(())
         }
@@ -1235,7 +1332,7 @@ pub async fn apply_builder_changes_menu(
             print_insight_level_2("Discarding and loading previous state");
             csv_builder
                 .override_with(prev_iteration_builder)
-                .print_table()
+                .print_table(&big_file_threshold)
                 .await;
             Ok(())
         }
@@ -1243,7 +1340,7 @@ pub async fn apply_builder_changes_menu(
             print_insight_level_2("Loading original data, for you to start from scratch");
             csv_builder
                 .override_with(original_csv_builder)
-                .print_table()
+                .print_table(&big_file_threshold)
                 .await;
             Ok(())
         }

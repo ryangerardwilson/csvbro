@@ -8,6 +8,7 @@ use std::path::PathBuf;
 //#[allow(dead_code)]
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct Config {
+    pub big_file_threshold_in_megabytes: String,
     pub db_presets: Vec<DbPreset>,
     pub open_ai_key: String,
     pub google_big_query_presets: Vec<GoogleBigQueryPreset>,
@@ -36,6 +37,7 @@ pub fn edit_config(csv_db_path: &PathBuf) -> Result<(), Box<dyn std::error::Erro
     // Step 1: Create a bro.config if it does not already exist, containing the below text
 
     let bro_config_default_text = r#"{
+  "big_file_threshold_in_megabytes": "75",
   "db_presets" : [
     {
       "name": "",
@@ -59,6 +61,7 @@ pub fn edit_config(csv_db_path: &PathBuf) -> Result<(), Box<dyn std::error::Erro
 SYNTAX
 ======
 {
+  "big_file_threshold_in_megabytes": "75",
   "db_presets" : [
     {
       "name": "",
@@ -76,7 +79,7 @@ SYNTAX
       "project_id": ""
     }
   ],
-  "open_ai_key": "",
+  "open_ai_key": ""
 }
 "#;
 
@@ -112,6 +115,7 @@ SYNTAX
 ======
 
 {
+  "big_file_threshold_in_megabytes": "75",
   "db_presets" : [
     {
       "name": "",

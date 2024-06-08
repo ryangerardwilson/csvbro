@@ -57,6 +57,7 @@ pub async fn handle_inspect(
     action_feature: &str,
     action_flag: &str,
     action_menu_options: Vec<&str>,
+    big_file_threshold: &str,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
     fn get_filter_expressions(
         data_store: &mut ExpStore,
@@ -281,7 +282,7 @@ SYNTAX
                 return Ok((csv_builder, false));
             }
 
-            csv_builder.print_table().await;
+            csv_builder.print_table(&big_file_threshold).await;
         }
 
         "2" => {

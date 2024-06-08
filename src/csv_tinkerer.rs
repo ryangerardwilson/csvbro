@@ -58,6 +58,7 @@ pub async fn handle_tinker(
     action_feature: &str,
     action_flag: &str,
     action_menu_options: Vec<&str>,
+    big_file_threshold: &str,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
     fn get_filter_expressions(
         data_store: &mut ExpStore,
@@ -494,7 +495,7 @@ Total rows: 0
             csv_builder.set_header(header_slices);
 
             if csv_builder.has_data() {
-                csv_builder.print_table().await;
+                csv_builder.print_table(&big_file_threshold).await;
                 println!();
             }
         }
@@ -513,7 +514,7 @@ Replaces header whitespaces with an underscore.
             csv_builder.replace_header_whitespaces_with_underscores();
 
             if csv_builder.has_data() {
-                csv_builder.print_table().await;
+                csv_builder.print_table(&big_file_threshold).await;
                 println!();
             }
         }
@@ -609,7 +610,7 @@ Total rows: 5
             csv_builder.set_header(header_slices);
 
             if csv_builder.has_data() {
-                csv_builder.print_table().await;
+                csv_builder.print_table(&big_file_threshold).await;
                 println!();
             }
         }
@@ -753,7 +754,7 @@ SYNTAX
                     .collect::<Vec<Vec<&str>>>();
 
                 csv_builder.add_rows(rows_as_str_slices);
-                csv_builder.print_table().await;
+                csv_builder.print_table(&big_file_threshold).await;
                 println!();
             } else {
                 print_insight_level_2("No headers set. Cannot add rows.");
@@ -806,7 +807,7 @@ Total rows: 6
             }
 
             // Display existing data
-            csv_builder.print_table().await;
+            csv_builder.print_table(&big_file_threshold).await;
             println!();
 
             let use_id_for_update = csv_builder
@@ -925,7 +926,7 @@ Total rows: 6
                 eprintln!("Row index out of range.");
             }
 
-            csv_builder.print_table().await;
+            csv_builder.print_table(&big_file_threshold).await;
             println!();
         }
 
@@ -1110,7 +1111,7 @@ SYNTAX
             // Override the existing CsvBuilder with the new one
             csv_builder.override_with(&new_csv_builder);
 
-            csv_builder.print_table().await;
+            csv_builder.print_table(&big_file_threshold).await;
 
             println!();
         }
@@ -1298,7 +1299,7 @@ SYNTAX
             // Override the existing CsvBuilder with the new one
             csv_builder.override_with(&new_csv_builder);
 
-            csv_builder.print_table().await;
+            csv_builder.print_table(&big_file_threshold).await;
             println!();
         }
 
@@ -1338,7 +1339,7 @@ Total rows: 3
             }
 
             // Display existing data
-            csv_builder.print_table().await;
+            csv_builder.print_table(&big_file_threshold).await;
             println!();
 
             let use_id_for_deletion = csv_builder
@@ -1396,7 +1397,7 @@ Total rows: 3
             }
 
             // Print updated table
-            csv_builder.print_table().await;
+            csv_builder.print_table(&big_file_threshold).await;
             println!();
         }
 
@@ -1477,7 +1478,7 @@ Total rows: 4
                     //dbg!(&expressions_refs, &result_expression);
                     csv_builder.where_(expressions_refs, &result_expression);
 
-                    csv_builder.print_table().await;
+                    csv_builder.print_table(&big_file_threshold).await;
                     println!();
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
@@ -1591,7 +1592,7 @@ Note the implications of the limit_type value:
 
             match apply_limit(&mut csv_builder) {
                 Ok(_) => {
-                    let _ = csv_builder.print_table().await;
+                    let _ = csv_builder.print_table(&big_file_threshold).await;
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
                     // If the operation was canceled by the user, do not print an error and just continue
@@ -1774,7 +1775,7 @@ SYNTAX
                     }
                 }
 
-                csv_builder.print_table().await;
+                csv_builder.print_table(&big_file_threshold).await;
             } else {
                 println!("No columns entered. Exiting ADD COLUMNS function.");
             }
@@ -1815,7 +1816,10 @@ Total rows: 3
 
             let columns: Vec<&str> = columns_input.trim().split(',').map(|s| s.trim()).collect();
 
-            csv_builder.drop_columns(columns).print_table().await;
+            csv_builder
+                .drop_columns(columns)
+                .print_table(&big_file_threshold)
+                .await;
         }
 
         "13" => {
@@ -1857,7 +1861,10 @@ Total rows: 5
 
             let columns: Vec<&str> = columns_input.trim().split(',').map(|s| s.trim()).collect();
 
-            csv_builder.retain_columns(columns).print_table().await;
+            csv_builder
+                .retain_columns(columns)
+                .print_table(&big_file_threshold)
+                .await;
         }
 
         "14" => {
@@ -1950,7 +1957,7 @@ Total rows: 11
             // To be updated
             csv_builder
                 .order_columns(new_columns_order)
-                .print_table()
+                .print_table(&big_file_threshold)
                 .await;
         }
 
@@ -2048,7 +2055,7 @@ Total rows: 10
 
             csv_builder
                 .order_columns(vec![&id_column_name, "..."])
-                .print_table()
+                .print_table(&big_file_threshold)
                 .await;
         }
 
@@ -2160,7 +2167,7 @@ SYNTAX
             csv_builder.cascade_sort(sort_orders);
 
             if csv_builder.has_data() {
-                csv_builder.print_table().await;
+                csv_builder.print_table(&big_file_threshold).await;
                 println!();
             }
         }
@@ -2180,7 +2187,7 @@ SYNTAX
                 Ok((target_column_names, replacement_rules)) => {
                     csv_builder
                         .replace_all(target_column_names, replacement_rules)
-                        .print_table()
+                        .print_table(&big_file_threshold)
                         .await;
 
                     println!();
@@ -2360,7 +2367,7 @@ SYNTAX
                     .await;
 
                 if csv_builder.has_data() {
-                    csv_builder.print_table().await;
+                    csv_builder.print_table(&big_file_threshold).await;
                     println!();
                 }
             }

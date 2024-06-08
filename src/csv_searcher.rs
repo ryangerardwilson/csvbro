@@ -10,6 +10,7 @@ pub async fn handle_search(
     action_feature: &str,
     action_flag: &str,
     action_menu_options: Vec<&str>,
+    _big_file_threshold: &str,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
     match action_feature {
         "" => {
