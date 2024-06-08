@@ -202,7 +202,7 @@ DIRECTIVES SYNTAX
             DbType::MsSql => {
                 // Existing connection logic for i2e1
                 if special_confirmations.contains(&confirmation.as_str()) {
-                    csv_builder.print_table();
+                    csv_builder.print_table().await;
                     confirmation = String::new();
                 } else {
                     let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
@@ -391,7 +391,7 @@ DIRECTIVES SYNTAX
                         if is_table_description {
                             csv_builder.print_table_all_rows();
                         } else if csv_builder.has_data() && csv_builder.has_headers() {
-                            csv_builder.print_table(); // Print the table on success
+                            csv_builder.print_table().await; // Print the table on success
                         }
                         println!("Executiom Time: {:?}", elapsed_time);
                         confirmation = String::new(); // Reset confirmation for the next loop iteration
@@ -402,7 +402,7 @@ DIRECTIVES SYNTAX
             DbType::MySql => {
                 // Existing connection logic for i2e1
                 if special_confirmations.contains(&confirmation.as_str()) {
-                    csv_builder.print_table();
+                    csv_builder.print_table().await;
                     confirmation = String::new();
                 } else {
                     let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
@@ -573,10 +573,10 @@ DIRECTIVES SYNTAX
                         if is_table_description {
                             csv_builder.print_table_all_rows();
                         } else if csv_builder.has_data() && csv_builder.has_headers() {
-                            csv_builder.print_table(); // Print the table on success
+                            csv_builder.print_table().await; // Print the table on success
                         }
 
-                        //csv_builder.print_table(); // Print the table on success
+                        //csv_builder.print_table().await; // Print the table on success
                         println!("Executiom Time: {:?}", elapsed_time);
                         confirmation = String::new(); // Reset confirmation for the next loop iteration
                     }
@@ -586,7 +586,7 @@ DIRECTIVES SYNTAX
             DbType::ClickHouse => {
                 // Existing connection logic for i2e1
                 if special_confirmations.contains(&confirmation.as_str()) {
-                    csv_builder.print_table();
+                    csv_builder.print_table().await;
                     confirmation = String::new();
                 } else {
                     let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
@@ -754,10 +754,10 @@ DIRECTIVES SYNTAX
                         if is_table_description {
                             csv_builder.print_table_all_rows();
                         } else if csv_builder.has_data() && csv_builder.has_headers() {
-                            csv_builder.print_table(); // Print the table on success
+                            csv_builder.print_table().await; // Print the table on success
                         }
 
-                        //csv_builder.print_table(); // Print the table on success
+                        //csv_builder.print_table().await; // Print the table on success
                         println!("Executiom Time: {:?}", elapsed_time);
                         confirmation = String::new(); // Reset confirmation for the next loop iteration
                     }
@@ -767,7 +767,7 @@ DIRECTIVES SYNTAX
             DbType::GoogleBigQuery => {
                 // Existing connection logic for i2e1
                 if special_confirmations.contains(&confirmation.as_str()) {
-                    csv_builder.print_table();
+                    csv_builder.print_table().await;
                     confirmation = String::new();
                 } else {
                     let sql_query = if confirmation == "@r" && !last_sql_query.is_empty() {
@@ -934,10 +934,10 @@ DIRECTIVES SYNTAX
                         if is_table_description {
                             csv_builder.print_table_all_rows();
                         } else if csv_builder.has_data() && csv_builder.has_headers() {
-                            csv_builder.print_table(); // Print the table on success
+                            csv_builder.print_table().await; // Print the table on success
                         }
 
-                        //csv_builder.print_table(); // Print the table on success
+                        //csv_builder.print_table().await; // Print the table on success
                         println!("Executiom Time: {:?}", elapsed_time);
                         confirmation = String::new(); // Reset confirmation for the next loop iteration
                     }

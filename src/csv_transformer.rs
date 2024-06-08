@@ -101,7 +101,7 @@ Unlike a broad grouping, a pivot is grouping that emphasizes aggregating numeric
 
             csv_builder.transpose_transform();
             if csv_builder.has_data() {
-                csv_builder.print_table();
+                csv_builder.print_table().await;
                 println!();
             }
         }
@@ -293,7 +293,7 @@ The following feature flags can be used to perform different types of calculatio
             }
 
             if csv_builder.has_data() {
-                csv_builder.print_table();
+                csv_builder.print_table().await;
                 println!();
             }
         }
@@ -464,7 +464,7 @@ Note the implication of params in the Json Query:
             match get_pivot_input() {
                 Ok(dask_pivot_config) => {
                     csv_builder.pivot(dask_pivot_config).await;
-                    csv_builder.print_table();
+                    csv_builder.print_table().await;
                     println!();
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {

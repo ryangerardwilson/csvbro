@@ -618,7 +618,7 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
     //let current_file_path: Option<PathBuf> = file_path_option.map(PathBuf::from);
 
     if builder.has_data() {
-        let _ = builder.print_table();
+        let _ = builder.print_table().await;
         println!();
     }
 
@@ -688,7 +688,9 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
-                    ) {
+                    )
+                    .await
+                    {
                         Ok(_) => (),
                         Err(e) => {
                             println!("{}", e);
@@ -744,7 +746,9 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
-                    ) {
+                    )
+                    .await
+                    {
                         Ok(_) => (),
                         Err(e) => {
                             println!("{}", e);
@@ -778,7 +782,9 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
-                    ) {
+                    )
+                    .await
+                    {
                         Ok(_) => (),
                         Err(e) => {
                             println!("{}", e);
@@ -808,14 +814,16 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                 // Update the original builder with the new one
                 if modified {
                     builder.override_with(&new_builder);
-                    //.print_table();
+                    //.print_table().await;
 
                     println!("The builder has been modified.");
                     match apply_builder_changes_menu(
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
-                    ) {
+                    )
+                    .await
+                    {
                         Ok(_) => (),
                         Err(e) => {
                             println!("{}", e);
@@ -851,7 +859,9 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
-                    ) {
+                    )
+                    .await
+                    {
                         Ok(_) => (),
                         Err(e) => {
                             println!("{}", e);
@@ -886,7 +896,9 @@ pub async fn chain_builder(mut builder: CsvBuilder, file_path_option: Option<&st
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
-                    ) {
+                    )
+                    .await
+                    {
                         Ok(_) => (),
                         Err(e) => {
                             println!("{}", e);
@@ -910,7 +922,7 @@ pub async fn query_chain_builder(
 
     /*
     if builder.has_data() {
-        let _ = builder.print_table();
+        let _ = builder.print_table().await;
         println!();
     }
     */
@@ -976,7 +988,9 @@ pub async fn query_chain_builder(
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
-                    ) {
+                    )
+                    .await
+                    {
                         Ok(_) => (),
                         Err(e) => {
                             println!("{}", e);
@@ -1030,7 +1044,9 @@ pub async fn query_chain_builder(
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
-                    ) {
+                    )
+                    .await
+                    {
                         Ok(_) => (),
                         Err(e) => {
                             println!("{}", e);
@@ -1064,7 +1080,9 @@ pub async fn query_chain_builder(
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
-                    ) {
+                    )
+                    .await
+                    {
                         Ok(_) => (),
                         Err(e) => {
                             println!("{}", e);
@@ -1098,7 +1116,9 @@ pub async fn query_chain_builder(
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
-                    ) {
+                    )
+                    .await
+                    {
                         Ok(_) => (),
                         Err(e) => {
                             println!("{}", e);
@@ -1133,7 +1153,9 @@ pub async fn query_chain_builder(
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
-                    ) {
+                    )
+                    .await
+                    {
                         Ok(_) => (),
                         Err(e) => {
                             println!("{}", e);
@@ -1167,7 +1189,9 @@ pub async fn query_chain_builder(
                         &mut builder,
                         &prev_iteration_builder,
                         &original_csv_builder,
-                    ) {
+                    )
+                    .await
+                    {
                         Ok(_) => (),
                         Err(e) => {
                             println!("{}", e);
@@ -1184,7 +1208,7 @@ pub async fn query_chain_builder(
     retry_invoked
 }
 
-pub fn apply_builder_changes_menu(
+pub async fn apply_builder_changes_menu(
     csv_builder: &mut CsvBuilder,
     prev_iteration_builder: &CsvBuilder,
     original_csv_builder: &CsvBuilder,
@@ -1203,7 +1227,7 @@ pub fn apply_builder_changes_menu(
     match selected_option {
         Some(1) => {
             print_insight_level_2("Continuing with modified_builder");
-            csv_builder.print_table();
+            csv_builder.print_table().await;
             // Implement the logic for continuing with filtered data
             Ok(())
         }
@@ -1211,14 +1235,16 @@ pub fn apply_builder_changes_menu(
             print_insight_level_2("Discarding and loading previous state");
             csv_builder
                 .override_with(prev_iteration_builder)
-                .print_table();
+                .print_table()
+                .await;
             Ok(())
         }
         Some(3) => {
             print_insight_level_2("Loading original data, for you to start from scratch");
             csv_builder
                 .override_with(original_csv_builder)
-                .print_table();
+                .print_table()
+                .await;
             Ok(())
         }
         _ => Err("Invalid option. Please enter a number from 1 to 2.".to_string()),

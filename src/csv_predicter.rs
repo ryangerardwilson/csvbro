@@ -501,7 +501,7 @@ Appends a XGB_TYPE model column labelling rows as TRAIN, VALIDATE, or TEST, as p
             csv_builder.append_xgb_label_by_ratio_column(&xgb_ratio_str);
 
             if csv_builder.has_data() {
-                csv_builder.print_table();
+                csv_builder.print_table().await;
                 println!();
             }
         }
@@ -706,7 +706,7 @@ Total rows: 20
                         .await;
 
                     // Print the updated table
-                    updated_csv_builder.print_table();
+                    updated_csv_builder.print_table().await;
                     println!();
 
                     print_insight_level_2("Yo, here's the lowdown on the model's performance:");
@@ -828,7 +828,7 @@ Appends a predictions column leveraging an XGB Model.
                         )
                         .await;
 
-                    csv_builder.print_table();
+                    csv_builder.print_table().await;
                     println!();
                 }
                 Err(e) => {

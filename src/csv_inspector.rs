@@ -281,7 +281,7 @@ SYNTAX
                 return Ok((csv_builder, false));
             }
 
-            csv_builder.print_table();
+            csv_builder.print_table().await;
         }
 
         "2" => {
@@ -481,7 +481,7 @@ First row:
                 return Ok((csv_builder, false));
             }
 
-            csv_builder.print_first_n_rows(&n_str);
+            csv_builder.print_first_n_rows(&n_str).await;
         }
         "5" => {
             if action_flag == "d" {
@@ -524,7 +524,7 @@ Last row:
                 return Ok((csv_builder, false));
             }
 
-            csv_builder.print_last_n_rows(&n_str);
+            csv_builder.print_last_n_rows(&n_str).await;
         }
         "6" => {
             if action_flag == "d" {
@@ -590,21 +590,13 @@ Row 4:
                 return Ok((csv_builder, false));
             }
 
-            let start = start_str
-                .parse::<usize>()
-                .map_err(|_| "Invalid start row number")?;
-
             let end_str = get_user_input_level_2("Enter the end row number: ");
 
             if handle_cancel_flag(&end_str) {
                 return Ok((csv_builder, false));
             }
 
-            let end = end_str
-                .parse::<usize>()
-                .map_err(|_| "Invalid start row number")?;
-
-            csv_builder.print_rows_range(start, end);
+            csv_builder.print_rows_range(&start_str, &end_str).await;
         }
 
         "7" => {
@@ -1511,7 +1503,7 @@ SYNTAX
 
                 /*
                 if csv_builder.has_data() {
-                    csv_builder.print_table();
+                    csv_builder.print_table().await();
                     println!();
                 }
                 */

@@ -238,7 +238,9 @@ Total rows: 7
 
             let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
             if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                CsvBuilder::from_csv(&chosen_file_path_for_join)
+                    .print_table()
+                    .await;
 
                 let join_at_choice = get_user_input_level_2(
                         "Enter comma separated column name/names from your above selected csvs to determine uniqueness by (use * for a traditional union that determines uniqueness based on all columns)): ",
@@ -259,7 +261,7 @@ Total rows: 7
 
                 sort_csv_by_id_if_needed(&mut csv_builder);
 
-                csv_builder.print_table();
+                csv_builder.print_table().await;
             }
         }
 
@@ -330,14 +332,16 @@ Total rows: 22
             let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
 
             if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                CsvBuilder::from_csv(&chosen_file_path_for_join)
+                    .print_table()
+                    .await;
                 println!();
                 print_insight_level_2("Now, computing the bag union with the above ...");
                 let _ = csv_builder.set_bag_union_with_csv_file(&chosen_file_path_for_join);
 
                 sort_csv_by_id_if_needed(&mut csv_builder);
 
-                csv_builder.print_table();
+                csv_builder.print_table().await;
             }
         }
 
@@ -400,7 +404,9 @@ Total rows: 10
             print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A LEFT_JOIN B");
             let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
             if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                CsvBuilder::from_csv(&chosen_file_path_for_join)
+                    .print_table()
+                    .await;
                 let left_join_at_choice = get_user_input_level_2(
                         "Enter comma-separated column name/names from your above selected csv to LEFT JOIN at: ",
                     )
@@ -420,7 +426,8 @@ Total rows: 10
                         "UNION_TYPE:LEFT_JOIN",
                         column_names,
                     )
-                    .print_table();
+                    .print_table()
+                    .await;
             }
         }
 
@@ -484,7 +491,9 @@ Total rows: 10
             print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A RIGHT_JOIN B");
             let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
             if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                CsvBuilder::from_csv(&chosen_file_path_for_join)
+                    .print_table()
+                    .await;
                 let right_join_at_choice = get_user_input_level_2(
                         "Enter comma separated column name/ names from your above selected csv to RIGHT JOIN at: ",
                     )
@@ -503,7 +512,8 @@ Total rows: 10
                         "UNION_TYPE:RIGHT_JOIN",
                         column_names,
                     )
-                    .print_table();
+                    .print_table()
+                    .await;
             }
         }
 
@@ -570,7 +580,9 @@ Total rows: 11
             let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
 
             if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
-                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join)
+                    .print_table()
+                    .await;
                 println!();
             }
 
@@ -604,7 +616,8 @@ Total rows: 11
                             "UNION_TYPE:OUTER_FULL_JOIN",
                             key_columns,
                         )
-                        .print_table();
+                        .print_table()
+                        .await;
                 }
             }
         }
@@ -728,7 +741,9 @@ Total rows: 3
             let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
 
             if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
-                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join)
+                    .print_table()
+                    .await;
                 println!();
             }
 
@@ -762,7 +777,8 @@ Total rows: 3
                             key_columns,
                             "INTERSECTION_TYPE:NORMAL",
                         )
-                        .print_table();
+                        .print_table()
+                        .await;
                 }
             }
         }
@@ -865,7 +881,9 @@ Total rows: 3
             let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
 
             if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
-                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join)
+                    .print_table()
+                    .await;
                 println!();
             }
 
@@ -899,7 +917,8 @@ Total rows: 3
                             key_columns,
                             "INTERSECTION_TYPE:INNER_JOIN",
                         )
-                        .print_table();
+                        .print_table()
+                        .await;
                 }
             }
         }
@@ -1024,7 +1043,9 @@ Total rows: 3
             let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
 
             if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
-                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join)
+                    .print_table()
+                    .await;
                 println!();
             }
 
@@ -1058,7 +1079,8 @@ Total rows: 3
                             "DIFFERENCE_TYPE:NORMAL",
                             key_columns,
                         )
-                        .print_table();
+                        .print_table()
+                        .await;
                 }
             }
         }
@@ -1194,7 +1216,9 @@ Total rows: 6
             let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
 
             if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
-                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join).print_table();
+                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join)
+                    .print_table()
+                    .await;
                 println!();
             }
 
@@ -1229,7 +1253,8 @@ Total rows: 6
                             "DIFFERENCE_TYPE:SYMMETRIC",
                             key_columns,
                         )
-                        .print_table();
+                        .print_table()
+                        .await;
                 }
             }
         }

@@ -81,28 +81,26 @@ async fn main() {
                 }
             }
 
-    let packages: Vec<&str> = vec![
-        "google-cloud-bigquery",
-        "clickhouse-driver",
-        "pandas",
-        "xgboost",
-        "scikit-learn",
-        "numpy",
-        "h5py",
-        "tables",
-        "dask",
-        "dask[dataframe]",
-    ];
+            let packages: Vec<&str> = vec![
+                "google-cloud-bigquery",
+                "clickhouse-driver",
+                "pandas",
+                "xgboost",
+                "scikit-learn",
+                "numpy",
+                "h5py",
+                "tables",
+                "dask",
+                "dask[dataframe]",
+            ];
 
-    let mut install_args = vec!["install"];
-    install_args.extend(packages.iter().map(|&pkg| pkg));
+            let mut install_args = vec!["install"];
+            install_args.extend(packages.iter().map(|&pkg| pkg));
 
-    let pip_install_status = Command::new("pip3")
-        .args(&install_args)
-        .status()?;
-    if !pip_install_status.success() {
-        return Err("Failed to install packages".into());
-    }
+            let pip_install_status = Command::new("pip3").args(&install_args).status()?;
+            if !pip_install_status.success() {
+                return Err("Failed to install packages".into());
+            }
 
             // Move the binary to the target path using 'sudo mv'
             let status = Command::new("sudo")
@@ -227,6 +225,7 @@ async fn main() {
                     Some(ref action) if action == "OPEN (FROM CSV_DB)" => {
                         match open_csv_file(&csv_db_path_buf).await {
                             Some((csv_builder, file_path)) => {
+                                dbg!(&csv_builder);
                                 if let Some(path_str) = file_path.to_str() {
                                     chain_builder(csv_builder, Some(path_str)).await;
                                 } else {

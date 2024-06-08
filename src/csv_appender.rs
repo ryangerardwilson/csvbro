@@ -1231,7 +1231,7 @@ Total rows: 5
                         &result_expression,
                     );
                     if csv_builder.has_data() {
-                        csv_builder.print_table();
+                        csv_builder.print_table().await;
                         println!();
                     }
                     print_insight_level_2("Derived boolean column appended.");
@@ -1370,7 +1370,7 @@ Total rows: 5
                     csv_builder
                         .append_derived_category_column(&new_column_name, category_expressions);
                     if csv_builder.has_data() {
-                        csv_builder.print_table();
+                        csv_builder.print_table().await;
                         println!();
                     }
                     print_insight_level_2("Derived category column appended.");
@@ -1430,7 +1430,7 @@ Appends an inclusive-exclusive numerical interval category column.
             );
 
             if csv_builder.has_data() {
-                csv_builder.print_table();
+                csv_builder.print_table().await;
                 println!();
             }
         }
@@ -1478,7 +1478,7 @@ Appends an inclusive-exclusive date interval category column.
             );
 
             if csv_builder.has_data() {
-                csv_builder.print_table();
+                csv_builder.print_table().await;
                 println!();
             }
         }
@@ -1529,7 +1529,7 @@ Total rows: 5
                     );
 
                     if csv_builder.has_data() {
-                        csv_builder.print_table();
+                        csv_builder.print_table().await;
                         println!();
                     }
                     print_insight_level_2("Derived concatenation column appended.");
@@ -1600,7 +1600,7 @@ The following value formats can be processed by this feature:
                     csv_builder.split_date_as_appended_category_columns(&column_name, &date_format);
 
                     if csv_builder.has_data() {
-                        csv_builder.print_table();
+                        csv_builder.print_table().await;
                         println!();
                     }
                     print_insight_level_2("Date column split into category columns.");
@@ -1658,7 +1658,7 @@ Appends a new column with the count of timestamps in a semi-colon separated time
             );
 
             if csv_builder.has_data() {
-                csv_builder.print_table();
+                csv_builder.print_table().await;
                 println!();
             }
         }
@@ -1705,7 +1705,7 @@ Appends a new column with the count of timestamps in a semi-colon separated time
             );
 
             if csv_builder.has_data() {
-                csv_builder.print_table();
+                csv_builder.print_table().await;
                 println!();
             }
         }
@@ -1752,7 +1752,7 @@ Appends a new timestamp column ADDING a specified number of days to another time
             );
 
             if csv_builder.has_data() {
-                csv_builder.print_table();
+                csv_builder.print_table().await;
                 println!();
             }
         }
@@ -1799,7 +1799,7 @@ Appends a new timestamp column SUBTRACTING a specified number of days FROM anoth
             );
 
             if csv_builder.has_data() {
-                csv_builder.print_table();
+                csv_builder.print_table().await;
                 println!();
             }
         }
@@ -1846,7 +1846,7 @@ Appends a new timestamp column ADDING a specified number of days (set out in a s
             );
 
             if csv_builder.has_data() {
-                csv_builder.print_table();
+                csv_builder.print_table().await;
                 println!();
             }
         }
@@ -1893,7 +1893,7 @@ Appends a new timestamp column SUBTRACTING a specified number of days (set out i
             );
 
             if csv_builder.has_data() {
-                csv_builder.print_table();
+                csv_builder.print_table().await;
                 println!();
             }
         }
@@ -1943,7 +1943,7 @@ Appends a new column specifying the difference in days between two timestamp par
             );
 
             if csv_builder.has_data() {
-                csv_builder.print_table();
+                csv_builder.print_table().await;
                 println!();
             }
         }
@@ -2024,7 +2024,7 @@ Note the implications of the params in the JSON query:
                     println!("Fuzzai analysis columns appended.");
 
                     if csv_builder.has_data() {
-                        csv_builder.print_table();
+                        csv_builder.print_table().await;
                         println!();
                     }
                     print_insight_level_2("Fuzzai Analysis columns appended.");
@@ -2144,7 +2144,7 @@ Note the implications of the params in the JSON query:
                     println!("Fuzzai analysis columns appended.");
 
                     if csv_builder.has_data() {
-                        csv_builder.print_table();
+                        csv_builder.print_table().await;
                         println!();
                     }
                     print_insight_level_2("Fuzzai Analysis columns appended.");
@@ -2266,7 +2266,7 @@ Total rows: 3
                         .await;
 
                     if result.has_data() {
-                        csv_builder.print_table();
+                        csv_builder.print_table().await;
                         println!();
                         print_insight_level_2("OpenAI analysis complete.");
                     }
@@ -2566,7 +2566,8 @@ Total rows: 3
             csv_builder
                 .append_openai_batch_analysis_columns(&api_key, &output_file_id)
                 .await
-                .print_table();
+                .print_table()
+                .await;
             println!();
         }
 
@@ -2715,7 +2716,7 @@ Total rows: 5
                         test_predictors_column_names,
                     );
                     if csv_builder.has_data() {
-                        csv_builder.print_table();
+                        csv_builder.print_table().await;
                         println!();
                     }
                     print_insight_level_2("Derived linear regression column appended.");
@@ -2754,7 +2755,7 @@ Appends a cluster column.
                         .await;
 
                     // Print the updated table
-                    csv_builder.print_table();
+                    csv_builder.print_table().await;
                     println!();
                 }
                 Err(e) if e.to_string() == "Operation canceled" => {
