@@ -225,7 +225,7 @@ async fn main() {
                     Some(ref action) if action == "OPEN (FROM CSV_DB)" => {
                         match open_csv_file(&csv_db_path_buf).await {
                             Some((csv_builder, file_path)) => {
-                                dbg!(&csv_builder);
+                                //dbg!(&csv_builder);
                                 if let Some(path_str) = file_path.to_str() {
                                     chain_builder(csv_builder, Some(path_str)).await;
                                 } else {
