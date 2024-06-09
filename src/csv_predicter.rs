@@ -51,10 +51,10 @@ pub async fn handle_predict(
         "xgb_device": "",
         "xgb_cv": "",
         "xgb_interaction_constraints": "",
-        "hyperparameter_optimization_attempts": "",
-        "hyperparameter_optimization_result_display_limit": "",
-        "dask_workers": "",
-        "dask_threads_per_worker": ""
+        "hyperparameter_optimization_attempts": "7",
+        "hyperparameter_optimization_result_display_limit": "7",
+        "dask_workers": "4",
+        "dask_threads_per_worker": "1"
     }
 }
 
