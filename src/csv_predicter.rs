@@ -23,9 +23,6 @@ pub async fn handle_predict(
     action_menu_options: Vec<&str>,
     big_file_threshold: &str,
 ) -> Result<(CsvBuilder, bool), Box<dyn std::error::Error>> {
-
-
-
     fn get_xgb_model_input(
     ) -> Result<(String, String, String, String, XgbConfig), Box<dyn std::error::Error>> {
         let xgb_model_input_syntax = r#"{
@@ -34,58 +31,69 @@ pub async fn handle_predict(
     "prediction_column_name": "",
     "save_model_as": "",
     "xgb_config": {
-        "objective": "",
-        "max_depth": "",
-        "learning_rate": "",
-        "n_estimators": "",
-        "gamma": "",
-        "min_child_weight": "",
-        "subsample": "",
-        "colsample_bytree": "",
-        "reg_lambda": "",
-        "reg_alpha": "",
-        "scale_pos_weight": "",
-        "max_delta_step": "",
-        "booster": "",
-        "tree_method": "",
-        "grow_policy": "",
-        "eval_metric": "",
-        "early_stopping_rounds": "",
-        "device": "",
-        "cv": "",
-        "interaction_constraints": ""
+        "xgb_objective": "",
+        "xgb_max_depth": "",
+        "xgb_learning_rate": "",
+        "xgb_n_estimators": "",
+        "xgb_gamma": "",
+        "xgb_min_child_weight": "",
+        "xgb_subsample": "",
+        "xgb_colsample_bytree": "",
+        "xgb_reg_lambda": "",
+        "xgb_reg_alpha": "",
+        "xgb_scale_pos_weight": "",
+        "xgb_max_delta_step": "",
+        "xgb_booster": "",
+        "xgb_tree_method": "",
+        "xgb_grow_policy": "",
+        "xgb_eval_metric": "",
+        "xgb_early_stopping_rounds": "",
+        "xgb_device": "",
+        "xgb_cv": "",
+        "xgb_interaction_constraints": "",
+        "hyperparameter_optimization_attempts": "",
+        "hyperparameter_optimization_result_display_limit": "",
+        "dask_workers": "",
+        "dask_threads_per_worker": ""
     }
 }
 
 SYNTAX
 ======
+
+Default presets in the event the xgb_config is left blank, shall operate as below:
+
 {
-    "param_columns": "",
-    "target_column": "",
-    "prediction_column_name": "",
-    "save_model_as": "",
-    "xgb_config": {
-        "objective": "",  // Leave blank for binary classification, use "reg:squarederror" for linear regression
-        "max_depth": "",
-        "learning_rate": "",
-        "n_estimators": "",
-        "gamma": "",
-        "min_child_weight": "",
-        "subsample": "",
-        "colsample_bytree": "",
-        "reg_lambda": "",
-        "reg_alpha": "",
-        "scale_pos_weight": "",
-        "max_delta_step": "",
-        "booster": "",
-        "tree_method": "",
-        "grow_policy": "",
-        "eval_metric": "",
-        "early_stopping_rounds": "",
-        "device": "",
-        "cv": "",
-        "interaction_constraints": ""
-    }       
+    "param_columns": "", // Required, Comma-separated column names to use as parameters for model training
+    "target_column": "", // Optional, Name of the target column
+    "prediction_column_name": "", // Required, Name of the prediction column
+    "save_model_as": "", // Optional, Specify the name of the trained model
+    "xgb_config": {     
+        "xgb_objective": "binary:logistic", // Use "reg:squarederror" for linear regression
+        "xgb_max_depth": 6, // Maximum tree depth for base learners
+        "xgb_learning_rate": 0.05, // Boosting learning rate
+        "xgb_n_estimators": 200, // Number of boosting rounds
+        "xgb_gamma": 0.0, // Minimum loss reduction required to make a further partition on a leaf node
+        "xgb_min_child_weight": 1, // Minimum sum of instance weight (hessian) needed in a child
+        "xgb_subsample": 0.8, // Subsample ratio of the training instances
+        "xgb_colsample_bytree": 0.8, // Subsample ratio of columns when constructing each tree
+        "xgb_reg_lambda": 1.0, // L2 regularization term on weights
+        "xgb_reg_alpha": 0.0, // L1 regularization term on weights
+        "xgb_scale_pos_weight": 1.0, // Balancing of positive and negative weights
+        "xgb_max_delta_step": 0.0, // Maximum delta step we allow each tree’s weight estimation to be
+        "xgb_booster": "gbtree", // Which booster to use
+        "xgb_tree_method": "auto", // Specify the tree construction algorithm used in XGBoost
+        "xgb_grow_policy": "depthwise", // Controls a way new nodes are added to the tree
+        "xgb_eval_metric": "rmse", // Evaluation metric for validation data
+        "xgb_early_stopping_rounds": 10, // Activates early stopping. Validation metric needs to improve at least once in every *early_stopping_rounds* round(s) to continue training
+        "xgb_device": "cpu", // Device to run the training on (e.g., "cpu", "cuda")
+        "xgb_cv": 5, // Number of cross-validation folds, default 5
+        "xgb_interaction_constraints": "", // Constraints for interaction between variables
+        "hyperparameter_optimization_attempts": 0, // Set to above 0 to activate
+        "hyperparameter_optimization_result_display_limit": 3, // Adjust this to change how many rankings of hyperparameter optimizations are returned
+        "dask_workers": 4, // Number of dask workers
+        "dask_threads_per_worker": 1 // Number of threads per dask worker
+    }
 }
 "#;
 
@@ -117,77 +125,102 @@ SYNTAX
         let xgb_config = &parsed_json["xgb_config"];
 
         let config = XgbConfig {
-            objective: xgb_config["objective"]
+            xgb_objective: xgb_config["xgb_objective"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            max_depth: xgb_config["max_depth"]
+            xgb_max_depth: xgb_config["xgb_max_depth"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            learning_rate: xgb_config["learning_rate"]
+            xgb_learning_rate: xgb_config["xgb_learning_rate"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            n_estimators: xgb_config["n_estimators"]
+            xgb_n_estimators: xgb_config["xgb_n_estimators"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            gamma: xgb_config["gamma"].as_str().unwrap_or_default().to_string(),
-            min_child_weight: xgb_config["min_child_weight"]
+            xgb_gamma: xgb_config["xgb_gamma"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            subsample: xgb_config["subsample"]
+            xgb_min_child_weight: xgb_config["xgb_min_child_weight"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            colsample_bytree: xgb_config["colsample_bytree"]
+            xgb_subsample: xgb_config["xgb_subsample"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            reg_lambda: xgb_config["reg_lambda"]
+            xgb_colsample_bytree: xgb_config["xgb_colsample_bytree"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            reg_alpha: xgb_config["reg_alpha"]
+            xgb_reg_lambda: xgb_config["xgb_reg_lambda"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            scale_pos_weight: xgb_config["scale_pos_weight"]
+            xgb_reg_alpha: xgb_config["xgb_reg_alpha"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            max_delta_step: xgb_config["max_delta_step"]
+            xgb_scale_pos_weight: xgb_config["xgb_scale_pos_weight"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            booster: xgb_config["booster"]
+            xgb_max_delta_step: xgb_config["xgb_max_delta_step"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            tree_method: xgb_config["tree_method"]
+            xgb_booster: xgb_config["xgb_booster"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            grow_policy: xgb_config["grow_policy"]
+            xgb_tree_method: xgb_config["xgb_tree_method"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            eval_metric: xgb_config["eval_metric"]
+            xgb_grow_policy: xgb_config["xgb_grow_policy"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            early_stopping_rounds: xgb_config["early_stopping_rounds"]
+            xgb_eval_metric: xgb_config["xgb_eval_metric"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            device: xgb_config["device"]
+            xgb_early_stopping_rounds: xgb_config["xgb_early_stopping_rounds"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
-            cv: xgb_config["cv"].as_str().unwrap_or_default().to_string(),
-            interaction_constraints: xgb_config["interaction_constraints"]
+            xgb_device: xgb_config["xgb_device"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+            xgb_cv: xgb_config["xgb_cv"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+            xgb_interaction_constraints: xgb_config["xgb_interaction_constraints"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+
+            hyperparameter_optimization_attempts: xgb_config
+                ["hyperparameter_optimization_attempts"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+            hyperparameter_optimization_result_display_limit: xgb_config
+                ["hyperparameter_optimization_result_display_limit"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+            dask_workers: xgb_config["dask_workers"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+            dask_threads_per_worker: xgb_config["dask_threads_per_worker"]
                 .as_str()
                 .unwrap_or_default()
                 .to_string(),
