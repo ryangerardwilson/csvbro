@@ -3,7 +3,6 @@ use crate::user_experience::handle_cancel_flag;
 use crate::user_interaction::{get_user_input_level_2, print_insight_level_2, print_list_level_2};
 use fuzzywuzzy::fuzz;
 use rgwml::csv_utils::CsvBuilder;
-use rgwml::dask_utils::{DaskDifferentiatorConfig, DaskIntersectorConfig, DaskJoinerConfig};
 use std::env;
 use std::fs;
 use std::io;
@@ -125,7 +124,6 @@ pub async fn handle_join(
                 "UNION (LEFT JOIN/ OUTER LEFT JOIN)",
                 "UNION (RIGHT JOIN/ OUTER RIGHT JOIN)",
                 "UNION (OUTER FULL JOIN)",
-                "INTERSECTION",
                 "INTERSECTION (INNER JOIN)",
                 "DIFFERENCE",
                 "DIFFERENCE (SYMMETRIC)",
@@ -265,14 +263,22 @@ Total rows: 7
                 );
                 */
 
+                // Parse the big_file_threshold to a numeric type
+                let big_file_threshold_num: f64 = big_file_threshold.parse().unwrap_or(0.0);
+
+                // Calculate half the value
+                let adjusted_big_file_threshold_num = big_file_threshold_num / 2.0;
+
+                // Convert the result back to a String
+                let adjusted_big_file_threshold = adjusted_big_file_threshold_num.to_string();
+
                 let _ = csv_builder
                     .union_with_csv_file(
                         &chosen_file_path_for_join,
-                        DaskJoinerConfig {
-                            join_type: "UNION".to_string(),
-                            table_a_ref_column: "".to_string(),
-                            table_b_ref_column: "".to_string(),
-                        },
+                        "UNION",
+                        "",
+                        "",
+                        &adjusted_big_file_threshold,
                     )
                     .await;
 
@@ -356,14 +362,22 @@ Total rows: 22
                 print_insight_level_2("Now, computing the bag union with the above ...");
                 //let _ = csv_builder.set_bag_union_with_csv_file(&chosen_file_path_for_join);
 
+                // Parse the big_file_threshold to a numeric type
+                let big_file_threshold_num: f64 = big_file_threshold.parse().unwrap_or(0.0);
+
+                // Calculate half the value
+                let adjusted_big_file_threshold_num = big_file_threshold_num / 2.0;
+
+                // Convert the result back to a String
+                let adjusted_big_file_threshold = adjusted_big_file_threshold_num.to_string();
+
                 let _ = csv_builder
                     .union_with_csv_file(
                         &chosen_file_path_for_join,
-                        DaskJoinerConfig {
-                            join_type: "BAG_UNION".to_string(),
-                            table_a_ref_column: "".to_string(),
-                            table_b_ref_column: "".to_string(),
-                        },
+                        "BAG_UNION",
+                        "",
+                        "",
+                        &adjusted_big_file_threshold,
                     )
                     .await;
 
@@ -444,33 +458,26 @@ Total rows: 10
                     return Ok((csv_builder, false));
                 }
 
-                /*
-                let column_names: Vec<&str> =
-                    left_join_at_choice.split(',').map(|s| s.trim()).collect();
-
-                //dbg!(&union_type);
-                csv_builder
-                    .set_union_with_csv_file(
-                        &chosen_file_path_for_join,
-                        "UNION_TYPE:LEFT_JOIN",
-                        column_names,
-                    )
-                    .print_table(&big_file_threshold)
-                    .await;
-                */
-
                 let mut split = join_at_choice.split(',').map(|s| s.trim());
                 let table_a_ref_column = split.next().expect("Expected a column name");
                 let table_b_ref_column = split.next().expect("Expected a second column name");
 
+                // Parse the big_file_threshold to a numeric type
+                let big_file_threshold_num: f64 = big_file_threshold.parse().unwrap_or(0.0);
+
+                // Calculate half the value
+                let adjusted_big_file_threshold_num = big_file_threshold_num / 2.0;
+
+                // Convert the result back to a String
+                let adjusted_big_file_threshold = adjusted_big_file_threshold_num.to_string();
+
                 let _ = csv_builder
                     .union_with_csv_file(
                         &chosen_file_path_for_join,
-                        DaskJoinerConfig {
-                            join_type: "LEFT_JOIN".to_string(),
-                            table_a_ref_column: table_a_ref_column.to_string(),
-                            table_b_ref_column: table_b_ref_column.to_string(),
-                        },
+                        "LEFT_JOIN",
+                        table_a_ref_column,
+                        table_b_ref_column,
+                        &adjusted_big_file_threshold,
                     )
                     .await
                     .print_table(&big_file_threshold)
@@ -568,14 +575,22 @@ Total rows: 10
                 let table_a_ref_column = split.next().expect("Expected a column name");
                 let table_b_ref_column = split.next().expect("Expected a second column name");
 
+                // Parse the big_file_threshold to a numeric type
+                let big_file_threshold_num: f64 = big_file_threshold.parse().unwrap_or(0.0);
+
+                // Calculate half the value
+                let adjusted_big_file_threshold_num = big_file_threshold_num / 2.0;
+
+                // Convert the result back to a String
+                let adjusted_big_file_threshold = adjusted_big_file_threshold_num.to_string();
+
                 let _ = csv_builder
                     .union_with_csv_file(
                         &chosen_file_path_for_join,
-                        DaskJoinerConfig {
-                            join_type: "RIGHT_JOIN".to_string(),
-                            table_a_ref_column: table_a_ref_column.to_string(),
-                            table_b_ref_column: table_b_ref_column.to_string(),
-                        },
+                        "RIGHT_JOIN",
+                        table_a_ref_column,
+                        table_b_ref_column,
+                        &adjusted_big_file_threshold,
                     )
                     .await
                     .print_table(&big_file_threshold)
@@ -662,43 +677,26 @@ Total rows: 11
                     return Ok((csv_builder, false));
                 }
 
-                /*
-                // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
-                let key_columns: Vec<&str> = set_intersection_at_choice
-                    .split(',')
-                    .map(|s| s.trim())
-                    .filter(|s| !s.is_empty())
-                    .collect();
-
-                // Ensure that there is at least one key column specified
-                if key_columns.is_empty() {
-                    println!(
-                        "Error: No key columns specified. Please specify at least one key column."
-                    );
-                } else {
-                    // Perform set intersection with the specified key columns
-                    csv_builder
-                        .set_union_with_csv_file(
-                            &chosen_file_path_for_join,
-                            "UNION_TYPE:OUTER_FULL_JOIN",
-                            key_columns,
-                        )
-                        .print_table(&big_file_threshold)
-                        .await;
-                }
-                */
                 let mut split = join_at_choice.split(',').map(|s| s.trim());
                 let table_a_ref_column = split.next().expect("Expected a column name");
                 let table_b_ref_column = split.next().expect("Expected a second column name");
 
+                // Parse the big_file_threshold to a numeric type
+                let big_file_threshold_num: f64 = big_file_threshold.parse().unwrap_or(0.0);
+
+                // Calculate half the value
+                let adjusted_big_file_threshold_num = big_file_threshold_num / 2.0;
+
+                // Convert the result back to a String
+                let adjusted_big_file_threshold = adjusted_big_file_threshold_num.to_string();
+
                 let _ = csv_builder
                     .union_with_csv_file(
                         &chosen_file_path_for_join,
-                        DaskJoinerConfig {
-                            join_type: "OUTER_FULL_JOIN".to_string(),
-                            table_a_ref_column: table_a_ref_column.to_string(),
-                            table_b_ref_column: table_b_ref_column.to_string(),
-                        },
+                        "OUTER_FULL_JOIN",
+                        table_a_ref_column,
+                        table_b_ref_column,
+                        &adjusted_big_file_threshold,
                     )
                     .await
                     .print_table(&big_file_threshold)
@@ -707,186 +705,6 @@ Total rows: 11
         }
 
         "6" => {
-            if action_flag == "d" {
-                print_insight_level_2(
-                    r#"DOCUMENTATION
-
-A 'SET INTERSECTION WITH' analysis is useful to find common elements of data sets with similar column names but serving different purposes. For instance, if, instead of using a category column 'sales_type', a business decides to have two different csv files to record online_sales and instore_sales, a 'SET INTERSECTION WITH' analysis can help us find out which customers (identified uniquely in both files via an id column) shop online as well as at the store.
-
-### Example 1
-
-Background: A retail company operates both an online store and several physical locations. They have launched two separate marketing campaigns over the past month: one targeting online shoppers through digital ads (Campaign A) and another targeting in-store shoppers through traditional advertising methods (Campaign B). Each campaign aims to increase sales in its respective channel, but there is interest in understanding the overlap to refine future marketing strategies.
-
-TABLE A
-+++++++
-@BIGBro: Opening z_online_sales.csv
-
-|id |sales |date      |
------------------------
-|1  |120   |2024-03-01|
-|2  |60    |2024-03-02|
-|3  |200   |2024-03-03|
-|4  |500   |2024-03-04|
-|5  |300   |2024-03-05|
-Total rows: 5
-
-TABLE B
-+++++++
-  @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_INTERSECTION_WITH B
-  @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
-|id |sales |date      |
------------------------
-|6  |190   |2024-03-07|
-|2  |40    |2024-03-08|
-|3  |700   |2024-03-09|
-|9  |100   |2024-03-10|
-|5  |200   |2024-02-05|
-Total rows: 5
-
-  @LILbro: Enter column names (comma separated, if multiple) to SET_INTERSECTION_WITH at: id
-
-|id |sales |date      |
------------------------
-|2  |40    |2024-03-08|
-|3  |700   |2024-03-09|
-|5  |200   |2024-02-05|
-Total rows: 3
-
-### Example 2
-
-Background: Consider a scenario where a retail chain wants to perform a market basket analysis to understand shopping patterns across different store locations. The goal is to identify combinations of products that are frequently bought together by customers across multiple stores. In this case, there's no single customer_id or transaction_id that tracks purchases across stores, but a combination of category, item, and purchase_day can provide a unique enough signature to identify shopping patterns.
-
-The analysis aims to uncover products frequently bought together by customers across multiple stores of a retail chain. This insight is valuable for inventory management, marketing strategies, and enhancing customer satisfaction. TABLE A and TABLE B represent purchase records from two different stores. Each table lists products bought, categorized by `category` and `item`, along with the `purchase_day` of the week:
-1. The operation SET_INTERSECTION_WITH at 'category, item, purchase_day': This command intersects TABLE A and TABLE B based on all three columns: `category`, `item`, and `purchase_day`. The intersection finds records where the exact combination of these three attributes matches across both tables, indicating the same item was purchased in the same category on the same day of the week in both stores.
-2. The operation SET_INTERSECTION_WITH at 'category, item': This time, the intersection is performed on two columns: `category` and `item`, excluding `purchase_day`. This broader comparison reveals items that are commonly bought across stores regardless of the day they were purchased.
-3. The operation SET_INTERSECTION_WITH at 'item, purchase_day': This command focuses on the intersection based on `item` and `purchase_day`, ignoring the `category`. This operation seeks to identify specific items bought on the same days across stores, potentially revealing day-specific purchasing trends for particular items.
-
-TABLE A
-+++++++
-|category |item  |purchase_day |
---------------------------------
-|Beverages|Tea   |Monday       |
-|Bakery   |Bread |Tuesday      |
-|Dairy    |Cheese|Wednesday    |
-|Beverages|Coffee|Thursday     |
-|Snacks   |Chips |Friday       |
-|Beverages|Coffee|Monday       |
-Total rows: 6
-
-TABLE B
-+++++++
-  @LILBro: Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_INTERSECTION_WITH B
-  @LILbro: Punch in the serial number or a slice of the file name to LOAD: 26
-|category |item  |purchase_day |
---------------------------------
-|Beverages|Tea   |Monday       |
-|Bakery   |Bread |Tuesday      |
-|Dairy    |Butter|Wednesday    |
-|Beverages|Coffee|Thursday     |
-|Snacks   |Nuts  |Friday       |
-|Beverages|Tea   |Friday       |
-Total rows: 6
-
-  @LILbro: Enter column names (comma separated, if multiple) to SET_INTERSECTION_WITH at: category, item, pur
-chase_day
-
-|category |item  |purchase_day |
---------------------------------
-|Beverages|Tea   |Monday       |
-|Bakery   |Bread |Tuesday      |
-|Beverages|Coffee|Thursday     |
-Total rows: 3
-
-  @LILbro: Enter column names (comma separated, if multiple) to SET_INTERSECTION_WITH at: category, item
-
-|category |item  |purchase_day |
---------------------------------
-|Beverages|Tea   |Monday       |
-|Bakery   |Bread |Tuesday      |
-|Beverages|Coffee|Thursday     |
-|Beverages|Tea   |Friday       |
-Total rows: 4
-
-  @LILbro: Enter column names (comma separated, if multiple) to SET_INTERSECTION_WITH at: item, purchase_day
-
-|category |item  |purchase_day |
---------------------------------
-|Beverages|Tea   |Monday       |
-|Bakery   |Bread |Tuesday      |
-|Beverages|Coffee|Thursday     |
-Total rows: 3
-"#,
-                );
-                return Ok((csv_builder, false));
-            }
-
-            print_insight_level_2("Your current csv is the 'A Table'. Now, choose the 'B Table' for the operation A SET_INTERSECTION_WITH B");
-
-            let chosen_file_path_for_join = select_csv_file_path(&csv_db_path_buf);
-
-            if let Some(ref chosen_file_path_for_join) = chosen_file_path_for_join {
-                let _ = CsvBuilder::from_csv(&chosen_file_path_for_join)
-                    .print_table(&big_file_threshold)
-                    .await;
-                println!();
-            }
-
-            if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
-                // Capture user input for key columns
-                let intersect_at_choice = get_user_input_level_2(
-        "Enter column names (comma separated, if multiple) to SET_INTERSECTION_WITH at: ",
-    );
-
-                if handle_cancel_flag(&intersect_at_choice) {
-                    return Ok((csv_builder, false));
-                }
-
-                /*
-                // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
-                let key_columns: Vec<&str> = set_intersection_at_choice
-                    .split(',')
-                    .map(|s| s.trim())
-                    .filter(|s| !s.is_empty())
-                    .collect();
-
-                // Ensure that there is at least one key column specified
-                if key_columns.is_empty() {
-                    println!(
-                        "Error: No key columns specified. Please specify at least one key column."
-                    );
-                } else {
-                    // Perform set intersection with the specified key columns
-                    csv_builder
-                        .set_intersection_with_csv_file(
-                            &chosen_file_path_for_join,
-                            key_columns,
-                            "INTERSECTION_TYPE:NORMAL",
-                        )
-                        .print_table(&big_file_threshold)
-                        .await;
-                }
-                */
-
-                let mut split = intersect_at_choice.split(',').map(|s| s.trim());
-                let table_a_ref_column = split.next().expect("Expected a column name");
-                let table_b_ref_column = split.next().expect("Expected a second column name");
-
-                let _ = csv_builder
-                    .intersection_with_csv_file(
-                        &chosen_file_path_for_join,
-                        DaskIntersectorConfig {
-                            intersection_type: "NORMAL".to_string(),
-                            table_a_ref_column: table_a_ref_column.to_string(),
-                            table_b_ref_column: table_b_ref_column.to_string(),
-                        },
-                    )
-                    .await
-                    .print_table(&big_file_threshold)
-                    .await;
-            }
-        }
-
-        "7" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1000,44 +818,25 @@ Total rows: 3
                     return Ok((csv_builder, false));
                 }
 
-                /*
-                // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
-                let key_columns: Vec<&str> = set_intersection_at_choice
-                    .split(',')
-                    .map(|s| s.trim())
-                    .filter(|s| !s.is_empty())
-                    .collect();
-
-                // Ensure that there is at least one key column specified
-                if key_columns.is_empty() {
-                    println!(
-                        "Error: No key columns specified. Please specify at least one key column."
-                    );
-                } else {
-                    // Perform set intersection with the specified key columns
-                    csv_builder
-                        .set_intersection_with_csv_file(
-                            &chosen_file_path_for_join,
-                            key_columns,
-                            "INTERSECTION_TYPE:INNER_JOIN",
-                        )
-                        .print_table(&big_file_threshold)
-                        .await;
-                }
-                */
-
                 let mut split = intersect_at_choice.split(',').map(|s| s.trim());
                 let table_a_ref_column = split.next().expect("Expected a column name");
                 let table_b_ref_column = split.next().expect("Expected a second column name");
 
+                // Parse the big_file_threshold to a numeric type
+                let big_file_threshold_num: f64 = big_file_threshold.parse().unwrap_or(0.0);
+
+                // Calculate half the value
+                let adjusted_big_file_threshold_num = big_file_threshold_num / 2.0;
+
+                // Convert the result back to a String
+                let adjusted_big_file_threshold = adjusted_big_file_threshold_num.to_string();
+
                 let _ = csv_builder
                     .intersection_with_csv_file(
                         &chosen_file_path_for_join,
-                        DaskIntersectorConfig {
-                            intersection_type: "INNER_JOIN".to_string(),
-                            table_a_ref_column: table_a_ref_column.to_string(),
-                            table_b_ref_column: table_b_ref_column.to_string(),
-                        },
+                        table_a_ref_column,
+                        table_b_ref_column,
+                        &adjusted_big_file_threshold,
                     )
                     .await
                     .print_table(&big_file_threshold)
@@ -1045,7 +844,7 @@ Total rows: 3
             }
         }
 
-        "8" => {
+        "7" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1181,44 +980,26 @@ Total rows: 3
                     return Ok((csv_builder, false));
                 }
 
-                /*
-                // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
-                let key_columns: Vec<&str> = set_intersection_at_choice
-                    .split(',')
-                    .map(|s| s.trim())
-                    .filter(|s| !s.is_empty())
-                    .collect();
-
-                // Ensure that there is at least one key column specified
-                if key_columns.is_empty() {
-                    println!(
-                        "Error: No key columns specified. Please specify at least one key column."
-                    );
-                } else {
-                    // Perform set intersection with the specified key columns
-                    csv_builder
-                        .set_difference_with_csv_file(
-                            &chosen_file_path_for_join,
-                            "DIFFERENCE_TYPE:NORMAL",
-                            key_columns,
-                        )
-                        .print_table(&big_file_threshold)
-                        .await;
-                }
-                */
-
                 let mut split = differentiate_at_choice.split(',').map(|s| s.trim());
                 let table_a_ref_column = split.next().expect("Expected a column name");
                 let table_b_ref_column = split.next().expect("Expected a second column name");
 
+                // Parse the big_file_threshold to a numeric type
+                let big_file_threshold_num: f64 = big_file_threshold.parse().unwrap_or(0.0);
+
+                // Calculate half the value
+                let adjusted_big_file_threshold_num = big_file_threshold_num / 2.0;
+
+                // Convert the result back to a String
+                let adjusted_big_file_threshold = adjusted_big_file_threshold_num.to_string();
+
                 let _ = csv_builder
                     .difference_with_csv_file(
                         &chosen_file_path_for_join,
-                        DaskDifferentiatorConfig {
-                            difference_type: "NORMAL".to_string(),
-                            table_a_ref_column: table_a_ref_column.to_string(),
-                            table_b_ref_column: table_b_ref_column.to_string(),
-                        },
+                        "NORMAL",
+                        table_a_ref_column,
+                        table_b_ref_column,
+                        &adjusted_big_file_threshold,
                     )
                     .await
                     .print_table(&big_file_threshold)
@@ -1226,7 +1007,7 @@ Total rows: 3
             }
         }
 
-        "9" => {
+        "8" => {
             if action_flag == "d" {
                 print_insight_level_2(
                     r#"DOCUMENTATION
@@ -1373,44 +1154,26 @@ Total rows: 6
                     return Ok((csv_builder, false));
                 }
 
-                /*
-                // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
-                let key_columns: Vec<&str> = set_intersection_at_choice
-                    .split(',')
-                    .map(|s| s.trim())
-                    .filter(|s| !s.is_empty())
-                    .collect();
-
-                // Ensure that there is at least one key column specified
-                if key_columns.is_empty() {
-                    println!(
-                        "Error: No key columns specified. Please specify at least one key column."
-                    );
-                    return Ok((csv_builder, false));
-                } else {
-                    // Perform set intersection with the specified key columns
-                    csv_builder
-                        .set_difference_with_csv_file(
-                            &chosen_file_path_for_join,
-                            "DIFFERENCE_TYPE:SYMMETRIC",
-                            key_columns,
-                        )
-                        .print_table(&big_file_threshold)
-                        .await;
-                }
-                */
                 let mut split = differentiate_at_choice.split(',').map(|s| s.trim());
                 let table_a_ref_column = split.next().expect("Expected a column name");
                 let table_b_ref_column = split.next().expect("Expected a second column name");
 
+                // Parse the big_file_threshold to a numeric type
+                let big_file_threshold_num: f64 = big_file_threshold.parse().unwrap_or(0.0);
+
+                // Calculate half the value
+                let adjusted_big_file_threshold_num = big_file_threshold_num / 2.0;
+
+                // Convert the result back to a String
+                let adjusted_big_file_threshold = adjusted_big_file_threshold_num.to_string();
+
                 let _ = csv_builder
                     .difference_with_csv_file(
                         &chosen_file_path_for_join,
-                        DaskDifferentiatorConfig {
-                            difference_type: "SYMMETRIC".to_string(),
-                            table_a_ref_column: table_a_ref_column.to_string(),
-                            table_b_ref_column: table_b_ref_column.to_string(),
-                        },
+                        "SYMMETRIC",
+                        table_a_ref_column,
+                        table_b_ref_column,
+                        &adjusted_big_file_threshold,
                     )
                     .await
                     .print_table(&big_file_threshold)
@@ -1419,7 +1182,7 @@ Total rows: 6
         }
 
         _ => {
-            println!("Invalid option. Please enter a number from 1 to 9.");
+            println!("Invalid option. Please enter a number from 1 to 8.");
             return Ok((csv_builder, false));
         }
     }
