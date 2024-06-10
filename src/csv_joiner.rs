@@ -3,6 +3,7 @@ use crate::user_experience::handle_cancel_flag;
 use crate::user_interaction::{get_user_input_level_2, print_insight_level_2, print_list_level_2};
 use fuzzywuzzy::fuzz;
 use rgwml::csv_utils::CsvBuilder;
+use rgwml::dask_utils::{DaskDifferentiatorConfig, DaskIntersectorConfig, DaskJoinerConfig};
 use std::env;
 use std::fs;
 use std::io;
@@ -243,6 +244,7 @@ Total rows: 7
                     .print_table(&big_file_threshold)
                     .await;
 
+                /*
                 let join_at_choice = get_user_input_level_2(
                         "Enter comma separated column name/names from your above selected csvs to determine uniqueness by (use * for a traditional union that determines uniqueness based on all columns)): ",
                     )
@@ -251,14 +253,28 @@ Total rows: 7
                 if handle_cancel_flag(&join_at_choice) {
                     return Ok((csv_builder, false));
                 }
+                */
 
-                let column_names: Vec<&str> = join_at_choice.split(',').map(|s| s.trim()).collect();
+                //let column_names: Vec<&str> = join_at_choice.split(',').map(|s| s.trim()).collect();
 
+                /*
                 let _ = csv_builder.set_union_with_csv_file(
                     &chosen_file_path_for_join,
                     "UNION_TYPE:NORMAL",
                     column_names,
                 );
+                */
+
+                let _ = csv_builder
+                    .union_with_csv_file(
+                        &chosen_file_path_for_join,
+                        DaskJoinerConfig {
+                            join_type: "UNION".to_string(),
+                            table_a_ref_column: "".to_string(),
+                            table_b_ref_column: "".to_string(),
+                        },
+                    )
+                    .await;
 
                 sort_csv_by_id_if_needed(&mut csv_builder);
 
@@ -338,7 +354,18 @@ Total rows: 22
                     .await;
                 println!();
                 print_insight_level_2("Now, computing the bag union with the above ...");
-                let _ = csv_builder.set_bag_union_with_csv_file(&chosen_file_path_for_join);
+                //let _ = csv_builder.set_bag_union_with_csv_file(&chosen_file_path_for_join);
+
+                let _ = csv_builder
+                    .union_with_csv_file(
+                        &chosen_file_path_for_join,
+                        DaskJoinerConfig {
+                            join_type: "BAG_UNION".to_string(),
+                            table_a_ref_column: "".to_string(),
+                            table_b_ref_column: "".to_string(),
+                        },
+                    )
+                    .await;
 
                 sort_csv_by_id_if_needed(&mut csv_builder);
 
@@ -408,15 +435,16 @@ Total rows: 10
                 CsvBuilder::from_csv(&chosen_file_path_for_join)
                     .print_table(&big_file_threshold)
                     .await;
-                let left_join_at_choice = get_user_input_level_2(
+                let join_at_choice = get_user_input_level_2(
                         "Enter comma-separated column name/names from your above selected csv to LEFT JOIN at: ",
                     )
                     .to_lowercase();
 
-                if handle_cancel_flag(&left_join_at_choice) {
+                if handle_cancel_flag(&join_at_choice) {
                     return Ok((csv_builder, false));
                 }
 
+                /*
                 let column_names: Vec<&str> =
                     left_join_at_choice.split(',').map(|s| s.trim()).collect();
 
@@ -427,6 +455,24 @@ Total rows: 10
                         "UNION_TYPE:LEFT_JOIN",
                         column_names,
                     )
+                    .print_table(&big_file_threshold)
+                    .await;
+                */
+
+                let mut split = join_at_choice.split(',').map(|s| s.trim());
+                let table_a_ref_column = split.next().expect("Expected a column name");
+                let table_b_ref_column = split.next().expect("Expected a second column name");
+
+                let _ = csv_builder
+                    .union_with_csv_file(
+                        &chosen_file_path_for_join,
+                        DaskJoinerConfig {
+                            join_type: "LEFT_JOIN".to_string(),
+                            table_a_ref_column: table_a_ref_column.to_string(),
+                            table_b_ref_column: table_b_ref_column.to_string(),
+                        },
+                    )
+                    .await
                     .print_table(&big_file_threshold)
                     .await;
             }
@@ -495,15 +541,16 @@ Total rows: 10
                 CsvBuilder::from_csv(&chosen_file_path_for_join)
                     .print_table(&big_file_threshold)
                     .await;
-                let right_join_at_choice = get_user_input_level_2(
+                let join_at_choice = get_user_input_level_2(
                         "Enter comma separated column name/ names from your above selected csv to RIGHT JOIN at: ",
                     )
                     .to_lowercase();
 
-                if handle_cancel_flag(&right_join_at_choice) {
+                if handle_cancel_flag(&join_at_choice) {
                     return Ok((csv_builder, false));
                 }
 
+                /*
                 let column_names: Vec<&str> =
                     right_join_at_choice.split(',').map(|s| s.trim()).collect();
 
@@ -513,6 +560,24 @@ Total rows: 10
                         "UNION_TYPE:RIGHT_JOIN",
                         column_names,
                     )
+                    .print_table(&big_file_threshold)
+                    .await;
+                */
+
+                let mut split = join_at_choice.split(',').map(|s| s.trim());
+                let table_a_ref_column = split.next().expect("Expected a column name");
+                let table_b_ref_column = split.next().expect("Expected a second column name");
+
+                let _ = csv_builder
+                    .union_with_csv_file(
+                        &chosen_file_path_for_join,
+                        DaskJoinerConfig {
+                            join_type: "RIGHT_JOIN".to_string(),
+                            table_a_ref_column: table_a_ref_column.to_string(),
+                            table_b_ref_column: table_b_ref_column.to_string(),
+                        },
+                    )
+                    .await
                     .print_table(&big_file_threshold)
                     .await;
             }
@@ -589,14 +654,15 @@ Total rows: 11
 
             if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
                 // Capture user input for key columns
-                let set_intersection_at_choice = get_user_input_level_2(
+                let join_at_choice = get_user_input_level_2(
         "Enter column names (comma separated, if multiple) to SET_OUTER_FULL_JOIN_UNION_WITH at: ",
     );
 
-                if handle_cancel_flag(&set_intersection_at_choice) {
+                if handle_cancel_flag(&join_at_choice) {
                     return Ok((csv_builder, false));
                 }
 
+                /*
                 // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
                 let key_columns: Vec<&str> = set_intersection_at_choice
                     .split(',')
@@ -620,6 +686,23 @@ Total rows: 11
                         .print_table(&big_file_threshold)
                         .await;
                 }
+                */
+                let mut split = join_at_choice.split(',').map(|s| s.trim());
+                let table_a_ref_column = split.next().expect("Expected a column name");
+                let table_b_ref_column = split.next().expect("Expected a second column name");
+
+                let _ = csv_builder
+                    .union_with_csv_file(
+                        &chosen_file_path_for_join,
+                        DaskJoinerConfig {
+                            join_type: "OUTER_FULL_JOIN".to_string(),
+                            table_a_ref_column: table_a_ref_column.to_string(),
+                            table_b_ref_column: table_b_ref_column.to_string(),
+                        },
+                    )
+                    .await
+                    .print_table(&big_file_threshold)
+                    .await;
             }
         }
 
@@ -750,14 +833,15 @@ Total rows: 3
 
             if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
                 // Capture user input for key columns
-                let set_intersection_at_choice = get_user_input_level_2(
+                let intersect_at_choice = get_user_input_level_2(
         "Enter column names (comma separated, if multiple) to SET_INTERSECTION_WITH at: ",
     );
 
-                if handle_cancel_flag(&set_intersection_at_choice) {
+                if handle_cancel_flag(&intersect_at_choice) {
                     return Ok((csv_builder, false));
                 }
 
+                /*
                 // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
                 let key_columns: Vec<&str> = set_intersection_at_choice
                     .split(',')
@@ -781,6 +865,24 @@ Total rows: 3
                         .print_table(&big_file_threshold)
                         .await;
                 }
+                */
+
+                let mut split = intersect_at_choice.split(',').map(|s| s.trim());
+                let table_a_ref_column = split.next().expect("Expected a column name");
+                let table_b_ref_column = split.next().expect("Expected a second column name");
+
+                let _ = csv_builder
+                    .intersection_with_csv_file(
+                        &chosen_file_path_for_join,
+                        DaskIntersectorConfig {
+                            intersection_type: "NORMAL".to_string(),
+                            table_a_ref_column: table_a_ref_column.to_string(),
+                            table_b_ref_column: table_b_ref_column.to_string(),
+                        },
+                    )
+                    .await
+                    .print_table(&big_file_threshold)
+                    .await;
             }
         }
 
@@ -890,14 +992,15 @@ Total rows: 3
 
             if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
                 // Capture user input for key columns
-                let set_intersection_at_choice = get_user_input_level_2(
+                let intersect_at_choice = get_user_input_level_2(
         "Enter column names (comma separated, if multiple) to SET_INNER_JOIN_INTERSECTION_WITH at: ",
     );
 
-                if handle_cancel_flag(&set_intersection_at_choice) {
+                if handle_cancel_flag(&intersect_at_choice) {
                     return Ok((csv_builder, false));
                 }
 
+                /*
                 // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
                 let key_columns: Vec<&str> = set_intersection_at_choice
                     .split(',')
@@ -921,6 +1024,24 @@ Total rows: 3
                         .print_table(&big_file_threshold)
                         .await;
                 }
+                */
+
+                let mut split = intersect_at_choice.split(',').map(|s| s.trim());
+                let table_a_ref_column = split.next().expect("Expected a column name");
+                let table_b_ref_column = split.next().expect("Expected a second column name");
+
+                let _ = csv_builder
+                    .intersection_with_csv_file(
+                        &chosen_file_path_for_join,
+                        DaskIntersectorConfig {
+                            intersection_type: "INNER_JOIN".to_string(),
+                            table_a_ref_column: table_a_ref_column.to_string(),
+                            table_b_ref_column: table_b_ref_column.to_string(),
+                        },
+                    )
+                    .await
+                    .print_table(&big_file_threshold)
+                    .await;
             }
         }
 
@@ -1052,14 +1173,15 @@ Total rows: 3
 
             if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
                 // Capture user input for key columns
-                let set_intersection_at_choice = get_user_input_level_2(
+                let differentiate_at_choice = get_user_input_level_2(
                     "Enter column names (comma separated, if multiple) to SET_DIFFERENCE_WITH at: ",
                 );
 
-                if handle_cancel_flag(&set_intersection_at_choice) {
+                if handle_cancel_flag(&differentiate_at_choice) {
                     return Ok((csv_builder, false));
                 }
 
+                /*
                 // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
                 let key_columns: Vec<&str> = set_intersection_at_choice
                     .split(',')
@@ -1083,6 +1205,24 @@ Total rows: 3
                         .print_table(&big_file_threshold)
                         .await;
                 }
+                */
+
+                let mut split = differentiate_at_choice.split(',').map(|s| s.trim());
+                let table_a_ref_column = split.next().expect("Expected a column name");
+                let table_b_ref_column = split.next().expect("Expected a second column name");
+
+                let _ = csv_builder
+                    .difference_with_csv_file(
+                        &chosen_file_path_for_join,
+                        DaskDifferentiatorConfig {
+                            difference_type: "NORMAL".to_string(),
+                            table_a_ref_column: table_a_ref_column.to_string(),
+                            table_b_ref_column: table_b_ref_column.to_string(),
+                        },
+                    )
+                    .await
+                    .print_table(&big_file_threshold)
+                    .await;
             }
         }
 
@@ -1225,14 +1365,15 @@ Total rows: 6
 
             if let Some(chosen_file_path_for_join) = chosen_file_path_for_join {
                 // Capture user input for key columns
-                let set_intersection_at_choice = get_user_input_level_2(
+                let differentiate_at_choice = get_user_input_level_2(
         "Enter column names (comma separated, if multiple) to SET_SYMMETRIC_DIFFERENCE_WITH at: ",
     );
 
-                if handle_cancel_flag(&set_intersection_at_choice) {
+                if handle_cancel_flag(&differentiate_at_choice) {
                     return Ok((csv_builder, false));
                 }
 
+                /*
                 // Split the input string into a vector of &str, trimming whitespace and ignoring empty entries
                 let key_columns: Vec<&str> = set_intersection_at_choice
                     .split(',')
@@ -1257,6 +1398,23 @@ Total rows: 6
                         .print_table(&big_file_threshold)
                         .await;
                 }
+                */
+                let mut split = differentiate_at_choice.split(',').map(|s| s.trim());
+                let table_a_ref_column = split.next().expect("Expected a column name");
+                let table_b_ref_column = split.next().expect("Expected a second column name");
+
+                let _ = csv_builder
+                    .difference_with_csv_file(
+                        &chosen_file_path_for_join,
+                        DaskDifferentiatorConfig {
+                            difference_type: "SYMMETRIC".to_string(),
+                            table_a_ref_column: table_a_ref_column.to_string(),
+                            table_b_ref_column: table_b_ref_column.to_string(),
+                        },
+                    )
+                    .await
+                    .print_table(&big_file_threshold)
+                    .await;
             }
         }
 
