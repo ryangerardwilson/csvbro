@@ -25,7 +25,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::{self, Command};
 
-const BRO_VERSION: &str = "1.5.1";
+const BRO_VERSION: &str = "1.5.2";
 
 #[tokio::main]
 async fn main() {
