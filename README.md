@@ -63,10 +63,16 @@ If no command is provided, the entire CSV is displayed as a DataFrame (with pand
   - Aggregation functions: `SUM`, `COUNT`, `COUNT_UNIQUE`, `MEAN`, `MEDIAN`
   - Note: `SUM`, `MEAN`, and `MEDIAN` require numeric values.
 
-- **PIVOT with DECLIES**: Create a decile analysis of a column.
+- **PIVOT with DECILES**: Create a decile analysis of a column with 10 equal-width bins (D1 to D10).
 
   ```bash
-  PIVOT DECLIES(<column>[,IGNORE_OUTLIERS]) [<pivot_column>] <value> <AGGFUNC> [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>] [WHERE "<condition>"]
+  PIVOT DECILES(<column>[,IGNORE_OUTLIERS]) [<pivot_column>] <value> <AGGFUNC> [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>] [WHERE "<condition>"]
+  ```
+
+- **PIVOT with PERCENTILES**: Create a percentile analysis of a column with 10 equal-count bins (P0, P10, ..., P90).
+
+  ```bash
+  PIVOT PERCENTILES(<column>[,IGNORE_OUTLIERS]) [<pivot_column>] <value> <AGGFUNC> [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>] [WHERE "<condition>"]
   ```
 
 - **JSON**: Output the DataFrame in JSON format.
@@ -120,38 +126,44 @@ If no command is provided, the entire CSV is displayed as a DataFrame (with pand
 4. Create a decile analysis with a WHERE clause:
 
    ```bash
-   python main.py data.csv PIVOT DECLIES(splitter_efficacy_score,IGNORE_OUTLIERS) tenure_bin partner_id COUNT_UNIQUE WHERE "tenure_bin = '180+'"
+   python main.py data.csv PIVOT DECILES(splitter_efficacy_score,IGNORE_OUTLIERS) tenure_bin partner_id COUNT_UNIQUE WHERE "tenure_bin = '180+'"
    ```
 
-5. Output JSON with sorting and limiting:
+5. Create a percentile analysis with sorting:
+
+   ```bash
+   python main.py data.csv PIVOT PERCENTILES(unique_splitter_contribution,IGNORE_OUTLIERS) partner_id COUNT_UNIQUE ORDER_BY count_unique DESC
+   ```
+
+6. Output JSON with sorting and limiting:
 
    ```bash
    python main.py data.csv JSON ORDER_BY mobile DESC LIMIT 100
    ```
 
-6. Sort and limit the entire DataFrame with a WHERE clause:
+7. Sort and limit the entire DataFrame with a WHERE clause:
 
    ```bash
    python main.py data.csv ORDER_BY mobile ASC LIMIT 5 WHERE "mobile = '1234567890'"
    ```
 
-7. Filter and display the DataFrame with numeric comparison:
+8. Filter and display the DataFrame with numeric comparison:
 
    ```bash
    python main.py data.csv WHERE "splitter_efficacy_score > 0.3"
    ```
 
-8. Filter and display the DataFrame with string containment:
+9. Filter and display the DataFrame with string containment:
 
    ```bash
    python main.py data.csv WHERE "tenure_bin LIKE '180'"
    ```
 
-9. Filter and display the DataFrame with complex condition:
+10. Filter and display the DataFrame with complex condition:
 
-   ```bash
-   python main.py data.csv WHERE "splitter_efficacy_score > 0.3 AND (splitter_count > 100 OR active_base_customer_count < 50)"
-   ```
+    ```bash
+    python main.py data.csv WHERE "splitter_efficacy_score > 0.3 AND (splitter_count > 100 OR active_base_customer_count < 50)"
+    ```
 
 ## Error Handling
 
@@ -160,6 +172,7 @@ If no command is provided, the entire CSV is displayed as a DataFrame (with pand
 - File not found or CSV loading errors will display an error and exit.
 - Type mismatches in WHERE clauses (e.g., comparing a numeric column to a string) will display an error.
 - Using `LIKE` on non-string columns or invalid condition syntax will display an error.
+- Insufficient unique values for `DECILES` or `PERCENTILES` (fewer than 10) will result in an error.
 
 ## Notes
 
@@ -167,6 +180,7 @@ If no command is provided, the entire CSV is displayed as a DataFrame (with pand
 - Output is color-coded: data and column names in blue, pivot table headers in green, errors in red.
 - Debug messages are included to trace command parsing and execution.
 - WHERE conditions must be enclosed in double quotes in the shell command to handle operators and complex logic correctly.
+- `PERCENTILES` uses equal-count binning to ensure each bin contains approximately 10% of the data, with noise added to handle duplicate values.
 
 ## License
 
