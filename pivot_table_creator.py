@@ -9,7 +9,7 @@ class PivotTableCreator:
         self.__ui = ui
         self.__valid_aggfuncs = {'SUM', 'COUNT', 'COUNT_UNIQUE', 'MEAN', 'MEDIAN'}
         self.__valid_directions = {'ASC', 'DESC'}
-        self.__ui.print_colored("Debug: Using PivotTableCreator version with corrected decile sorting, outlier handling, and full aggregation support (2025-04-22)", "blue")
+        self.__ui.print_colored("Debug: Using PivotTableCreator version with corrected decile/percentile sorting, outlier handling, and robust P0-P90 equal-count percentile binning (2025-04-29)", "blue")
 
     def compute_deciles(self, df: pd.DataFrame, column: str, ignore_outliers: bool = False) -> tuple:
         """Assign decile bins and return DataFrame with decile labels and bin ranges, optionally ignoring outliers."""
@@ -38,7 +38,7 @@ class PivotTableCreator:
                 filtered_len = len(df)
                 self.__ui.print_colored(f"Outlier removal: {original_len - filtered_len} rows removed as outliers (values < {lower_bound:.4f} or > {upper_bound:.4f}).", "blue")
                 if filtered_len == 0:
-                    self.__ui.print_colored("Error: No data remains after removing outliers.", "red")
+                    self.__ui.print_colored(f"Error: No data remains after removing outliers.", "red")
                     sys.exit(1)
             
             # Debug: Inspect the column
@@ -82,13 +82,88 @@ class PivotTableCreator:
             self.__ui.print_colored(f"Error computing deciles: {str(e)}", "red")
             sys.exit(1)
 
-    def create_pivot_table(self, df: pd.DataFrame, row: str, value: str, aggfunc: str, column: str = None, sort_column: str = None, sort_direction: str = 'ASC', limit: str = None, is_deciles: bool = False, decile_column: str = None, ignore_outliers: bool = False):
-        """Create a pivot table or decile-based aggregation from the DataFrame, optionally ignoring outliers for deciles."""
+    def compute_percentiles(self, df: pd.DataFrame, column: str, ignore_outliers: bool = False) -> tuple:
+        """Assign percentile bins (P0, P10, ..., P90) using equal-count binning and return DataFrame with percentile labels and bin ranges, optionally ignoring outliers."""
         try:
-            # Handle deciles case
-            if is_deciles:
-                if decile_column not in df.columns:
-                    self.__ui.print_colored(f"Error: Decile column '{decile_column}' not found in DataFrame.", "red")
+            if column not in df.columns:
+                self.__ui.print_colored(f"Error: Column '{column}' not found in DataFrame.", "red")
+                sys.exit(1)
+            if not pd.api.types.is_numeric_dtype(df[column]):
+                self.__ui.print_colored(f"Error: Percentile column '{column}' must be numeric.", "red")
+                sys.exit(1)
+            
+            # Check for missing values
+            if df[column].isna().any():
+                self.__ui.print_colored(f"Warning: Column '{column}' contains missing values. Dropping them for percentile computation.", "red")
+                df = df.dropna(subset=[column]).copy()
+            
+            # Filter outliers if requested
+            if ignore_outliers:
+                Q1 = df[column].quantile(0.25)
+                Q3 = df[column].quantile(0.75)
+                IQR = Q3 - Q1
+                lower_bound = Q1 - 1.5 * IQR
+                upper_bound = Q3 + 1.5 * IQR
+                original_len = len(df)
+                df = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)].copy()
+                filtered_len = len(df)
+                self.__ui.print_colored(f"Outlier removal: {original_len - filtered_len} rows removed as outliers (values < {lower_bound:.4f} or > {upper_bound:.4f}).", "blue")
+                if filtered_len == 0:
+                    self.__ui.print_colored(f"Error: No data remains after removing outliers.", "red")
+                    sys.exit(1)
+            
+            # Debug: Inspect the column
+            unique_count = df[column].nunique()
+            total_rows = len(df)
+            value_counts = df[column].value_counts()
+            
+            if unique_count < 10:
+                self.__ui.print_colored(f"Error: Column '{column}' has too few unique values ({unique_count}) to compute 10 percentiles.", "red")
+                sys.exit(1)
+            
+            try:
+                # Add small random noise to break ties among duplicates
+                noise = np.random.uniform(-1e-6, 1e-6, size=len(df))
+                df[f'{column}_noised'] = df[column] + noise
+                
+                # Compute percentile bins using pd.qcut
+                df['percentile'], bin_edges = pd.qcut(
+                    df[f'{column}_noised'], 
+                    q=10, 
+                    labels=[f'P{i*10}' for i in range(10)], 
+                    retbins=True
+                )
+                
+                # Drop the noised column
+                df = df.drop(columns=[f'{column}_noised'])
+                
+                # Create range labels based on original data
+                ranges = [f"[{bin_edges[i]:.4f}, {bin_edges[i+1]:.4f})" for i in range(len(bin_edges)-1)]
+                range_df = pd.DataFrame({
+                    'percentile': [f'P{i*10}' for i in range(10)],
+                    'range': ranges
+                })
+                # Combine percentile and range for display
+                range_df['formatted_percentile'] = range_df.apply(lambda x: f"{x['percentile']} {x['range']}", axis=1)
+            except ValueError as e:
+                self.__ui.print_colored(f"Error: Failed to compute bins for '{column}'. Reason: {str(e)}", "red")
+                self.__ui.print_colored(f"Debug: Column stats - min: {df[column].min()}, max: {df[column].max()}, unique values: {unique_count}", "blue")
+                sys.exit(1)
+            
+            return df, range_df
+        except Exception as e:
+            self.__ui.print_colored(f"Error computing percentiles: {str(e)}", "red")
+            sys.exit(1)
+
+    def create_pivot_table(self, df: pd.DataFrame, row: str, value: str, aggfunc: str, column: str = None, sort_column: str = None, sort_direction: str = 'ASC', limit: str = None, is_deciles: bool = False, decile_column: str = None, ignore_outliers: bool = False, is_percentiles: bool = False, percentile_column: str = None):
+        """Create a pivot table, decile-based, or percentile-based aggregation from the DataFrame, optionally ignoring outliers."""
+        try:
+            # Handle deciles or percentiles case
+            if is_deciles or is_percentiles:
+                target_column = decile_column if is_deciles else percentile_column
+                bin_type = 'decile' if is_deciles else 'percentile'
+                if target_column not in df.columns:
+                    self.__ui.print_colored(f"Error: {bin_type.capitalize()} column '{target_column}' not found in DataFrame.", "red")
                     sys.exit(1)
                 if value not in df.columns:
                     self.__ui.print_colored(f"Error: Value column '{value}' not found in DataFrame.", "red")
@@ -101,11 +176,14 @@ class PivotTableCreator:
                     sys.exit(1)
                 
                 stop_animation = threading.Event()
-                animation_thread = threading.Thread(target=self.__ui.animate_loading, args=(stop_animation, "Creating decile analysis"))
+                animation_thread = threading.Thread(target=self.__ui.animate_loading, args=(stop_animation, f"Creating {bin_type} analysis"))
                 animation_thread.start()
                 
-                # Compute deciles and get range information
-                df, range_df = self.compute_deciles(df, decile_column, ignore_outliers)
+                # Compute bins and get range information
+                if is_deciles:
+                    df, range_df = self.compute_deciles(df, decile_column, ignore_outliers)
+                else:
+                    df, range_df = self.compute_percentiles(df, percentile_column, ignore_outliers)
                 
                 # Define aggregation function
                 if aggfunc == 'SUM':
@@ -119,24 +197,24 @@ class PivotTableCreator:
                 elif aggfunc == 'MEDIAN':
                     agg_func = 'median'
                 
-                # Group by decile and optionally pivot_column
+                # Group by bin and optionally pivot_column
                 if column:
                     if column not in df.columns:
                         self.__ui.print_colored(f"Error: Pivot column '{column}' not found in DataFrame.", "red")
                         sys.exit(1)
-                    pivot = pd.pivot_table(df, index='decile', columns=column, values=value, aggfunc=agg_func, fill_value=0, observed=False)
+                    pivot = pd.pivot_table(df, index=bin_type, columns=column, values=value, aggfunc=agg_func, fill_value=0, observed=False)
                     pivot = pivot.reset_index()
-                    # Merge with range information to get formatted decile labels
-                    pivot = pivot.merge(range_df[['decile', 'formatted_decile']], on='decile', how='left')
-                    pivot['decile'] = pivot['formatted_decile']
-                    pivot = pivot.drop(columns=['formatted_decile'])
+                    # Merge with range information to get formatted labels
+                    pivot = pivot.merge(range_df[[bin_type, f'formatted_{bin_type}']], on=bin_type, how='left')
+                    pivot[bin_type] = pivot[f'formatted_{bin_type}']
+                    pivot = pivot.drop(columns=[f'formatted_{bin_type}'])
                 else:
-                    # No pivot_column: aggregate by decile only
-                    pivot = df.groupby('decile', observed=False)[value].agg(agg_func).reset_index(name=aggfunc.lower())
-                    # Merge with range information to get formatted decile labels
-                    pivot = pivot.merge(range_df[['decile', 'formatted_decile']], on='decile', how='left')
-                    pivot['decile'] = pivot['formatted_decile']
-                    pivot = pivot.drop(columns=['formatted_decile'])
+                    # No pivot_column: aggregate by bin only
+                    pivot = df.groupby(bin_type, observed=False)[value].agg(agg_func).reset_index(name=aggfunc.lower())
+                    # Merge with range information to get formatted labels
+                    pivot = pivot.merge(range_df[[bin_type, f'formatted_{bin_type}']], on=bin_type, how='left')
+                    pivot[bin_type] = pivot[f'formatted_{bin_type}']
+                    pivot = pivot.drop(columns=[f'formatted_{bin_type}'])
                 
                 # Handle sorting
                 if sort_column:
@@ -147,14 +225,14 @@ class PivotTableCreator:
                         self.__ui.print_colored(f"Error: Invalid sort direction '{sort_direction}'. Choose from ASC, DESC.", "red")
                         sys.exit(1)
                     ascending = sort_direction == 'ASC'
-                    # Sort by sort_column and decile_order to ensure consistent ordering
-                    pivot['decile_order'] = pivot['decile'].str.extract(r'D(\d+)')[0].astype(int)
-                    pivot = pivot.sort_values(by=[sort_column, 'decile_order'], ascending=[ascending, True]).reset_index(drop=True)
-                    pivot = pivot.drop(columns='decile_order')
+                    # Sort by sort_column and bin_order to ensure consistent ordering
+                    pivot[f'{bin_type}_order'] = pivot[bin_type].str.extract(r'[DP](\d+)')[0].astype(int)
+                    pivot = pivot.sort_values(by=[sort_column, f'{bin_type}_order'], ascending=[ascending, True]).reset_index(drop=True)
+                    pivot = pivot.drop(columns=f'{bin_type}_order')
                 else:
-                    # Default to natural order (D1 to D10)
-                    pivot['decile_order'] = pivot['decile'].str.extract(r'D(\d+)')[0].astype(int)
-                    pivot = pivot.sort_values(by='decile_order').reset_index(drop=True).drop(columns='decile_order')
+                    # Default to natural order (D1 to D10 or P0 to P90)
+                    pivot[f'{bin_type}_order'] = pivot[bin_type].str.extract(r'[DP](\d+)')[0].astype(int)
+                    pivot = pivot.sort_values(by=f'{bin_type}_order').reset_index(drop=True).drop(columns=f'{bin_type}_order')
                 
                 # Handle limit
                 if limit is not None:
@@ -170,7 +248,7 @@ class PivotTableCreator:
                 # Display results
                 original_max_rows = pd.options.display.max_rows
                 pd.options.display.max_rows = None
-                self.__ui.print_colored(f"\nDecile Analysis ({aggfunc} of {value} by deciles of {decile_column}{' with outliers ignored' if ignore_outliers else ''}{', Column: ' + column if column else ''}):", "green")
+                self.__ui.print_colored(f"\n{bin_type.capitalize()} Analysis ({aggfunc} of {value} by {bin_type}s of {target_column}{' with outliers ignored' if ignore_outliers else ''}{', Column: ' + column if column else ''}):", "green")
                 self.__ui.print_colored("=" * 50, "green")
                 self.__ui.print_colored(str(pivot), "blue")
                 self.__ui.print_colored("=" * 50, "green")

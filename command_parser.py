@@ -23,7 +23,8 @@ class CommandParser:
         self.__ui.print_colored("Commands:", "green")
         self.__ui.print_colored("  SHOW <column1> [<column2> ...] [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>] [WHERE \"<condition>\"]  Display specified columns of the CSV", "blue")
         self.__ui.print_colored("  PIVOT <row> [<column>] <value> <AGGFUNC> [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>] [WHERE \"<condition>\"]  Create a pivot table (value must be numeric for SUM, MEAN, MEDIAN)", "blue")
-        self.__ui.print_colored("  PIVOT DECLIES(<column>[,IGNORE_OUTLIERS]) [<pivot_column>] <value> <AGGFUNC> [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>] [WHERE \"<condition>\"]  Create a decile analysis of <column> with aggregation of <value>", "blue")
+        self.__ui.print_colored("  PIVOT DECILES(<column>[,IGNORE_OUTLIERS]) [<pivot_column>] <value> <AGGFUNC> [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>] [WHERE \"<condition>\"]  Create a decile analysis of <column> with aggregation of <value>", "blue")
+        self.__ui.print_colored("  PIVOT PERCENTILES(<column>[,IGNORE_OUTLIERS]) [<pivot_column>] <value> <AGGFUNC> [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>] [WHERE \"<condition>\"]  Create a percentile analysis of <column> with aggregation of <value>", "blue")
         self.__ui.print_colored("  JSON [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>] [WHERE \"<condition>\"]  Output the DataFrame in JSON format", "blue")
         self.__ui.print_colored("  ORDER_BY <sort_column> <ASC|DESC> [LIMIT <n>] [WHERE \"<condition>\"]  Sort the entire DataFrame", "blue")
         self.__ui.print_colored("  LIMIT <n> [WHERE \"<condition>\"]  Limit the entire DataFrame to <n> rows", "blue")
@@ -36,8 +37,9 @@ class CommandParser:
         self.__ui.print_colored("  csvbro data.csv", "blue")
         self.__ui.print_colored("  csvbro data.csv SHOW account_id mobile ORDER_BY mobile ASC LIMIT 10", "blue")
         self.__ui.print_colored("  csvbro data.csv PIVOT lco_name category/ThirdParty mobile COUNT_UNIQUE ORDER_BY mobile DESC LIMIT 10", "blue")
-        self.__ui.print_colored("  csvbro data.csv PIVOT DECLIES(splitter_efficacy_score,IGNORE_OUTLIERS) partner_id COUNT_UNIQUE ORDER_BY count_unique DESC", "blue")
-        self.__ui.print_colored("  csvbro data.csv PIVOT DECLIES(splitter_efficacy_score,IGNORE_OUTLIERS) tenure_bin partner_id COUNT_UNIQUE WHERE \"tenure_bin = '180+'\"", "blue")
+        self.__ui.print_colored("  csvbro data.csv PIVOT DECILES(splitter_efficacy_score,IGNORE_OUTLIERS) partner_id COUNT_UNIQUE ORDER_BY count_unique DESC", "blue")
+        self.__ui.print_colored("  csvbro data.csv PIVOT DECILES(splitter_efficacy_score,IGNORE_OUTLIERS) tenure_bin partner_id COUNT_UNIQUE WHERE \"tenure_bin = '180+'\"", "blue")
+        self.__ui.print_colored("  csvbro data.csv PIVOT PERCENTILES(unique_splitter_contribution,IGNORE_OUTLIERS) partner_id COUNT_UNIQUE ORDER_BY count_unique DESC", "blue")
         self.__ui.print_colored("  csvbro data.csv JSON ORDER_BY mobile DESC LIMIT 100", "blue")
         self.__ui.print_colored("  csvbro data.csv ORDER_BY mobile ASC LIMIT 5 WHERE \"mobile = '1234567890'\"", "blue")
         self.__ui.print_colored("  csvbro data.csv WHERE \"splitter_efficacy_score > 0.3\"", "blue")
@@ -89,31 +91,45 @@ class CommandParser:
         aggfunc = None
         pivot_column = None
         is_deciles = False
+        is_percentiles = False
         decile_column = None
+        percentile_column = None
         ignore_outliers = False
 
         try:
             if command == "PIVOT":
                 if len(args) < 5:
-                    self.__ui.print_colored("Error: PIVOT requires at least <row> <value> <AGGFUNC> or DECLIES(<column>[,IGNORE_OUTLIERS]) [<pivot_column>] <value> <AGGFUNC>", "red")
+                    self.__ui.print_colored("Error: PIVOT requires at least <row> <value> <AGGFUNC> or DECILES/PERCENTILES(<column>[,IGNORE_OUTLIERS]) [<pivot_column>] <value> <AGGFUNC>", "red")
                     self.print_usage()
                     sys.exit(1)
                 row = args[3]
                 self.__ui.print_colored(f"Debug: PIVOT row: {row}", "blue")
                 i = 4
                 
-                if row.upper().startswith("DECLIES("):
+                if row.upper().startswith("DECILES("):
                     is_deciles = True
-                    match = re.match(r"DECLIES\(([^,)]+)(?:,IGNORE_OUTLIERS)?\)", row, re.IGNORECASE)
+                    match = re.match(r"DECILES\(([^,)]+)(?:,IGNORE_OUTLIERS)?\)", row, re.IGNORECASE)
                     if not match:
-                        self.__ui.print_colored("Error: Invalid DECLIES syntax. Expected DECLIES(<column>[,IGNORE_OUTLIERS]).", "red")
+                        self.__ui.print_colored("Error: Invalid DECILES syntax. Expected DECILES(<column>[,IGNORE_OUTLIERS]).", "red")
                         self.print_usage()
                         sys.exit(1)
                     decile_column = match.group(1)
                     ignore_outliers = ",IGNORE_OUTLIERS" in row.upper()
-                    self.__ui.print_colored(f"Debug: DECLIES detected - column: {decile_column}, ignore_outliers: {ignore_outliers}", "blue")
+                    self.__ui.print_colored(f"Debug: DECILES detected - column: {decile_column}, ignore_outliers: {ignore_outliers}", "blue")
+                elif row.upper().startswith("PERCENTILES("):
+                    is_percentiles = True
+                    match = re.match(r"PERCENTILES\(([^,)]+)(?:,IGNORE_OUTLIERS)?\)", row, re.IGNORECASE)
+                    if not match:
+                        self.__ui.print_colored("Error: Invalid PERCENTILES syntax. Expected PERCENTILES(<column>[,IGNORE_OUTLIERS]).", "red")
+                        self.print_usage()
+                        sys.exit(1)
+                    percentile_column = match.group(1)
+                    ignore_outliers = ",IGNORE_OUTLIERS" in row.upper()
+                    self.__ui.print_colored(f"Debug: PERCENTILES detected - column: {percentile_column}, ignore_outliers: {ignore_outliers}", "blue")
+                
+                if is_deciles or is_percentiles:
                     if i >= len(args):
-                        self.__ui.print_colored("Error: PIVOT DECLIES requires <value> <AGGFUNC> or [<pivot_column>] <value> <AGGFUNC>", "red")
+                        self.__ui.print_colored(f"Error: PIVOT {'DECILES' if is_deciles else 'PERCENTILES'} requires <value> <AGGFUNC> or [<pivot_column>] <value> <AGGFUNC>", "red")
                         self.print_usage()
                         sys.exit(1)
                     if i + 1 < len(args) and args[i + 1].upper() in self.__valid_aggfuncs:
@@ -124,18 +140,18 @@ class CommandParser:
                         pivot_column = args[i]
                         i += 1
                         if i >= len(args):
-                            self.__ui.print_colored("Error: PIVOT DECLIES requires <value> <AGGFUNC> after <pivot_column>", "red")
+                            self.__ui.print_colored(f"Error: PIVOT {'DECILES' if is_deciles else 'PERCENTILES'} requires <value> <AGGFUNC> after <pivot_column>", "red")
                             self.print_usage()
                             sys.exit(1)
                         value = args[i]
                         i += 1
                         if i >= len(args):
-                            self.__ui.print_colored("Error: PIVOT DECLIES requires <AGGFUNC> after <value>", "red")
+                            self.__ui.print_colored(f"Error: PIVOT {'DECILES' if is_deciles else 'PERCENTILES'} requires <AGGFUNC> after <value>", "red")
                             self.print_usage()
                             sys.exit(1)
                         aggfunc = args[i].upper()
                         i += 1
-                    self.__ui.print_colored(f"Debug: PIVOT DECLIES - pivot_column: {pivot_column}, value: {value}, aggfunc: {aggfunc}", "blue")
+                    self.__ui.print_colored(f"Debug: PIVOT {'DECILES' if is_deciles else 'PERCENTILES'} - pivot_column: {pivot_column}, value: {value}, aggfunc: {aggfunc}", "blue")
                 else:
                     if i + 1 < len(args) and args[i + 1].upper() not in self.__valid_aggfuncs and args[i + 1].upper() not in {'ORDER_BY', 'LIMIT', 'WHERE'}:
                         pivot_column = args[i]
@@ -212,7 +228,7 @@ class CommandParser:
                     sys.exit(1)
                 self.__viewer.show_dataframe(df, columns, sort_column, sort_direction, limit)
             elif command == "PIVOT":
-                self.__pivot_creator.create_pivot_table(df, row, value, aggfunc, pivot_column, sort_column, sort_direction, limit, is_deciles, decile_column, ignore_outliers)
+                self.__pivot_creator.create_pivot_table(df, row, value, aggfunc, pivot_column, sort_column, sort_direction, limit, is_deciles, decile_column, ignore_outliers, is_percentiles, percentile_column)
             elif command == "JSON":
                 self.__json_exporter.output_json(df, columns if columns else None, sort_column, sort_direction, limit)
             elif command == "ORDER_BY":
