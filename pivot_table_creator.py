@@ -9,11 +9,11 @@ class PivotTableCreator:
         self.__valid_aggfuncs = {'SUM', 'COUNT', 'COUNT_UNIQUE', 'MEAN', 'MEDIAN'}
         self.__valid_directions = {'ASC', 'DESC'}
 
-    def create_pivot_table(self, df: pd.DataFrame, row: str, value: str, aggfunc: str, sort_column: str = None, sort_direction: str = 'ASC', limit: str = None):
-        """Create a pivot table from the DataFrame with specified aggregation, sorting, and limit."""
+    def create_pivot_table(self, df: pd.DataFrame, row: str, value: str, aggfunc: str, column: str = None, sort_column: str = None, sort_direction: str = 'ASC', limit: str = None):
+        """Create a pivot table from the DataFrame with specified row, optional column, value, aggregation, sorting, and limit."""
         try:
             # Validate column names
-            for col_name in [row, value]:
+            for col_name in [row, value] + ([column] if column else []):
                 if col_name not in df.columns:
                     self.__ui.print_colored(f"Error: Column '{col_name}' not found in DataFrame.", "red")
                     sys.exit(1)
@@ -44,18 +44,25 @@ class PivotTableCreator:
             elif aggfunc == 'MEDIAN':
                 agg_func = 'median'
             
-            pivot = pd.pivot_table(df, index=row, values=value, aggfunc=agg_func, fill_value=0)
+            # Create pivot table with optional columns parameter
+            pivot = pd.pivot_table(df, index=row, values=value, columns=column, aggfunc=agg_func, fill_value=0)
             
             # Handle sorting
             if sort_column:
-                if sort_column != value:
-                    self.__ui.print_colored(f"Error: Sort column '{sort_column}' must be the value column '{value}' for pivot table.", "red")
+                if column and sort_column not in pivot.columns:
+                    self.__ui.print_colored(f"Error: Sort column '{sort_column}' not found in pivot table columns.", "red")
+                    sys.exit(1)
+                if not column and sort_column != value:
+                    self.__ui.print_colored(f"Error: Sort column '{sort_column}' must be the value column '{value}' for pivot table without columns.", "red")
                     sys.exit(1)
                 if sort_direction not in self.__valid_directions:
                     self.__ui.print_colored(f"Error: Invalid sort direction '{sort_direction}'. Choose from ASC, DESC.", "red")
                     sys.exit(1)
                 ascending = sort_direction == 'ASC'
-                pivot = pivot.sort_values(by=value, ascending=ascending)
+                if column:
+                    pivot = pivot.sort_values(by=sort_column, ascending=ascending)
+                else:
+                    pivot = pivot.sort_values(by=value, ascending=ascending)
             
             if limit is not None:
                 try:
@@ -75,7 +82,7 @@ class PivotTableCreator:
             original_max_rows = pd.options.display.max_rows
             pd.options.display.max_rows = None
             
-            self.__ui.print_colored(f"\nPivot Table ({aggfunc}):", "green")
+            self.__ui.print_colored(f"\nPivot Table ({aggfunc}{', Column: ' + column if column else ''}):", "green")
             self.__ui.print_colored("=" * 50, "green")
             self.__ui.print_colored(str(pivot), "blue")
             self.__ui.print_colored("=" * 50, "green")

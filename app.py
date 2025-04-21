@@ -19,6 +19,11 @@ class App:
         """Execute the main program logic."""
         self.__ui.display_logo()
         
+        # Check if filename is provided
+        if len(args) < 2:
+            self.__parser.print_usage()
+            sys.exit(1)
+        
         # Load CSV file
         df = self.__loader.load_csv(args[1])
         

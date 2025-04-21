@@ -11,14 +11,15 @@ class CommandParser:
         self.__json_exporter = json_exporter
         self.__pivot_creator = pivot_creator
         self.__valid_directions = {'ASC', 'DESC'}
+        self.__valid_aggfuncs = {'SUM', 'COUNT', 'COUNT_UNIQUE', 'MEAN', 'MEDIAN'}
 
     def print_usage(self):
         """Print usage instructions."""
         self.__ui.print_colored("Usage: csvbro <filename> [<command> [args]]", "green")
-        self.__ui.print_colored("If no command is provided, the CSV content is displayed as a normal DataFrame (with pandas' default truncation) unless ORDER_BY or LIMIT is specified.", "green")
+        self.__ui.print_colored("If no command is provided, the CSV content is displayed as a normal DataFrame (with pandas' default truncation) else if ORDER_BY or LIMIT is specified.", "green")
         self.__ui.print_colored("Commands:", "green")
         self.__ui.print_colored("  SHOW <column1> [<column2> ...] [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>]  Display specified columns of the CSV", "blue")
-        self.__ui.print_colored("  PIVOT <row> <value> <AGGFUNC> [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>]  Create a pivot table (value must be numeric for SUM, MEAN, MEDIAN)", "blue")
+        self.__ui.print_colored("  PIVOT <row> [<column>] <value> <AGGFUNC> [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>]  Create a pivot table (value must be numeric for SUM, MEAN, MEDIAN)", "blue")
         self.__ui.print_colored("  JSON [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>]  Output the DataFrame in JSON format", "blue")
         self.__ui.print_colored("  ORDER_BY <sort_column> <ASC|DESC> [LIMIT <n>]  Sort the entire DataFrame", "blue")
         self.__ui.print_colored("  LIMIT <n>  Limit the entire DataFrame to <n> rows", "blue")
@@ -26,7 +27,8 @@ class CommandParser:
         self.__ui.print_colored("Example:", "green")
         self.__ui.print_colored("  csvbro data.csv", "blue")
         self.__ui.print_colored("  csvbro data.csv SHOW account_id mobile ORDER_BY mobile ASC LIMIT 10", "blue")
-        self.__ui.print_colored("  csvbro data.csv PIVOT lco_name mobile COUNT_UNIQUE ORDER_BY mobile DESC LIMIT 10", "blue")
+        self.__ui.print_colored("  csvbro data.csv PIVOT lco_name category mobile COUNT_UNIQUE ORDER_BY mobile DESC LIMIT 10", "blue")
+        self.__ui.print_colored("  csvbro data.csv PIVOT lco_name mobile COUNT_UNIQUE ORDER_BY mobile ASC", "blue")
         self.__ui.print_colored("  csvbro data.csv JSON ORDER_BY mobile DESC LIMIT 100", "blue")
         self.__ui.print_colored("  csvbro data.csv ORDER_BY mobile ASC LIMIT 5", "blue")
 
@@ -74,15 +76,40 @@ class CommandParser:
             self.__viewer.show_dataframe(df, columns, sort_column, sort_direction, limit)
         elif args[2].upper() == "PIVOT":
             # Parse PIVOT command
-            if len(args) < 6:
-                self.__ui.print_colored("Error: PIVOT requires <row> <value> <AGGFUNC> [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>]", "red")
+            if len(args) < 5:
+                self.__ui.print_colored("Error: PIVOT requires at least <row> <value> <AGGFUNC> [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>]", "red")
                 self.print_usage()
                 sys.exit(1)
-            row, value, aggfunc = args[3], args[4], args[5].upper()
+            row = args[3]
+            i = 4
+            column = None
+            value = None
+            aggfunc = None
+            # Check for optional column: the next argument is a column if the one after it is not AGGFUNC, ORDER_BY, or LIMIT
+            if i + 1 < len(args) and args[i + 1].upper() not in self.__valid_aggfuncs and args[i + 1].upper() not in {'ORDER_BY', 'LIMIT'}:
+                column = args[i]
+                i += 1
+            # Parse value
+            if i >= len(args):
+                self.__ui.print_colored("Error: PIVOT requires <value> after <row> [<column>]", "red")
+                self.print_usage()
+                sys.exit(1)
+            value = args[i]
+            i += 1
+            # Parse AGGFUNC
+            if i >= len(args):
+                self.__ui.print_colored("Error: PIVOT requires <AGGFUNC> after <value>", "red")
+                self.print_usage()
+                sys.exit(1)
+            aggfunc = args[i].upper()
+            if aggfunc not in self.__valid_aggfuncs:
+                self.__ui.print_colored(f"Error: Invalid aggregation function '{aggfunc}'. Choose from {', '.join(self.__valid_aggfuncs)}.", "red")
+                self.print_usage()
+                sys.exit(1)
+            i += 1
             sort_column = None
             sort_direction = 'ASC'
             limit = None
-            i = 6
             while i < len(args):
                 if args[i].upper() == "ORDER_BY":
                     if i + 1 >= len(args):
@@ -103,10 +130,10 @@ class CommandParser:
                     limit = args[i + 1]
                     i += 2
                 else:
-                    self.__ui.print_colored(f"Error: Unexpected argument '{args[i]}' after AGGFUNC", "red")
+                    self.__ui.print_colored(f"Error: Unexpected argument '{args[i]}' in PIVOT command", "red")
                     self.print_usage()
                     sys.exit(1)
-            self.__pivot_creator.create_pivot_table(df, row, value, aggfunc, sort_column, sort_direction, limit)
+            self.__pivot_creator.create_pivot_table(df, row, value, aggfunc, column, sort_column, sort_direction, limit)
         elif args[2].upper() == "JSON":
             # Parse JSON command
             i = 3
