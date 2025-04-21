@@ -14,7 +14,7 @@ CSVBro is a command-line tool for viewing and analyzing CSV files using pandas D
 - **Pivot Tables**: Create pivot tables with aggregation functions like SUM, COUNT, COUNT_UNIQUE, MEAN, and MEDIAN.
 - **JSON Output**: Export the DataFrame or selected columns to JSON format with pretty-printing.
 - **Sorting and Limiting**: Sort data by a column in ascending or descending order and limit the number of rows displayed.
-- **WHERE Clause Filtering**: Filter DataFrame rows based on conditions using operators `=`, `>`, `<`, `>=`, `<=`, `!=` for numeric and string comparisons, and `LIKE` for string containment. Supports complex conditions with `AND` and `OR` (e.g., `"Col1 > 0.3 AND (Col2 > 0.5 OR Col9 > 1.2)"`). Numeric comparisons use float parsing for accuracy.
+- **WHERE Clause Filtering**: Filter DataFrame rows based on conditions using operators `=`, `>`, `<`, `>=`, `<=`, `!=` for numeric and string comparisons, and `LIKE` for string containment. Supports complex conditions with `AND` and `OR` (e.g., `"Col1 > 0.3 AND (Col2 > 0.5 OR Col9 > 1.2)"`). Numeric comparisons use float parsing for accuracy. Conditions must be enclosed in double quotes in the shell command.
 - **User-Friendly Interface**: Includes a loading animation and color-coded output (errors in red, data in blue, instructions in green).
 
 ## Requirements
@@ -95,7 +95,7 @@ If no command is provided, the entire CSV is displayed as a DataFrame (with pand
 
   - Condition syntax: `column <operator> value [AND|OR condition]` (e.g., `"column1 > 0.3"`, `"Col1 > 0.3 AND (Col2 > 0.5 OR Col9 > 1.2)"`)
   - Operators: `=`, `>`, `<`, `>=`, `<=`, `!=`, `LIKE` (for string containment)
-  - Note: Numeric comparisons use float parsing; `LIKE` requires string columns and matches substrings (case-insensitive). Conditions must be enclosed in quotes.
+  - Note: Numeric comparisons use float parsing; `LIKE` requires string columns and matches substrings (case-insensitive). Conditions must be enclosed in double quotes in the shell command.
 
 ### Examples
 
@@ -166,7 +166,7 @@ If no command is provided, the entire CSV is displayed as a DataFrame (with pand
 - The tool uses threading to display a loading animation during CSV loading and pivot table creation.
 - Output is color-coded: data and column names in blue, pivot table headers in green, errors in red.
 - Debug messages are included to trace command parsing and execution.
-- WHERE conditions must be enclosed in double quotes to handle operators and complex logic correctly.
+- WHERE conditions must be enclosed in double quotes in the shell command to handle operators and complex logic correctly.
 
 ## License
 

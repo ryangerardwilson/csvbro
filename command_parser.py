@@ -30,6 +30,7 @@ class CommandParser:
         self.__ui.print_colored("  WHERE \"<condition>\" [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>]  Filter and display the DataFrame", "blue")
         self.__ui.print_colored("  Condition syntax: column <operator> value [AND|OR condition] (e.g., \"column1 > 0.3\", \"Col1 > 0.3 AND (Col2 > 0.5 OR Col9 > 1.2)\")", "blue")
         self.__ui.print_colored("  Operators: =, >, <, >=, <=, !=, LIKE (for string containment)", "blue")
+        self.__ui.print_colored("  Note: Condition must be enclosed in double quotes in the shell command.", "blue")
         self.__ui.print_colored("  Aggregation functions: SUM, COUNT, COUNT_UNIQUE, MEAN, MEDIAN", "blue")
         self.__ui.print_colored("Example:", "green")
         self.__ui.print_colored("  csvbro data.csv", "blue")
@@ -59,13 +60,13 @@ class CommandParser:
         command = args[2].upper()
         self.__ui.print_colored(f"Debug: Command detected: {command}", "blue")
         
-        # Handle WHERE command immediately to capture the quoted condition
+        # Handle WHERE command immediately to capture the condition
         if command == "WHERE":
-            if len(args) < 4 or not (args[3].startswith('"') and args[3].endswith('"')):
-                self.__ui.print_colored("Error: WHERE command requires a quoted condition (e.g., \"column operator value\")", "red")
+            if len(args) < 4:
+                self.__ui.print_colored("Error: WHERE command requires a condition (e.g., \"column operator value\")", "red")
                 self.print_usage()
                 sys.exit(1)
-            where_clause = args[3]
+            where_clause = ' '.join(args[3:])  # Capture the condition as a single string
             self.__ui.print_colored(f"Debug: WHERE clause: {where_clause}", "blue")
             try:
                 df = self.__where_handler.parse_and_apply(df, where_clause)
@@ -181,8 +182,8 @@ class CommandParser:
                     i += 2
                     self.__ui.print_colored(f"Debug: LIMIT - limit: {limit}", "blue")
                 elif args[i].upper() == "WHERE":
-                    if i + 1 >= len(args) or not (args[i + 1].startswith('"') and args[i + 1].endswith('"')):
-                        self.__ui.print_colored("Error: WHERE requires a quoted condition (e.g., \"column operator value\")", "red")
+                    if i + 1 >= len(args):
+                        self.__ui.print_colored("Error: WHERE requires a condition (e.g., \"column operator value\")", "red")
                         self.print_usage()
                         sys.exit(1)
                     where_clause = args[i + 1]

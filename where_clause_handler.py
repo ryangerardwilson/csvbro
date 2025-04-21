@@ -9,11 +9,11 @@ class WhereClauseHandler:
         self.__ui = ui
         self.__operators = {
             '=': lambda x, y: x == y,
-            '>': lambda x, y: float(x) > float(y),
-            '<': lambda x, y: float(x) < float(y),
-            '>=': lambda x, y: float(x) >= float(y),
-            '<=': lambda x, y: float(x) <= float(y),
-            '!=': lambda x, y: float(x) != float(y),
+            '>': lambda x, y: x > float(y),
+            '<': lambda x, y: x < float(y),
+            '>=': lambda x, y: x >= float(y),
+            '<=': lambda x, y: x <= float(y),
+            '!=': lambda x, y: x != float(y),
             'LIKE': lambda x, y: x.str.contains(y, case=False, na=False)
         }
 
