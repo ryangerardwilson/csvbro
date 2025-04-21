@@ -48,19 +48,16 @@ class CommandParser:
 
     def parse_and_execute(self, args: list, df):
         """Parse command-line arguments and execute the appropriate command."""
-        self.__ui.print_colored(f"Debug: Parsing arguments: {args}", "blue")
         if len(args) < 2:
             self.__ui.print_colored("Error: No filename provided.", "red")
             self.print_usage()
             sys.exit(1)
         
         if len(args) == 2:
-            self.__ui.print_colored("Debug: No command provided, displaying full DataFrame.", "blue")
             self.__viewer.show_dataframe(df)
             return
         
         command = args[2].upper()
-        self.__ui.print_colored(f"Debug: Command detected: {command}", "blue")
         
         # Handle WHERE command immediately to capture the condition
         if command == "WHERE":
@@ -69,10 +66,8 @@ class CommandParser:
                 self.print_usage()
                 sys.exit(1)
             where_clause = ' '.join(args[3:])  # Capture the condition as a single string
-            self.__ui.print_colored(f"Debug: WHERE clause: {where_clause}", "blue")
             try:
                 df = self.__where_handler.parse_and_apply(df, where_clause)
-                self.__ui.print_colored("Debug: Executing standalone WHERE command", "blue")
                 self.__viewer.show_dataframe(df)
             except Exception as e:
                 self.__ui.print_colored(f"Error: Failed to execute WHERE command: {str(e)}", "red")
@@ -103,7 +98,6 @@ class CommandParser:
                     self.print_usage()
                     sys.exit(1)
                 row = args[3]
-                self.__ui.print_colored(f"Debug: PIVOT row: {row}", "blue")
                 i = 4
                 
                 if row.upper().startswith("DECILES("):
@@ -115,7 +109,6 @@ class CommandParser:
                         sys.exit(1)
                     decile_column = match.group(1)
                     ignore_outliers = ",IGNORE_OUTLIERS" in row.upper()
-                    self.__ui.print_colored(f"Debug: DECILES detected - column: {decile_column}, ignore_outliers: {ignore_outliers}", "blue")
                 elif row.upper().startswith("PERCENTILES("):
                     is_percentiles = True
                     match = re.match(r"PERCENTILES\(([^,)]+)(?:,IGNORE_OUTLIERS)?\)", row, re.IGNORECASE)
@@ -125,7 +118,6 @@ class CommandParser:
                         sys.exit(1)
                     percentile_column = match.group(1)
                     ignore_outliers = ",IGNORE_OUTLIERS" in row.upper()
-                    self.__ui.print_colored(f"Debug: PERCENTILES detected - column: {percentile_column}, ignore_outliers: {ignore_outliers}", "blue")
                 
                 if is_deciles or is_percentiles:
                     if i >= len(args):
@@ -151,7 +143,6 @@ class CommandParser:
                             sys.exit(1)
                         aggfunc = args[i].upper()
                         i += 1
-                    self.__ui.print_colored(f"Debug: PIVOT {'DECILES' if is_deciles else 'PERCENTILES'} - pivot_column: {pivot_column}, value: {value}, aggfunc: {aggfunc}", "blue")
                 else:
                     if i + 1 < len(args) and args[i + 1].upper() not in self.__valid_aggfuncs and args[i + 1].upper() not in {'ORDER_BY', 'LIMIT', 'WHERE'}:
                         pivot_column = args[i]
@@ -168,7 +159,6 @@ class CommandParser:
                         sys.exit(1)
                     aggfunc = args[i].upper()
                     i += 1
-                    self.__ui.print_colored(f"Debug: PIVOT - pivot_column: {pivot_column}, value: {value}, aggfunc: {aggfunc}", "blue")
                 if aggfunc not in self.__valid_aggfuncs:
                     self.__ui.print_colored(f"Error: Invalid aggregation function '{aggfunc}'. Choose from {', '.join(self.__valid_aggfuncs)}.", "red")
                     self.print_usage()
@@ -176,7 +166,6 @@ class CommandParser:
             
             # Parse remaining arguments (ORDER_BY, LIMIT, WHERE)
             while i < len(args):
-                self.__ui.print_colored(f"Debug: Parsing argument at index {i}: {args[i]}", "blue")
                 if args[i].upper() == "ORDER_BY":
                     if i + 1 >= len(args):
                         self.__ui.print_colored("Error: ORDER_BY requires <sort_column> [ASC|DESC]", "red")
@@ -188,7 +177,6 @@ class CommandParser:
                     if i < len(args) and args[i].upper() in self.__valid_directions:
                         sort_direction = args[i].upper()
                         i += 1
-                    self.__ui.print_colored(f"Debug: ORDER_BY - sort_column: {sort_column}, sort_direction: {sort_direction}", "blue")
                 elif args[i].upper() == "LIMIT":
                     if i + 1 >= len(args):
                         self.__ui.print_colored("Error: LIMIT requires a positive integer", "red")
@@ -196,7 +184,6 @@ class CommandParser:
                         sys.exit(1)
                     limit = args[i + 1]
                     i += 2
-                    self.__ui.print_colored(f"Debug: LIMIT - limit: {limit}", "blue")
                 elif args[i].upper() == "WHERE":
                     if i + 1 >= len(args):
                         self.__ui.print_colored("Error: WHERE requires a condition (e.g., \"column operator value\")", "red")
@@ -204,11 +191,9 @@ class CommandParser:
                         sys.exit(1)
                     where_clause = args[i + 1]
                     i += 2
-                    self.__ui.print_colored(f"Debug: WHERE clause: {where_clause}", "blue")
                 elif command in {"SHOW", "JSON"}:
                     columns.append(args[i])
                     i += 1
-                    self.__ui.print_colored(f"Debug: Added column: {args[i-1]}", "blue")
                 else:
                     self.__ui.print_colored(f"Error: Unexpected argument '{args[i]}' in {command} command", "red")
                     self.print_usage()
@@ -216,11 +201,9 @@ class CommandParser:
             
             # Apply WHERE clause if present
             if where_clause:
-                self.__ui.print_colored(f"Debug: Applying WHERE clause: {where_clause}", "blue")
                 df = self.__where_handler.parse_and_apply(df, where_clause)
             
             # Execute the command
-            self.__ui.print_colored(f"Debug: Executing command: {command}", "blue")
             if command == "SHOW":
                 if not columns:
                     self.__ui.print_colored("Error: SHOW command requires at least one column name", "red")

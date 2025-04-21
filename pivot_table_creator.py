@@ -9,7 +9,6 @@ class PivotTableCreator:
         self.__ui = ui
         self.__valid_aggfuncs = {'SUM', 'COUNT', 'COUNT_UNIQUE', 'MEAN', 'MEDIAN'}
         self.__valid_directions = {'ASC', 'DESC'}
-        self.__ui.print_colored("Debug: Using PivotTableCreator version with corrected decile/percentile sorting, outlier handling, and robust P0-P90 equal-count percentile binning (2025-04-29)", "blue")
 
     def compute_deciles(self, df: pd.DataFrame, column: str, ignore_outliers: bool = False) -> tuple:
         """Assign decile bins and return DataFrame with decile labels and bin ranges, optionally ignoring outliers."""
@@ -74,7 +73,6 @@ class PivotTableCreator:
                 range_df['formatted_decile'] = range_df.apply(lambda x: f"{x['decile']} {x['range']}", axis=1)
             except ValueError as e:
                 self.__ui.print_colored(f"Error: Failed to compute bins for '{column}'. Reason: {str(e)}", "red")
-                self.__ui.print_colored(f"Debug: Column stats - min: {df[column].min()}, max: {df[column].max()}, unique values: {unique_count}", "blue")
                 sys.exit(1)
             
             return df, range_df
