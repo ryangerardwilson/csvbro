@@ -17,31 +17,27 @@ CSVBro is a command-line tool for viewing and analyzing CSV files using pandas D
 - **WHERE Clause Filtering**: Filter DataFrame rows based on conditions using operators `=`, `>`, `<`, `>=`, `<=`, `!=` for numeric and string comparisons, and `LIKE` for string containment. Supports complex conditions with `AND` and `OR` (e.g., `"Col1 > 0.3 AND (Col2 > 0.5 OR Col9 > 1.2)"`). Numeric comparisons use float parsing for accuracy. Conditions must be enclosed in double quotes in the shell command.
 - **User-Friendly Interface**: Includes a loading animation and color-coded output (errors in red, data in blue, instructions in green).
 
-## Requirements
-
-- Python 3.6 or higher
-- Required Python packages:
-  - `pandas`
-  - `numpy`
-
-Install dependencies using:
-
-```bash
-pip install pandas numpy
-```
-
 ## Installation
 
-1. Clone or download the repository.
-2. Ensure the required Python packages are installed (see Requirements).
-3. Place the `main.py` and other required files in your project directory.
+To install CSVBro, add the APT repository and install the package using the following command:
+
+```bash
+bash -c "sh <(curl -fsSL https://files.ryangerardwilson.com/csvbro/install.sh)"
+```
+
+This will:
+1. Download and install the GPG key for the `csvbro` repository.
+2. Add the `csvbro` repository to your APT sources list.
+3. Update the APT cache and install the `csvbro` package.
+
+After installation, the `csvbro` command is available system-wide.
 
 ## Usage
 
 Run the tool from the command line using:
 
 ```bash
-python main.py <filename> [<command> [args]]
+csvbro <filename> [<command> [args]]
 ```
 
 If no command is provided, the entire CSV is displayed as a DataFrame (with pandas' default truncation) unless `ORDER_BY`, `LIMIT`, or `WHERE` is specified.
@@ -108,61 +104,61 @@ If no command is provided, the entire CSV is displayed as a DataFrame (with pand
 1. Display the entire CSV:
 
    ```bash
-   python main.py data.csv
+   csvbro data.csv
    ```
 
 2. Show specific columns with sorting and limiting:
 
    ```bash
-   python main.py data.csv SHOW account_id mobile ORDER_BY mobile ASC LIMIT 10
+   csvbro data.csv SHOW account_id mobile ORDER_BY mobile ASC LIMIT 10
    ```
 
 3. Create a pivot table with unique count:
 
    ```bash
-   python main.py data.csv PIVOT lco_name category/ThirdParty mobile COUNT_UNIQUE ORDER_BY mobile DESC LIMIT 10
+   csvbro data.csv PIVOT lco_name category/ThirdParty mobile COUNT_UNIQUE ORDER_BY mobile DESC LIMIT 10
    ```
 
 4. Create a decile analysis with a WHERE clause:
 
    ```bash
-   python main.py data.csv PIVOT DECILES(splitter_efficacy_score,IGNORE_OUTLIERS) tenure_bin partner_id COUNT_UNIQUE WHERE "tenure_bin = '180+'"
+   csvbro data.csv PIVOT DECILES(splitter_efficacy_score,IGNORE_OUTLIERS) tenure_bin partner_id COUNT_UNIQUE WHERE "tenure_bin = '180+'"
    ```
 
 5. Create a percentile analysis with sorting:
 
    ```bash
-   python main.py data.csv PIVOT PERCENTILES(unique_splitter_contribution,IGNORE_OUTLIERS) partner_id COUNT_UNIQUE ORDER_BY count_unique DESC
+   csvbro data.csv PIVOT PERCENTILES(unique_splitter_contribution,IGNORE_OUTLIERS) partner_id COUNT_UNIQUE ORDER_BY count_unique DESC
    ```
 
 6. Output JSON with sorting and limiting:
 
    ```bash
-   python main.py data.csv JSON ORDER_BY mobile DESC LIMIT 100
+   csvbro data.csv JSON ORDER_BY mobile DESC LIMIT 100
    ```
 
 7. Sort and limit the entire DataFrame with a WHERE clause:
 
    ```bash
-   python main.py data.csv ORDER_BY mobile ASC LIMIT 5 WHERE "mobile = '1234567890'"
+   csvbro data.csv ORDER_BY mobile ASC LIMIT 5 WHERE "mobile = '1234567890'"
    ```
 
 8. Filter and display the DataFrame with numeric comparison:
 
    ```bash
-   python main.py data.csv WHERE "splitter_efficacy_score > 0.3"
+   csvbro data.csv WHERE "splitter_efficacy_score > 0.3"
    ```
 
 9. Filter and display the DataFrame with string containment:
 
    ```bash
-   python main.py data.csv WHERE "tenure_bin LIKE '180'"
+   csvbro data.csv WHERE "tenure_bin LIKE '180'"
    ```
 
 10. Filter and display the DataFrame with complex condition:
 
     ```bash
-    python main.py data.csv WHERE "splitter_efficacy_score > 0.3 AND (splitter_count > 100 OR active_base_customer_count < 50)"
+    csvbro data.csv WHERE "splitter_efficacy_score > 0.3 AND (splitter_count > 100 OR active_base_customer_count < 50)"
     ```
 
 ## Error Handling

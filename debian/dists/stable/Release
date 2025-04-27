@@ -1,0 +1,23 @@
+Architectures: amd64
+Codename: stable
+Components: main
+Date: Sun, 27 Apr 2025 02:45:47 +0000
+Label: csvbroRepo
+Origin: csvbroRepo
+Suite: stable
+MD5Sum:
+ 4cd4fba3bb9906713cb1e55266116e9f              144 Release
+ 17e46e0a145862f6eee4917dca98e67c              559 main/binary-amd64/Packages
+ fd753012fb90d91dec6f8a15a45f76a3              408 main/binary-amd64/Packages.gz
+SHA1:
+ 04e799e9f10269666c774d6272bca17ede73840a              144 Release
+ 631b0de8fa174265080e8e31f3e630611b4afb38              559 main/binary-amd64/Packages
+ 828777cd7bcfc7226802af32246a5437bf9acec5              408 main/binary-amd64/Packages.gz
+SHA256:
+ 191449f89c525f8ac05bc2cf8815058c6053cd8a47e8fd6f10285af880ecbae9              144 Release
+ e60e5dfa7d93865e7bc1d0133001bb6113c8b9390d5e8fed9dfba4d106a706fa              559 main/binary-amd64/Packages
+ f82ed86ddca00bd5c5518c24afe7ae55cdd668941d9293838469a84961e8a839              408 main/binary-amd64/Packages.gz
+SHA512:
+ 14fc13a57ea5b4696c7b19a24528d242fca24878e63d219c58d954ec184a2ca2c4af8763b42dcf47c66d6b19287f54d4a7dcd36ae73d610875b3385f2ae80b13              144 Release
+ 5ed06c736d69e01337769a2d9cd3bca2d79c491c7b93c3c81c069b48fa3b22a862ee2a2b37e7f482e815e36a0101fe1309ff9ad8461c677de4eb55fe7040c5dd              559 main/binary-amd64/Packages
+ dbf0722566b6ee8900488d7002f8482d969d5227b4cc990e2530d4979bc06d083c59a4c383b4cffad5f96b2bf35968af825d4b61a7b12eb404b3854154e6669c              408 main/binary-amd64/Packages.gz

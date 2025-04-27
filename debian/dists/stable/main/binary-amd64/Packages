@@ -1,0 +1,15 @@
+Package: csvbro
+Version: 0.0.2-1
+Architecture: amd64
+Maintainer: Ryan Gerard Wilson <ryangerardwilson@gmail.com>
+Depends: python3 (>= 3.6), python3-pip, jq, libreoffice-calc, curl
+Filename: dists/stable/main/binary-amd64/csvbro_0.0.2-1_amd64.deb
+Size: 27242994
+MD5sum: 738b207d2bb551202ec33ac1d7959293
+SHA1: 6e182c0aa7754bdc3d340b67ec1e91d65fa56242
+SHA256: 55b3da98d0af4460899b0aca645e573050cb44263f604279a0c28350e7ab1c5b
+Section: utils
+Priority: optional
+Description: csvbro - A Python-based CSV processing tool
+ csvbro - A Python-based CSV processing tool
+
