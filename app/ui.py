@@ -9,22 +9,56 @@ class UI:
         self.__ERROR_COLOR = '\033[91m'    # Bright red
         self.__RESET_COLOR = '\033[0m'     # Reset
         self.__BANNER = r"""
-       ______           ____           
-      / ____/_____   __/ __ )_________ 
-     / /   / ___/ | / / __  / ___/ __ \
-    / /___(__  )| |/ / /_/ / /  / /_/ /
-    \____/____/ |___/_____/_/   \____/ 
 
-==========================================
+            CCCCCCCCCCCCC   SSSSSSSSSSSSSSS VVVVVVVV           VVVVVVVV
+         CCC::::::::::::C SS:::::::::::::::SV::::::V           V::::::V
+       CC:::::::::::::::CS:::::SSSSSS::::::SV::::::V           V::::::V
+      C:::::CCCCCCCC::::CS:::::S     SSSSSSSV::::::V           V::::::V
+     C:::::C       CCCCCCS:::::S             V:::::V           V:::::V 
+    C:::::C              S:::::S              V:::::V         V:::::V  
+    C:::::C               S::::SSSS            V:::::V       V:::::V   
+    C:::::C                SS::::::SSSSS        V:::::V     V:::::V    
+    C:::::C                  SSS::::::::SS       V:::::V   V:::::V     
+    C:::::C                     SSSSSS::::S       V:::::V V:::::V      
+    C:::::C                          S:::::S       V:::::V:::::V       
+     C:::::C       CCCCCC            S:::::S        V:::::::::V        
+      C:::::CCCCCCCC::::CSSSSSSS     S:::::S         V:::::::V         
+       CC:::::::::::::::CS::::::SSSSSS:::::S          V:::::V          
+         CCC::::::::::::CS:::::::::::::::SS            V:::V           
+            CCCCCCCCCCCCC SSSSSSSSSSSSSSS               VVV   
+
+                                   (        )   
+                               (   )\ )  ( /(   
+                             ( )\ (()/(  )\())  
+                             )((_) /(_))((_)\   
+                            ((_)_ (_))    ((_)  
+                             | _ )| _ \  / _ \  
+                             | _ \|   / | (_) | 
+                             |___/|_|_\  \___/  
+                                                
+            ╔╗ ┬ ┬  ╦═╗┬ ┬┌─┐┌┐┌  ╔═╗┌─┐┬─┐┌─┐┬─┐┌┬┐  ╦ ╦┬┬  ┌─┐┌─┐┌┐┌
+            ╠╩╗└┬┘  ╠╦╝└┬┘├─┤│││  ║ ╦├┤ ├┬┘├─┤├┬┘ ││  ║║║││  └─┐│ ││││
+            ╚═╝ ┴   ╩╚═ ┴ ┴ ┴┘└┘  ╚═╝└─┘┴└─┴ ┴┴└──┴┘  ╚╩╝┴┴─┘└─┘└─┘┘└┘
+==================================================================================
 """
         self.__spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 
     def display_logo(self):
-        """Display the csvbro ASCII art logo with animation."""
-        for line in self.__BANNER.splitlines():
-            print(f"{self.__HEADING_COLOR}{line}{self.__RESET_COLOR}")
-            sys.stdout.flush()
-            time.sleep(0.05)  # Delay between lines for effect
+        """Display the csvbro ASCII art logo with a rapid typewriter effect."""
+        current_line = ""
+        for char in self.__BANNER:
+            if char == '\n':
+                print(f"{self.__HEADING_COLOR}{current_line}{self.__RESET_COLOR}")
+                current_line = ""
+                time.sleep(0.0005)  # Delay between lines
+            else:
+                current_line += char
+                print(f"{self.__HEADING_COLOR}{current_line}{self.__RESET_COLOR}", end='\r')
+                sys.stdout.flush()
+                time.sleep(0.0005)  # Rapid typing effect for each character
+        # Print the final line if not empty
+        if current_line:
+            print(f"{self.__HEADING_COLOR}{current_line}{self.__RESET_COLOR}")
 
     def animate_loading(self, stop_event, message="Processing"):
         """Display a Braille spinner animation."""

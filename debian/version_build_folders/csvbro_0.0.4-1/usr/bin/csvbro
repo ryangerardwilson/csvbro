@@ -1,0 +1,2 @@
+#!/bin/bash
+PYTHONPATH=/usr/lib/csvbro/site-packages python3 /usr/lib/csvbro/app/main.py "$@"

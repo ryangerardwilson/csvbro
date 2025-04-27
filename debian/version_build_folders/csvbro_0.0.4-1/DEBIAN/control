@@ -1,0 +1,9 @@
+Package: csvbro
+Version: 0.0.4-1
+Section: utils
+Priority: optional
+Architecture: amd64
+Depends: python3 (>= 3.6), python3-pip, jq, libreoffice-calc, curl
+Maintainer: Ryan Gerard Wilson <ryangerardwilson@gmail.com>
+Description: csvbro - A Python-based CSV processing tool
+ csvbro - A Python-based CSV processing tool

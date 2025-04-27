@@ -20,6 +20,7 @@ class CommandParser:
         """Print usage instructions."""
         self.__ui.print_colored("Usage: csvbro <filename> [<command> [args]]", "green")
         self.__ui.print_colored("If no command is provided, the CSV content is displayed as a normal DataFrame (with pandas' default truncation).", "green")
+        print()
         self.__ui.print_colored("Commands:", "green")
         self.__ui.print_colored("  SHOW <column1> [<column2> ...] [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>] [WHERE \"<condition>\"]  Display specified columns of the CSV", "blue")
         self.__ui.print_colored("  PIVOT <row> [<column>] <value> <AGGFUNC> [ORDER_BY <sort_column> [ASC|DESC]] [LIMIT <n>] [WHERE \"<condition>\"]  Create a pivot table (value must be numeric for SUM, MEAN, MEDIAN)", "blue")
@@ -33,6 +34,7 @@ class CommandParser:
         self.__ui.print_colored("  Operators: =, >, <, >=, <=, !=, LIKE (for string containment)", "blue")
         self.__ui.print_colored("  Note: Condition must be enclosed in double quotes in the shell command.", "blue")
         self.__ui.print_colored("  Aggregation functions: SUM, COUNT, COUNT_UNIQUE, MEAN, MEDIAN", "blue")
+        print()
         self.__ui.print_colored("Example:", "green")
         self.__ui.print_colored("  csvbro data.csv", "blue")
         self.__ui.print_colored("  csvbro data.csv SHOW account_id mobile ORDER_BY mobile ASC LIMIT 10", "blue")
