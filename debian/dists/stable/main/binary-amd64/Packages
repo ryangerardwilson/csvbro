@@ -1,13 +1,13 @@
 Package: csvbro
-Version: 0.0.6-1
+Version: 0.0.8-1
 Architecture: amd64
 Maintainer: Ryan Gerard Wilson <ryangerardwilson@gmail.com>
 Depends: python3 (>= 3.6), python3-pip
-Filename: dists/stable/main/binary-amd64/csvbro_0.0.6-1_amd64.deb
-Size: 27247012
-MD5sum: 566a2a50cca180a773e0777e9bc13a59
-SHA1: e830e35987b64e9b22dcf00615e4cb346b994306
-SHA256: 8aade8333c1a4452fe674125e61857b1621be7dede3c9d4e985f00b95836b603
+Filename: dists/stable/main/binary-amd64/csvbro_0.0.8-1_amd64.deb
+Size: 27252132
+MD5sum: 74960ac17d813dd13d853f60b3462c18
+SHA1: a91c49c0b27426a7dbd51be86a260de1eade9922
+SHA256: c7c2652dccdc53227f73d1eed3cd1b14278821454262dec23a30e78ec2a1bb8d
 Section: utils
 Priority: optional
 Description: csvbro - A Python-based CSV processing tool
