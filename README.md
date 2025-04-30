@@ -2,40 +2,23 @@
 
 CSVBro is a command-line tool for viewing and analyzing CSV files using pandas DataFrames. It provides functionality to display specific columns, create pivot tables, output data in JSON format, sort, limit, and filter results.
 
-## Author
-
-- **Name**: Ryan Gerard Wilson
+- **Author**: Ryan Gerard Wilson
 - **Website**: ryangerardwilson.com
 
-## Features
-
-- **Load and Display CSV**: Load a CSV file and display its contents as a pandas DataFrame.
-- **Selective Column Display**: Show only specified columns from the DataFrame.
-- **Pivot Tables**: Create pivot tables with aggregation functions like SUM, COUNT, COUNT_UNIQUE, MEAN, and MEDIAN.
-- **JSON Output**: Export the DataFrame or selected columns to JSON format with pretty-printing.
-- **Sorting and Limiting**: Sort data by a column in ascending or descending order and limit the number of rows displayed.
-- **WHERE Clause Filtering**: Filter DataFrame rows based on conditions using operators `=`, `>`, `<`, `>=`, `<=`, `!=` for numeric and string comparisons, and `LIKE` for string containment. Supports complex conditions with `AND` and `OR` (e.g., `"Col1 > 0.3 AND (Col2 > 0.5 OR Col9 > 1.2)"`). Numeric comparisons use float parsing for accuracy. Conditions must be enclosed in double quotes in the shell command.
-- **User-Friendly Interface**: Includes a loading animation and color-coded output (errors in red, data in blue, instructions in green).
-
-## Installation
+## 1. Installation
 
 To install CSVBro, add the APT repository and install the package using the following command:
 
     bash -c "sh <(curl -fsSL https://files.ryangerardwilson.com/csvbro/install.sh)"
 
-This will:
-1. Download and install the GPG key for the `csvbro` repository.
-2. Add the `csvbro` repository to your APT sources list.
-3. Update the APT cache and install the `csvbro` package.
-
 After installation, the `csvbro` command is available system-wide.
 
-## Upgrade to Latest Version
+## 2. Get Latest Version
 
-    sudo apt update 
+    sudo apt update
     sudo apt install --only-upgrade csvbro
 
-## Usage
+## 4. Usage
 
 Run the tool from the command line using:
 
@@ -43,7 +26,7 @@ Run the tool from the command line using:
 
 If no command is provided, the entire CSV is displayed as a DataFrame (with pandas' default truncation) unless `ORDER_BY`, `LIMIT`, or `WHERE` is specified.
 
-### Commands
+The following commands are available:
 
 - **SHOW**: Display specified columns of the CSV.
 
@@ -84,6 +67,6 @@ If no command is provided, the entire CSV is displayed as a DataFrame (with pand
   - Operators: `=`, `>`, `<`, `>=`, `<=`, `!=`, `LIKE` (for string containment)
   - Note: Numeric comparisons use float parsing; `LIKE` requires string columns and matches substrings (case-insensitive). Conditions must be enclosed in double quotes in the shell command.
 
-## License
+5. ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
