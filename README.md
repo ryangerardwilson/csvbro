@@ -19,7 +19,7 @@ To upgrade to the latest version of `csvbro`:
 
     pip install --upgrade csvbro
 
-## 4. Usage
+## 3. Usage
 
 Run the tool from the command line using:
 
@@ -68,6 +68,6 @@ The following commands are available:
   - Operators: `=`, `>`, `<`, `>=`, `<=`, `!=`, `LIKE` (for string containment)
   - Note: Numeric comparisons use float parsing; `LIKE` requires string columns and matches substrings (case-insensitive). Conditions must be enclosed in double quotes in the shell command.
 
-5. ## License
+4. ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
