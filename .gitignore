@@ -1,5 +1,17 @@
-__pycache__
-app/__pycache__
-debian
-*.csv
+# Python cache & bytecode
+**/__pycache__/
+*.py[cod]
+
+# Build/artifacts
+build/
+dist/
+*.egg-info/
+
+# Editor/temp files
 *.swp
+*.env.local
+*.tmp
+
+# Generated PDFs
+*.pdf
+

@@ -7,16 +7,17 @@ CSVBro is a command-line tool for viewing and analyzing CSV files using pandas D
 
 ## 1. Installation
 
-To install CSVBro, add the APT repository and install the package using the following command:
+To install `csvbro`, use pip:
 
-    bash -c "sh <(curl -fsSL https://files.ryangerardwilson.com/csvbro/install.sh)"
+    pip install csvbro
 
-After installation, the `csvbro` command is available system-wide.
+This installs `datasling` and its dependencies.
 
 ## 2. Get Latest Version
 
-    sudo apt update
-    sudo apt install --only-upgrade csvbro
+To upgrade to the latest version of `csvbro`:
+
+    pip install --upgrade csvbro
 
 ## 4. Usage
 
