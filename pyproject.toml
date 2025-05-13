@@ -1,14 +1,14 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel", "fastentrypoints"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "csvbro"
-version = "0.0.4"
+version = "0.0.5"
 description = "A tool for browsing and manipulating CSV files"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT License" }
+license = "MIT"
 
 authors = [
   { name = "Ryan Gerard Wilson", email = "ryan@wilsonfamilyoffice.com" }
@@ -29,4 +29,4 @@ Homepage = "https://ryangerardwilson.com"
 Issues   = "https://ryangerardwilson.com/contact"
 
 [project.entry-points."console_scripts"]
-csvbro = "main:main"
+csvbro = "csvbro.app.main:main"
